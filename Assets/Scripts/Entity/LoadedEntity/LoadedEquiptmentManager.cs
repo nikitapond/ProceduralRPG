@@ -15,11 +15,11 @@ public class LoadedEquiptmentManager : MonoBehaviour
     public GameObject WEAPONSHEATH, WEAPONSHEATH_END, BACKSHEATH, BACKSHEATH_END;
     private Dictionary<LoadedEquiptmentPlacement, GameObject> EquiptObjects;
 
-    private SkinnedMeshRenderer SMR;
+    public SkinnedMeshRenderer SMR;
     private LoadedEntity LoadedEntity;
     private void OnEnable()
     {
-        SMR = GetComponentInChildren<SkinnedMeshRenderer>();
+       // SMR = GetComponentInChildren<SkinnedMeshRenderer>();
         LoadedEntity = GetComponent<LoadedEntity>();
         EquiptObjects = new Dictionary<LoadedEquiptmentPlacement, GameObject>();
     }
@@ -119,12 +119,14 @@ public class LoadedEquiptmentManager : MonoBehaviour
                 le.transform.parent = SMR.transform;
                 le.SMR.bones = SMR.bones;
                 le.SMR.rootBone = SMR.rootBone;
+                Debug.Log("[LoadedEquiptmentManager] Equipting to legs - setting blend shape to 100");
                 SMR.SetBlendShapeWeight(0, 100);
                 break;
             case LoadedEquiptmentPlacement.chest:
                 le.transform.parent = SMR.transform;
                 le.SMR.bones = SMR.bones;
                 le.SMR.rootBone = SMR.rootBone;
+                Debug.Log("[LoadedEquiptmentManager] Equipting to chest - setting blend shape to 100");
                 SMR.SetBlendShapeWeight(1, 100);
                 break;
 
@@ -152,8 +154,9 @@ public class LoadedEquiptmentManager : MonoBehaviour
 
         if (item is Weapon && !(item is RangeWeapon))
         {
-            obj.GetComponent<LoadedMeleeWeapon>().SetWeaponDetails(LoadedEntity.Entity, item as Weapon);
             LoadedMeleeWeapon lmw = obj.GetComponent<LoadedMeleeWeapon>();
+            if (lmw == null) lmw = obj.GetComponentInChildren<LoadedMeleeWeapon>();
+            lmw.SetWeaponDetails(LoadedEntity.Entity, item as Weapon);
             LoadedEntity.Entity.CombatManager.SetLoadedMeleeWeapon(lmw);
         }
 

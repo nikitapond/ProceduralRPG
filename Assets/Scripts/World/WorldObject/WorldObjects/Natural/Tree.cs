@@ -9,7 +9,14 @@ public class Tree : WorldObjectData
 
 
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new Tree(pos);
+
+    }
 
     public override string Name => "tree";
 
@@ -96,7 +103,14 @@ public class TreeCanopy : WorldObjectData, IProcedualGeneratedObject
     public TreeCanopy(Vec2i worldPosition, Vector3 delta, WorldObjectMetaData meta = null, Vec2i size = null) : base(worldPosition, delta, meta, size)
     {
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new TreeCanopy(pos, this.ObjectDeltaPosition);
+
+    }
 
     public override string Name => "Tree Canopy";
 
@@ -147,7 +161,14 @@ public class TreeBranch : WorldObjectData
     public TreeBranch(Vec2i worldPosition, WorldObjectMetaData meta = null, Vec2i size = null) : base(worldPosition, meta, size)
     {
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new TreeBranch(pos, this.MetaData, this.Size);
+
+    }
 
     public override string Name => "Tree branch";
 

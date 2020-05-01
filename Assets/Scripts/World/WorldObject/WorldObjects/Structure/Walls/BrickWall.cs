@@ -4,7 +4,7 @@ using UnityEditor;
 public class BrickWall : WorldObjectData
 {
     private int Height;
-    public BrickWall(Vec2i worldPosition, int height=1, WorldObjectMetaData meta = null, Vec2i size = null) : base(worldPosition, meta, size)
+    public BrickWall(Vec2i worldPosition, WorldObjectMetaData meta = null, Vec2i size = null) : base(worldPosition, meta, size)
     {
     }
 
@@ -12,7 +12,14 @@ public class BrickWall : WorldObjectData
     public override string Name => "brick_wall";
 
     public override WorldObjects ObjID => WorldObjects.WALL;
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new BrickWall(pos, this.MetaData, this.Size);
+
+    }
     public override WorldObject CreateWorldObject(Transform transform = null)
     {
         WorldObject obj = base.CreateWorldObject(transform);

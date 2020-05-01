@@ -9,7 +9,14 @@ public class Bed : WorldObjectData, IMultiTileObject
     }
 
     public override WorldObjects ObjID => WorldObjects.BED;
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new Bed(pos, this.MetaData);
+
+    }
     public override string Name => "Bed";
     private IMultiTileObjectChild[,] Children;
     public IMultiTileObjectChild[,] GetChildren()

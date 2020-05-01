@@ -8,6 +8,16 @@ public class CaveDungeonEntrance : DungeonEntrance
     {
     }
 
+
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
+
+        return new CaveDungeonEntrance(pos, Dungeon);
+
+    }
+
     /// <summary>
     /// Checks if the entity is allowed to enter
     /// </summary>

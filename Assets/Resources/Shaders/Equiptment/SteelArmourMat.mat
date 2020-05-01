@@ -25,4 +25,4 @@ Material:
     - Vector1_B4AF1B7D: 1
     - Vector1_B972F939: 0
     m_Colors:
-    - Color_F7E5922F: {r: 1, g: 0, b: 0, a: 0}
+    - Color_F7E5922F: {r: 0, g: 0.08852029, b: 1, a: 0}

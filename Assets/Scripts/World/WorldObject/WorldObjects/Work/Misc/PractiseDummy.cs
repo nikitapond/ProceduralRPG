@@ -10,4 +10,13 @@ public class PractiseDummy : WorkEquiptmentData
     public override WorldObjects ObjID => WorldObjects.PRACTISE_DUMMY;
 
     public override string Name => "Practise Dummy";
+
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
+
+        return new PractiseDummy(pos, this.MetaData, this.Size);
+
+    }
 }

@@ -12,4 +12,13 @@ public class WoodSpikeWall : WorldObjectData
     public WoodSpikeWall(Vec2i worldPosition) : base(worldPosition, null, null)
     {
     }
+
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
+
+        return new WoodSpikeWall(pos);
+
+    }
 }

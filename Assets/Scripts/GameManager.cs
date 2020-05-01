@@ -162,9 +162,9 @@ public class GameManager : MonoBehaviour
         QuestManager.SetQuests(GameGenerator.GenerateQuests(WorldManager.World));
 
 
-        Vec2i wpos = Vec2i.FromVector2(QuestManager.Unstarted[0].Initiator.GetNPC().Position2);
-        //Vec2i wpos = WorldManager.World.GetChunkStructure(0).Position * World.ChunkSize + new Vec2i(2, 2);
-        Vec2i wEntr = WorldManager.World.GetSubworld(1).WorldEntrance;
+        //Vec2i wpos = Vec2i.FromVector2(QuestManager.Unstarted[0].Initiator.GetNPC().Position2);
+        Vec2i wpos = WorldManager.World.GetChunkStructure(0).Position * World.ChunkSize + new Vec2i(2, 2);
+       // Vec2i wEntr = WorldManager.World.GetSubworld(1).WorldEntrance;
         TestSettle = QuestManager.Unstarted[0].Initiator.GetNPC().NPCKingdomData.GetSettlement();
         Debug.Log(TestSettle);
 
@@ -193,7 +193,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        Debug.Log("LoadedPathCount: " + PathFinder.COUNT);
+       // Debug.Log("LoadedPathCount: " + PathFinder.COUNT);
     }
 
     bool hasBuilt = false;

@@ -12,7 +12,15 @@ public class LootSack : WorldObjectData, IInventoryObject
     }
 
 
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new LootSack(pos);
+        
+
+    }
     public override string Name => "Loot Sack";
 
     public override WorldObjects ObjID => WorldObjects.LOOT_SACK;

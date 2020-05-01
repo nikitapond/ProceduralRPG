@@ -10,7 +10,10 @@ public class GameGenerator
 {
     //Temporary test variable
     public static Texture2D MAP;
-    
+
+
+    public static GameGenerator Instance;
+
     //Global seed used by all further generators
     public int Seed { get; private set; }
 
@@ -34,6 +37,7 @@ public class GameGenerator
     public GameGenerator(int seed)
     {
         Seed = seed;
+        Instance = this;
     }
 
     /// <summary>

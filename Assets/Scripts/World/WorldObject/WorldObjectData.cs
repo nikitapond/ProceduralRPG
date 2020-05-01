@@ -7,6 +7,7 @@ public abstract class WorldObjectData
     [System.NonSerialized]
     public WorldObject LoadedObject;
 
+    public float GroundHeight { get; private set; }
     public abstract WorldObjects ObjID { get; }
     public int ID { get { return (int)ObjID; } }
     public abstract string Name { get; }
@@ -21,7 +22,9 @@ public abstract class WorldObjectData
     public Vector3 ObjectDeltaPosition { get { return new Vector3(ObjectDeltaPosition_[0], ObjectDeltaPosition_[1], ObjectDeltaPosition_[2]); } }
     protected WorldObjectMetaData MetaData;
     public Vec2i Size { get; protected set; }
-   
+
+    public abstract WorldObjectData Copy(Vec2i pos=null);
+    
 
     public WorldObjectData(Vec2i worldPosition, Vector3 delta, WorldObjectMetaData meta = null, Vec2i size = null)
     {
@@ -30,6 +33,7 @@ public abstract class WorldObjectData
         MetaData = meta;
         Size = size;
         IsCollision = true;
+        GroundHeight = -1;
     }
     public WorldObjectData(Vec2i worldPosition, WorldObjectMetaData meta=null, Vec2i size=null)
     {
@@ -38,7 +42,13 @@ public abstract class WorldObjectData
         ObjectDeltaPosition_ = new float[] { 0,0,0 };
         Size = size;
         IsCollision = true;
+        GroundHeight = -1;
 
+    }
+
+    public void SetGroundHeight(float gh)
+    {
+        GroundHeight = gh;
     }
 
     public void SetPosition(Vec2i worldPos)

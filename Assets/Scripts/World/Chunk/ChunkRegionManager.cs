@@ -5,7 +5,7 @@ using System.Collections;
 
 public class ChunkRegionManager : MonoBehaviour
 {
-    public static int LoadChunkRadius = 10;
+    public static int LoadChunkRadius = 6;
     private Object ThreadSafe;
     public ChunkRegion[,] LoadedRegions { get; private set; }
     public Dictionary<Vec2i, LoadedChunk> LoadedChunks { get; private set; }

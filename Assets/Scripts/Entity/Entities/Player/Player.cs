@@ -15,7 +15,8 @@ public class Player : HumanoidEntity
 
     public override void Update()
     {
-
+        
+        Debug.BeginDeepProfile("player_update_main");
         Vec2i cPos = World.GetChunkPosition(Position);
         if (cPos != LastChunkPosition)
         {
@@ -23,6 +24,7 @@ public class Player : HumanoidEntity
             GameManager.EntityManager.UpdateEntityChunk(this, LastChunkPosition, cPos);
             LastChunkPosition = cPos;
         }
+        Debug.EndDeepProfile("player_update_main");
 
         SpellCastData data = new SpellCastData();
         data.Source = this;

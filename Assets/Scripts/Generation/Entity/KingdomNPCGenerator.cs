@@ -239,7 +239,7 @@ public class KingdomNPCGenerator
             }
 
             float kindness = Mathf.Clamp(GenerationRan.GaussianFloat(0.6f, 0.4f), 0, 1);
-            float agression = Mathf.Clamp(GenerationRan.GaussianFloat(0.6f, 0.4f), 0, 1);
+            float agression = Mathf.Clamp(GenerationRan.GaussianFloat(0.3f, 0.5f), 0, 1);
             float greed = Mathf.Clamp(GenerationRan.GaussianFloat(0.6f, 0.4f), 0, 1);
 
             EntityPersonality pers = new EntityPersonality(agression, kindness, loyalty, greed, wealth);

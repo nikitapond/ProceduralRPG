@@ -84,5 +84,19 @@ public class Tile
         return new Color(_Color[0], _Color[1], _Color[2]);
     }
 
-
+    public static Tile GetFromBiome(ChunkBiome b)
+    {
+        switch (b)
+        {
+            case ChunkBiome.dessert:
+                return Tile.SAND;
+            case ChunkBiome.forrest:
+                return Tile.GRASS;
+            case ChunkBiome.grassland:
+                return Tile.GRASS;
+            case ChunkBiome.ocean:
+                return Tile.WATER;
+        }
+        return Tile.TEST_MAGENTA;
+    }
 }

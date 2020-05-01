@@ -11,7 +11,7 @@ public class EntityManager : MonoBehaviour
     /// When idle, no update calculations are run. The entity is set to idle mode, which prevents physics calculations also
     /// 
     /// </summary>
-    public static readonly int IDLE_CHUNK_DISTANCE = 5;
+    public static readonly int IDLE_CHUNK_DISTANCE = 4;
     public static readonly int IDLE_DISTANCE_SQR = World.ChunkSize * World.ChunkSize * IDLE_CHUNK_DISTANCE * IDLE_CHUNK_DISTANCE;
     public static readonly int ENTITY_CLOSE_TO_PLAYER_RADIUS = World.ChunkSize * 3;
     public static readonly int MAX_LOADED_ENTITIES = 128;
@@ -231,6 +231,42 @@ public class EntityManager : MonoBehaviour
             }
 
         }
+
+        int total=0;
+        int enabled=0;
+        foreach(Vec2i v in LoadedChunks)
+        {
+            MeshCollider mc = GameManager.WorldManager.CRManager.GetLoadedChunk(v).GetComponent<MeshCollider>();
+            total++;
+            if (mc.enabled)
+                enabled++;
+            if(LoadedEntityChunks.ContainsKey(v) && LoadedEntityChunks[v].Count != 0)
+            {
+                //enabled++;
+                //mc.enabled = true;
+            }
+            else
+            {
+               // mc.enabled = false;
+            }
+        }
+        /*
+        foreach(KeyValuePair<Vec2i, List<Entity>> kvp in LoadedEntityChunks)
+        {
+            MeshCollider mc = GameManager.WorldManager.CRManager.GetLoadedChunk(kvp.Key).GetComponent<MeshCollider>();
+            total++;
+            if (kvp.Value == null || kvp.Value.Count == 0)
+            {
+
+                mc.enabled = false;
+            }
+            else
+            {
+                mc.enabled = true;
+                enabled++;
+            }
+        }*/
+        DebugGUI.Instance.SetData("chunk_col", +enabled + "/" + total);
     }
 
     public List<Entity> GetEntitiesNearChunk(Vec2i cPos)
@@ -259,11 +295,24 @@ public class EntityManager : MonoBehaviour
             {
                 LoadedEntityChunks.Remove(last);
             }
+            for(int x=-1; x<=1; x++)
+            {
+                for (int z = -1; z <= 1; z++)
+                {
+                    //GameManager.WorldManager.CRManager.GetLoadedChunk(new Vec2i(x + last.x, z + last.z)).GetComponent<MeshCollider>().enabled = false;
+                }
+            }
         }
         //If the next position is not null, we try to add to correct spot
         if(next != null)
         {
-            
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int z = -1; z <= 1; z++)
+                {
+                   // GameManager.WorldManager.CRManager.GetLoadedChunk(new Vec2i(x + next.x, z + next.z)).GetComponent<MeshCollider>().enabled = true;
+                }
+            }
 
             //If the chunk has no entity list associated, create it
             if (!LoadedEntityChunks.ContainsKey(next))

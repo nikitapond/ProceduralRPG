@@ -11,7 +11,8 @@ public class TerrainGenerator
 
     public ChunkBase[,] ChunkBases { get; private set; }
     public List<Vec2i> LandChunks { get; private set; }
-
+    private GenerationRandom GenRan;
+    private float WorldRad;
     /// <summary>
     /// Initiates the Terrain Generator, the given World is the empty world
     /// that all terrain will be generated to
@@ -20,6 +21,7 @@ public class TerrainGenerator
     public TerrainGenerator(GameGenerator gamGen, World world)
     {
         GameGenerator = gamGen;
+        GenRan = new GenerationRandom(GameGenerator.Seed);
         World = world;
     }
 
@@ -27,10 +29,10 @@ public class TerrainGenerator
     {
         ChunkBases = new ChunkBase[World.WorldSize, World.WorldSize];
         LandChunks = new List<Vec2i>();
-        GenerationRandom genRan = new GenerationRandom(0);
 
         Vec2i mid = new Vec2i(World.WorldSize / 2, World.WorldSize / 2);
         float r_sqr = (World.WorldSize / 3) * (World.WorldSize / 3);
+        WorldRad = (World.WorldSize / 2.1f)* (World.WorldSize / 2.1f);
 
         Texture2D t = new Texture2D(World.WorldSize, World.WorldSize);
         Texture2D hum = new Texture2D(World.WorldSize, World.WorldSize);
@@ -39,15 +41,15 @@ public class TerrainGenerator
 
 
         float[,] humdity = new float[World.WorldSize, World.WorldSize];
-        Vec2i offset = genRan.RandomVec2i(World.WorldSize / 8, World.WorldSize / 4);
+        Vec2i offset = GenRan.RandomVec2i(World.WorldSize / 8, World.WorldSize / 4);
 
         Vec2i humMid = mid + offset;
-        float humRadSqr = genRan.Random(World.WorldSize / 4, World.WorldSize / 2);
+        float humRadSqr = GenRan.Random(World.WorldSize / 4, World.WorldSize / 2);
         humRadSqr *= humRadSqr;
 
 
         Vec2i tempMid = mid -offset;
-        float tempRadSqr = genRan.Random(World.WorldSize / 4, World.WorldSize / 2);
+        float tempRadSqr = GenRan.Random(World.WorldSize / 4, World.WorldSize / 2);
         tempRadSqr *= tempRadSqr;
         float[,] temperature = new float[World.WorldSize, World.WorldSize];
 
@@ -55,7 +57,10 @@ public class TerrainGenerator
         {
             for (int z = 0; z < World.WorldSize; z++)
             {
-                float c = 1- Mathf.Pow(Mathf.PerlinNoise(x*0.01f, z*0.01f), 2);
+                float c = WorldHeightChunk(x, z);
+
+
+                    
 
                 humdity[x, z] = 0.4f + 0.6f * Mathf.PerlinNoise(4000 + x * 0.02f, 4000 + z * 0.02f);
                 humdity[x, z] /= (((x - humMid.x) * (x - humMid.x) + (z - humMid.z) * (z - humMid.z)) / humRadSqr);
@@ -68,15 +73,15 @@ public class TerrainGenerator
                 hum.SetPixel(x, z, new Color(humdity[x, z], humdity[x, z], humdity[x, z]));
                 temp.SetPixel(x, z, new Color(temperature[x, z], temperature[x, z], temperature[x, z]));
 
-                c /= (((x - mid.x) * (x - mid.x) + (z - mid.z) * (z - mid.z)) / r_sqr);
+                //c /= (((x - mid.x) * (x - mid.x) + (z - mid.z) * (z - mid.z)) / r_sqr);
 
-                t.SetPixel(x,z, new Color(c, c, c));
+                t.SetPixel(x,z, new Color(c/World.ChunkHeight, c / World.ChunkHeight, c / World.ChunkHeight));
                 Vec2i v = new Vec2i(x, z);
 
                 //if ((x - mid.x) * (x - mid.x) + (z - mid.z) * (z - mid.z) < r_sqr)
-                if (c > 0.5)
+                if (c > 5 && !(x==0||z==0||x==World.WorldSize-1 || z==World.WorldSize-1))
                 { //If point within this radius of middle
-                    ChunkBases[x, z] = new ChunkBase(v, true);
+                    ChunkBases[x, z] = new ChunkBase(v, c, true);
                     LandChunks.Add(v);
 
 
@@ -111,7 +116,7 @@ public class TerrainGenerator
                 }
                 else
                 {
-                    ChunkBases[x, z] = new ChunkBase(v, false);
+                    ChunkBases[x, z] = new ChunkBase(v, 1, false);
                 }
             }
         }
@@ -122,9 +127,32 @@ public class TerrainGenerator
         GameManager.Game.toDrawTexts[0] = t;
         GameManager.Game.toDrawTexts[1] = hum;
         GameManager.Game.toDrawTexts[2] = temp;
-
     }
 
+
+    public float WorldHeightChunk(float x, float z)
+    {
+        float c = 5+ (World.ChunkHeight-5) * (1 - Mathf.Pow(Mathf.PerlinNoise(x * 0.01f, z * 0.01f), 2));
+        //float radialScale = ((x - World.WorldSize / 2) * (x - World.WorldSize / 2) + (z - World.WorldSize / 2) * (z - World.WorldSize / 2))/ WorldRad;
+        //c *= (1-Mathf.Clamp(radialScale, 0, 1));
+
+        if((x - World.WorldSize / 2) * (x - World.WorldSize / 2) + (z - World.WorldSize / 2) * (z - World.WorldSize / 2) > WorldRad)
+        {
+            c = 1;
+        }
+
+        return c;
+    }
+
+
+    public float WorldHeight(int x, int z)
+    {
+        int cx = Mathf.FloorToInt((float)x / World.ChunkSize);
+        int cz = Mathf.FloorToInt((float)z / World.ChunkSize);
+        float px = ((float)(x % World.ChunkSize)) / World.ChunkSize;
+        float pz = ((float)(z % World.ChunkSize)) / World.ChunkSize;
+        return WorldHeightChunk(cx + px, cz + pz);
+    }
     public void GenerateTerrainDetails()
     {
         GameGenerator.RiverGenerator.GenerateAllRivers();

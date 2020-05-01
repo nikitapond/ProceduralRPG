@@ -46,6 +46,18 @@ public class GenerationRandom
         return RandomInt(0, 2)==0?-1:1;
     }
 
+    /// <summary>
+    /// Returns true 'percent'/100 of the time.
+    /// </summary>
+    /// <param name="percent"></param>
+    /// <returns></returns>
+    public bool PercentageChance(float percent)
+    {
+        if (percent / 100 > Random())
+            return true;
+        return false;
+    }
+
 
     /// <summary>
     /// Returns an integer between min (inclusive) and max-1

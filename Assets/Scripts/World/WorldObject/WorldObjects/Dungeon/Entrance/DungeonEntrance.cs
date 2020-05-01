@@ -18,7 +18,7 @@ public abstract class DungeonEntrance : WorldObjectData, IMultiTileObject
 
 
     }
-
+ 
     public void SetChunkStructure(ChunkStructure entranceStructure)
     {
         ChunkStructure = entranceStructure;

@@ -71,7 +71,7 @@ public class ResourceManager
         AllWorldObjects = new Dictionary<int, GameObject>();
         string root = "WorldObjects/";
         AllWorldObjects.Add((int)WorldObjects.EMPTY_OBJECT_BASE, Resources.Load<GameObject>(root + "Null"));
-
+        GameObject placeholder = Resources.Load<GameObject>(root + "PlaceHolder");
         AllWorldObjects.Add((int)WorldObjects.WALL, Resources.Load<GameObject>(root + "BrickWall"));
         AllWorldObjects.Add((int)WorldObjects.LOOT_SACK, Resources.Load<GameObject>(root + "InventoryObjects/LootSack"));
         AllWorldObjects.Add((int)WorldObjects.TREE, Resources.Load<GameObject>(root + "Natural/Tree/TreeBase"));
@@ -91,6 +91,11 @@ public class ResourceManager
         AllWorldObjects.Add((int)WorldObjects.DUNGEON_ENTRANCE, Resources.Load<GameObject>(root + "Null"));
         AllWorldObjects.Add((int)WorldObjects.BED, Resources.Load<GameObject>(root + "Building/House/Bed"));
         AllWorldObjects.Add((int)WorldObjects.MARKET_STALL, Resources.Load<GameObject>(root + "Building/Work/Market/MarketStall"));
+
+
+
+        AllWorldObjects.Add((int)WorldObjects.BANDIT_GAURD_TOWER, placeholder);
+        AllWorldObjects.Add((int)WorldObjects.CHEST, placeholder);
 
         /*
         foreach(KeyValuePair<int, GameObject> kvp in AllWorldObjects)

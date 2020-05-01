@@ -6,6 +6,7 @@ public class PlayerManager : MonoBehaviour
 {
     public static PlayerManager Instance;
 
+    public CharacterController TEST;
 
     public LoadedEntity LoadedPlayer { get; private set; }
     public Player Player { get; private set; }
@@ -219,9 +220,11 @@ public class PlayerManager : MonoBehaviour
         GameManager.PathFinder.SetPlayerPosition(Player.TilePos);
     }
 
+    private Vec2i LastChunk;
+
     void Update()
     {
-
+        LoadedPlayer.SetIdle(false);
         if (Console.Instance != null && Console.Instance.Active)
             return;
 
@@ -248,16 +251,20 @@ public class PlayerManager : MonoBehaviour
         if (GameManager.Paused)
             return;
 
-        Debug.BeginDeepProfile("PlayerManagerUpdate");
+       // Debug.BeginDeepProfile("PlayerManagerUpdate");
 
         Vector3 worldMousePos = GetWorldMousePosition();
-        Tick(Time.deltaTime);
+        
 
-
+        Vec2i currentChunk = World.GetChunkPosition(Player.TilePos);
+        if(currentChunk != LastChunk)
+        {
+            LastChunk = currentChunk;
+            Tick(Time.deltaTime);
+        }
         Player.Update();
 
         MovementUpdate();
-
         PlayerSelectUpdate();
         /*
         float x = Input.GetAxis("Horizontal");
@@ -311,8 +318,12 @@ public class PlayerManager : MonoBehaviour
     private void MovementUpdate()
     {
 
+
+
         float hor = Input.GetAxis("Horizontal"); //A,D
         float vert = Input.GetAxis("Vertical"); //S,W 
+
+
 
         //If the camera is a first person type
         if (PlayerCameraScript.CameraController is FirstPersonCC)
@@ -321,6 +332,7 @@ public class PlayerManager : MonoBehaviour
             float dx = hor * Mathf.Cos(-Player.LookAngle * Mathf.Deg2Rad) - vert * Mathf.Sin(-Player.LookAngle * Mathf.Deg2Rad);
 
             LoadedPlayer.MoveInDirection(new Vector2(dx, dz));
+
         }
     }
 

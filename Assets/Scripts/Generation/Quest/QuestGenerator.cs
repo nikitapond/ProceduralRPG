@@ -98,6 +98,7 @@ public class QuestGenerator
         ChunkStructure ranStruct = GetRandomFreeStructure(dungeonPos, 3);
         if (ranStruct == null)
             throw new System.Exception("We need to fix this");
+        Debug.Log(dungeon + "_" + ranStruct + "_" + ranStruct.FinalLootChest + "_");
         //We add the dungeon key to the loot chest of this structure
         ranStruct.FinalLootChest.GetInventory().AddItem(dungeon.GetKey());
         //Add the item finding task

@@ -10,7 +10,14 @@ public class RiverBridgeObject : WorldObjectData, IMultiTileObject
         Direction = dir;
     }
 
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new RiverBridgeObject(pos, WorldPosition + this.Size, Direction);
+
+    }
     public override string Name => "Bridge";
 
     public override WorldObjects ObjID => WorldObjects.BRIDGE;
@@ -92,7 +99,14 @@ public class BridgeBaseObject : WorldObjectData, IMultiTileObjectChild
     {
         return Parent;
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new BridgeBaseObject(Parent, pos);
+
+    }
 
     public override WorldObject CreateWorldObject(Transform transform = null)
     {
@@ -111,7 +125,14 @@ public class BridgeRampObject : WorldObjectData, IMultiTileObjectChild
     {
         Parent = parent;
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new BridgeRampObject(Parent, pos);
+
+    }
     public override WorldObjects ObjID => WorldObjects.BRIDGE_RAMP;
     public override string Name => "Bridge ramp";
 

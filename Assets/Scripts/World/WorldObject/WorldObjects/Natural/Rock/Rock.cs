@@ -17,7 +17,14 @@ public class Rock : WorldObjectData, IProcedualGeneratedObject
         RockSize = rockSize;
         SetRandom(new GenerationRandom(worldPosition.GetHashCode() + 13));
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new Rock(pos, RockSize);
+
+    }
 
     public override void OnObjectLoad(WorldObject obj)
     {

@@ -97,7 +97,9 @@ public enum WorldObjects
     DUNGEON_ENTRANCE,
     MARKET_STALL,
     BED,
-    PRACTISE_DUMMY
+    PRACTISE_DUMMY,
+    BANDIT_GAURD_TOWER,
+    CHEST,
 
 
 

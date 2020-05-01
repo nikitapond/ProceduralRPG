@@ -21,7 +21,9 @@ public class ChunkBase
     public bool HasKingdom { get { return Kingdom != null; } }
 
     public bool HasSettlement { get; private set; }
-    public ChunkBase(Vec2i position, bool isLand=false)
+
+    public float BaseHeight { get; private set; }
+    public ChunkBase(Vec2i position, float baseHeight=5, bool isLand=false)
     {
         Position = position;
         IsLand = isLand;
@@ -29,6 +31,8 @@ public class ChunkBase
             Biome = ChunkBiome.ocean;
         else
             Biome = ChunkBiome.grassland;
+
+        BaseHeight = baseHeight;
     }
 
     public void SetHasSettlement(bool set)
@@ -85,4 +89,6 @@ public class ChunkBase
     {
         return "CB:" + this.Position.ToString();
     }
+
+
 }

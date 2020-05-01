@@ -145,7 +145,6 @@ public abstract class Entity
         if (LoadedEntity != null)
         {
             LoadedEntity.transform.localPosition = Position;
-            LoadedEntity.ResetPhysics();
         }
 
     }

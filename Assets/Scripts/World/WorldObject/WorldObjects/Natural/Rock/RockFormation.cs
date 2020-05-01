@@ -14,7 +14,14 @@ public class RockFormation : WorldObjectData
     {
         MaxSize = maxSize;
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new RockFormation(pos,MaxSize);
+
+    }
     public override WorldObject CreateWorldObject(Transform transform = null)
     {
         GenerationRandom genRan = new GenerationRandom(WorldPosition.GetHashCode() * 13);

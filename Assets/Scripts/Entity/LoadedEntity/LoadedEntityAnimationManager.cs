@@ -78,6 +78,7 @@ public class LoadedEntityAnimationManager : MonoBehaviour, IGamePauseEvent
     {
 
         Animator.enabled = !pause;
+    
     }
 
 

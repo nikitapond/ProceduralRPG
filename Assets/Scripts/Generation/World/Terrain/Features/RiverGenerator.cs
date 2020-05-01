@@ -103,7 +103,12 @@ public class RiverGenerator
             if(r.AddChunk(next, 5))
             {
                 last = next;
-                if (!GameGenerator.TerrainGenerator.ChunkBases[next.x, next.z].IsLand)
+                if(next.x < 0 || next.z < 0 || next.x>=World.WorldSize || next.z >= World.WorldSize)
+                {
+                    shouldStop = true;
+
+                }
+                else if (!GameGenerator.TerrainGenerator.ChunkBases[next.x, next.z].IsLand)
                     shouldStop = true;
             }
         }

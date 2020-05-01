@@ -202,7 +202,7 @@ public class EntityRelationshipManager
                 float weightedKingdom = kingdomRelation * Personality.Loyalty;
 
                 //High difference if aggression results in bad relationship
-                float agresDifMult = 1 - Mathf.Abs(otherPer.Agression - Personality.Agression);
+                float agresDifMult = 1 - Mathf.Abs(otherPer.Aggression - Personality.Aggression);
 
                 //Two entities will not like each other if they are opposite wealth
                 //Rich hate the poor, and the poor hate the rich
@@ -217,7 +217,10 @@ public class EntityRelationshipManager
                 return totalRelation;
             }
 
-
+            if(entity is Player)
+            {
+                return 1;
+            }
 
 
 
@@ -253,7 +256,7 @@ public class EntityRelationshipManager
 /// </summary>
 public struct EntityPersonality
 {
-    public float Agression; //Relevent to combat - how likey an entity is to enter combat, their jobs etc
+    public float Aggression; //Relevent to combat - how likey an entity is to enter combat, their jobs etc
     public float Kindness; //Relevent to ???
     public float Loyalty; //Relevent to nationality/ faction belonging
     public float Greed; //Reltative to crime, greedy agression -> criminal
@@ -261,7 +264,7 @@ public struct EntityPersonality
 
     public EntityPersonality(float agression, float kindness, float loyaly, float greed, float wealth)
     {
-        Agression = agression;
+        Aggression = agression;
         Kindness = kindness;
         Loyalty = loyaly;
         Greed = greed;
@@ -269,7 +272,7 @@ public struct EntityPersonality
     }
     public override string ToString()
     {
-        return "Aggression: " + Agression + ", Kindness: " + Kindness + ", Loyalty: " + Loyalty +
+        return "Aggression: " + Aggression + ", Kindness: " + Kindness + ", Loyalty: " + Loyalty +
             ", Greed: " + Greed + ", Wealth: " + Wealth;
     }
 }

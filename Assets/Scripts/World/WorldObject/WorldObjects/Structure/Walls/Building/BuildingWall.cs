@@ -135,7 +135,14 @@ public class BuildingWall : WorldObjectData
 
         return empty_base;
     }
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new BuildingWall(pos, this.WallBase, this.WallHeight, this.WallObject, this.WallObjectPosition, this.WallObjectHeight);
+
+    }
     public override WorldObjects ObjID => WorldObjects.WALL;
 
     public override string Name => "Building Wall";

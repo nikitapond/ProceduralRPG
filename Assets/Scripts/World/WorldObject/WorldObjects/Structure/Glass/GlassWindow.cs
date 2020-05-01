@@ -11,4 +11,14 @@ public class GlassWindow : WorldObjectData
     public override WorldObjects ObjID => WorldObjects.GLASS_WINDOW;
 
     public override string Name => "Glass Window";
+
+
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
+
+        return new GlassWindow(pos, GetMetaData().Direction);
+
+    }
 }

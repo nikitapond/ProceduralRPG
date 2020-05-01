@@ -15,8 +15,28 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
 
     public override void OnDealDamage(Entity source)
     {
+        Debug.Log("Entity " + Entity + " delt damage by Entity " + source);
+        float aggr = NPC.EntityRelationshipManager.Personality.Aggression;
+        if(aggr > 0.8f)
+        {
+            Debug.Log("Entity " + Entity + " has high aggression - Start Combat");
+            //If our aggression is high, we fight
+            GameManager.EntityManager.NewCombatEvent(source, Entity);
+        }
+        if (GameManager.RNG.PercentageChance(60 * aggr))
+        {
+            Debug.Log("Entity " + Entity + " has medium aggression & RNG - Start Combat");
+            GameManager.EntityManager.NewCombatEvent(source, Entity);
+        }
+        if (aggr < 0.3f)
+        {
+            Debug.Log("Entity " + Entity + " is a lil' pus pus, run from combat");
 
-        
+            //if our aggression is low, we run
+            Vec2i goTo = GameManager.RNG.RandomVec2i(-20, 20);
+            while (goTo.QuickDistance(new Vec2i(0, 0)) < 10 * 10) goTo = GameManager.RNG.RandomVec2i(-20, 20);
+            Entity.EntityAI?.TaskAI?.SetTask(new EntityTaskGoto(Entity, goTo + Entity.TilePos, running: true, priority: 50));
+        }        
     }
 
     public override void WorldCombatEvent(WorldCombat wce)
@@ -26,7 +46,7 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
             return;
 
         //if we are far, ignore
-        if (wce.Position.QuickDistance(Entity.TilePos) > World.ChunkSize * World.ChunkSize * 9)
+        if (wce.Position.QuickDistance(Entity.TilePos) > World.ChunkSize * World.ChunkSize * 4)
             return;
 
         if(CurrentCombatEvent == null || CurrentCombatEvent.IsComplete)
@@ -34,12 +54,15 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
             //If we are in the same faction as either of the sides, join accordingly
             if(Entity.EntityFaction != null && Entity.EntityFaction.Equals(wce.Faction1))
             {
+                Debug.Log("[WorldCombatEvent] Entity " + Entity + " is close to new combat event, part of Faction1 - joining combat");
                 wce.Team1.Add(Entity);
                 CurrentCombatEvent = wce;
                 CurrentTarget = wce.GetNearestTeam2Entity(Entity);
                 return;
             }else if(Entity.EntityFaction != null && Entity.EntityFaction.Equals(wce.Faction2))
             {
+                Debug.Log("[WorldCombatEvent] Entity " + Entity + " is close to new combat event, part of Faction2 - joining combat");
+
                 wce.Team2.Add(Entity);
                 CurrentCombatEvent = wce;
                 CurrentTarget = wce.GetNearestTeam1Entity(Entity);
@@ -74,6 +97,8 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
             //TODO - add something here? Who knows?
             if (team1High && team2High)
             {
+                Debug.Log("[WorldCombatEvent] Entity " + Entity + " is is high relationship with both factions - do nothing");
+
                 return;
             }
             //If we have a family/friend on team 1, we join the combat with team 1.
@@ -83,6 +108,8 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
                 wce.Team1.Add(Entity);
                 CurrentCombatEvent = wce;
                 CurrentTarget = wce.GetNearestTeam2Entity(Entity);
+                Debug.Log("[WorldCombatEvent] Entity " + Entity + " is close to new combat event, friend with team 1 - joining combat");
+
             }
             else if (team2High)
             {
@@ -90,27 +117,33 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
                 wce.Team2.Add(Entity);
                 CurrentCombatEvent = wce;
                 CurrentTarget = wce.GetNearestTeam1Entity(Entity);
+                Debug.Log("[WorldCombatEvent] Entity " + Entity + " is close to new combat event, friend with team 2 - joining combat");
+
             }
             else
             {
                 //Check if aggression is high against RNG
-                if (NPC.EntityRelationshipManager.Personality.Agression > GameManager.RNG.Random(0.6f, 0.8f))
+                if (NPC.EntityRelationshipManager.Personality.Aggression > GameManager.RNG.Random(0.6f, 0.8f))
                 {
                     //Agression is between 0 and 1, we divide the team2 relationship value by this.
                     //And check against team1relval. This means higher agression requires less difference
                     //We also divide team2relval by the entities loyatly. This means that an entity with low loyalty requires a higher difference
-                    if (team1RelVal > team2RelVal / (NPC.EntityRelationshipManager.Personality.Loyalty * NPC.EntityRelationshipManager.Personality.Agression))
+                    if (team1RelVal > team2RelVal / (NPC.EntityRelationshipManager.Personality.Loyalty * NPC.EntityRelationshipManager.Personality.Aggression))
                     {
+                        Debug.Log("[WorldCombatEvent] Entity " + Entity + " has high aggression - join team 1");
+
                         wce.Team1.Add(Entity);
                         CurrentCombatEvent = wce;
                         CurrentTarget = wce.GetNearestTeam2Entity(Entity);
                         return;
                     }
-                    else if (team2RelVal < team1RelVal / (NPC.EntityRelationshipManager.Personality.Loyalty * NPC.EntityRelationshipManager.Personality.Agression))
+                    else if (team2RelVal < team1RelVal / (NPC.EntityRelationshipManager.Personality.Loyalty * NPC.EntityRelationshipManager.Personality.Aggression))
                     {
                         wce.Team2.Add(Entity);
                         CurrentCombatEvent = wce;
                         CurrentTarget = wce.GetNearestTeam1Entity(Entity);
+                        Debug.Log("[WorldCombatEvent] Entity " + Entity + " has high aggression - join team 2");
+
                         return;
                     }
 
@@ -118,6 +151,8 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
                 }
                 else
                 {
+                    Debug.Log("[WorldCombatEvent] Entity " + Entity + " is running from combat event");
+
                     Vec2i runPos = Entity.TilePos + GameManager.RNG.RandomVec2i(10, 20) * GameManager.RNG.RandomSign();
                     Entity.EntityAI?.TaskAI.SetTask(new EntityTaskGoto(Entity, runPos, priority: 10, running: true));
                 }//if our agression is low, we check for 
@@ -134,9 +169,25 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
     protected override void ChooseEquiptWeapon()
     {
     }
-
+    /// <summary>
+    /// Is called when this entity can see the other entity.
+    /// Only time combat should occur is if there is a sever hatred 
+    /// 
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
     protected override bool ShouldCombat(Entity entity)
     {
+
+        float rel = NPC.EntityRelationshipManager.GetEntityRelationship(entity);
+        float aggr = NPC.EntityRelationshipManager.Personality.Aggression;
+        if (rel * (1-aggr) < 0.1f)
+        {
+            Debug.Log("[CombatAI] Entity " + Entity + " has seen " + entity + " and will enter combat. Relationship value: " + rel + ", Aggression: " + aggr);
+            return true;
+        }
+            
+
         return false;
     }
 

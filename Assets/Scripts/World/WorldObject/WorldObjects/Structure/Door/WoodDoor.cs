@@ -14,7 +14,14 @@ public class WoodDoor : WorldObjectData, IOnEntityInteract
         OpenDirection = openDirection;
     }
 
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new WoodDoor(pos, this.MetaData, (ExternalOnEntityInteract)OnDoorOpen,OpenDirection );
+
+    }
 
     public override WorldObjects ObjID => WorldObjects.DOOR;
 

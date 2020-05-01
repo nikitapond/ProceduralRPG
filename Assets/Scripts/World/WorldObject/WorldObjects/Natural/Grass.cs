@@ -8,7 +8,14 @@ public class Grass : WorldObjectData
     {
     }
 
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
 
+        return new Grass(pos);
+
+    }
     public override void OnObjectLoad(WorldObject obj)
     {
         obj.transform.localScale = new Vector3(1.5f, 2f, 1.5f);

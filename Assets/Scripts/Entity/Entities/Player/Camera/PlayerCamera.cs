@@ -3,7 +3,6 @@ using UnityEditor;
 using System.Collections.Generic;
 public class PlayerCamera : MonoBehaviour
 {
-    public RenderTexture RenderTexture;
     public Vector3 Dif { get; private set; }
     public Camera Camera { get; private set; }
     public PlayerManager PlayerManager { get; private set; }

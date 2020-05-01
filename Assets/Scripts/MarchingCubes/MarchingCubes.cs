@@ -16,6 +16,9 @@ namespace MarchingCubesProject
 			EdgeVertex = new Vector3[12];
 		}
 
+
+		
+
 		/// <summary>
 		/// MarchCube performs the Marching Cubes algorithm on a single cube
 		/// </summary>

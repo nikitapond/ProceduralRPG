@@ -49,6 +49,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
                 {
                     if (ShouldCombat(ent))
                     {
+                        Debug.Log("[EntityCombatAI] Entity " + Entity + " has seen Entity " + ent + " and is entering combat");
                         //Enter into combat
                         CurrentCombatEvent = GameManager.EntityManager.NewCombatEvent(Entity, ent);
                         CurrentTarget = ent;
@@ -276,7 +277,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
             {
                 continue; ;
             }
-            else if (blocking.tag == "MainCamera")
+            else if (blocking.CompareTag("MainCamera"))
                 continue;
             else if (blocking.GetComponent<LoadedChunk>() != null)
                 continue;

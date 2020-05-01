@@ -61,11 +61,20 @@ public class SettlementGenerator
                 else
                 {
                     int[,] cTiles = new int[World.ChunkSize, World.ChunkSize];
+                    float[,] cHeights = new float[World.ChunkSize, World.ChunkSize]; ;
                     Dictionary<int, WorldObjectData> cObj = new Dictionary<int, WorldObjectData>();
                     for (int x_ = 0; x_ < World.ChunkSize; x_++)
                     {
                         for (int z_ = 0; z_ < World.ChunkSize; z_++)
                         {
+                            if(setBuild.Heights[x * World.ChunkSize + x_, z * World.ChunkSize + z_] > 0)
+                            {
+                                cHeights[x_, z_] = setBuild.Heights[x * World.ChunkSize + x_, z * World.ChunkSize + z_];
+                            }
+                            else
+                            {
+                                cHeights[x_, z_] = cb.BaseHeight;
+                            }
                             Tile st = setBuild.Tiles[x * World.ChunkSize + x_, z * World.ChunkSize + z_];
                             cTiles[x_, z_] = st == null ? Tile.GRASS.ID : st.ID;
                             cObj[WorldObject.ObjectPositionHash(x_, z_)] = setBuild.SettlementObjects[x * World.ChunkSize + x_, z * World.ChunkSize + z_];
@@ -75,7 +84,7 @@ public class SettlementGenerator
                             }
                         }
                     }
-                    cd = new ChunkData(baseChunk.x + x, baseChunk.z + z, cTiles, true, cObj);
+                    cd = new ChunkData(baseChunk.x + x, baseChunk.z + z, cTiles, true, baseHeight:cb.BaseHeight, heights: cHeights, objects:cObj);
                 }
 
 

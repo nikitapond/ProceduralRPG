@@ -23,6 +23,8 @@ public class LoadedMeleeWeapon : MonoBehaviour
     private void Awake()
     {
         Collider = GetComponent<Collider>();
+        if (Collider == null)
+            Collider = GetComponentInChildren<Collider>();
         if(Collider == null)
         {
             Collider = gameObject.AddComponent<MeshCollider>();

@@ -9,6 +9,19 @@ public class Water : WorldObjectData
     public Water(Vec2i worldPosition) : base(worldPosition, null, null)
     {
     }
+
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
+
+        Water water = new Water(pos);
+        water.FlowDirection = FlowDirection;
+        water.UVOffset = UVOffset;
+        return water;
+
+    }
+
     /// <summary>
     /// Sets the UV offset for this water tile 
     /// </summary>

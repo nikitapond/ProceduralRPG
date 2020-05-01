@@ -76,7 +76,7 @@ public class DungeonGenerator
                 chunkObjects[x, z] = new Dictionary<int, WorldObjectData>();
 
 
-                dungeonChunks[x, z] = new ChunkData(x, z, (int[,])BASE_DIRT.Clone(), true, chunkObjects[x, z]);
+                dungeonChunks[x, z] = new ChunkData(x, z, (int[,])BASE_DIRT.Clone(), true, objects:chunkObjects[x, z]);
 
             }
         }

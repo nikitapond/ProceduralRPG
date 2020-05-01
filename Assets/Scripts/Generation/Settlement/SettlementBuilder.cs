@@ -31,6 +31,8 @@ public class SettlementBuilder
     //Array that hold all Tiles for this settlement
     public Tile[,] Tiles { get; set; }
 
+    public float[,] Heights { get; set; }
+
     //Defines the size of the settlement from one edge to another, in units of tiles.
     public int TileSize { get; private set; }
     public SettlementType SettlementType { get; private set; }
@@ -45,6 +47,8 @@ public class SettlementBuilder
     public SettlementPathNode[,] TestNodes2;
     public SettlementPathFinder SettlementPathFinder;
     public Tile PathTile { get; private set; }
+
+    public float AverageHeight = 5;
 
     public SettlementBuilder(GameGenerator gameGen, SettlementBase set)
     {
@@ -66,6 +70,10 @@ public class SettlementBuilder
         //PathNodes = new List<Vec2i>();
         BuildingPlots = new List<Recti>();
         SettlementType = set.SettlementType;
+
+        Heights = new float[TileSize, TileSize];
+        
+
         //TestNodes = new List<SettlementPathNode>();
         TestNodes2 = new SettlementPathNode[TileSize / NODE_RES, TileSize / NODE_RES];
 
@@ -73,6 +81,8 @@ public class SettlementBuilder
         PathNodeRes = World.ChunkSize; 
         PathNodes = new float[TileSize / NODE_RES, TileSize / NODE_RES];
         PNSize = TileSize / PathNodeRes;
+
+        AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
     }
 
 
@@ -1002,14 +1012,21 @@ public class SettlementBuilder
                 return null;
         }
 
+        float minHeight = GetHighestChunkHeight(pos.x, pos.z, b.Width, b.Height);
+
+
         for (int x = 0; x < b.Width; x++)
         {
             for (int z = 0; z < b.Height; z++)
             {
                 Tiles[x + pos.x, z + pos.z] = b.BuildingTiles[x, z];
                 SettlementObjects[x + pos.x, z + pos.z] = b.BuildingObjects[x, z];
-                if(SettlementObjects[x + pos.x, z + pos.z]!=null)
+                Heights[x + pos.x, z + pos.z] = minHeight;
+                if (SettlementObjects[x + pos.x, z + pos.z] != null)
+                {
                     SettlementObjects[x + pos.x, z + pos.z].SetPosition(new Vec2i(x + pos.x, z + pos.z));
+                    SettlementObjects[x + pos.x, z + pos.z].SetGroundHeight(minHeight);
+                }
             }
         }
         b.SetSettlementCoord(pos);
@@ -1017,6 +1034,8 @@ public class SettlementBuilder
         //PathNodes.Add(b.Entrance);
         return new Recti(pos.x, pos.z, b.Width, b.Height);
     }
+
+
 
 
     public bool IsTileFree(int x, int z)
@@ -1088,4 +1107,23 @@ public class SettlementBuilder
     }
 
 
+    private float GetHighestChunkHeight(int tx, int tz, int width, int height)
+    {
+        int lx = (int)(((float)tx+this.BaseCoord.x) / World.ChunkSize);
+        int lz = (int)(((float)tz + this.BaseCoord.z) / World.ChunkSize);
+        int hx = (int)(((float)(tx+width + this.BaseCoord.x)) / World.ChunkSize);
+        int hz = (int)(((float)(tz + height + this.BaseCoord.z)) / World.ChunkSize);
+        float curHeight = -1;
+        for(int x=lx; x<=hx; x++)
+        {
+            for(int z=lz; z<=hz; z++)
+            {
+                float cHeight = GameGenerator.TerrainGenerator.ChunkBases[x, z].BaseHeight;
+                if (cHeight > curHeight)
+                    curHeight = cHeight;
+            }
+        }
+        return curHeight;
+
+    }
 }

@@ -32,6 +32,11 @@ public class ChunkStructureGenerator
             GameGenerator.World.AddChunkStructure(kvp.Value);
             ChunkStructureShells.Add(kvp.Key, kvp.Value);
         }
+        foreach (KeyValuePair<Vec2i, ChunkStructure> kvp in GenerateAbandonedCastleShells())
+        {
+            GameGenerator.World.AddChunkStructure(kvp.Value);
+            ChunkStructureShells.Add(kvp.Key, kvp.Value);
+        }
         //TODO - add to others
     }
 
@@ -68,7 +73,7 @@ public class ChunkStructureGenerator
 
     }
 
-    private Dictionary<Vec2i, ChunkStructure> GenerateBanditCampShells(int count = 30)
+    private Dictionary<Vec2i, ChunkStructure> GenerateBanditCampShells(int count = 25)
     {
         Dictionary<Vec2i, ChunkStructure> banditShells = new Dictionary<Vec2i, ChunkStructure>();
         //iterate all counts
@@ -98,15 +103,43 @@ public class ChunkStructureGenerator
         }
         return banditShells;
     }
+
+    private Dictionary<Vec2i, ChunkStructure> GenerateAbandonedCastleShells(int count = 10)
+    {
+        Dictionary<Vec2i, ChunkStructure> banditShells = new Dictionary<Vec2i, ChunkStructure>();
+        //iterate all counts
+        for (int i = 0; i < count; i++)
+        {
+            //We make5 attempts to find a valid place for each bandit camp
+            for (int a = 0; a < 20; a++)
+            {
+                //Generate random position and size
+                Vec2i position = GenerationRandom.RandomFromList(GameGenerator.TerrainGenerator.LandChunks);
+                Vec2i size = GenerationRandom.RandomVec2i(2, 6);
+                //Check if position is valid,
+                if (IsPositionValid(position))
+                {
+                    //if valid, we add the structure to ChunkBases and to the dictionary of shells
+                    ChunkStructure banditCampShell = new AbandonedCastle(position, size);
+                    for (int x = 0; x < size.x; x++)
+                    {
+                        for (int z = 0; z < size.z; z++)
+                        {
+                            GameGenerator.TerrainGenerator.ChunkBases[position.x + x, position.z + z].AddChunkStructure(banditCampShell);
+                        }
+                    }
+                    banditShells.Add(position, banditCampShell);
+                }
+            }
+        }
+        return banditShells;
+    }
     private Dictionary<Vec2i, ChunkStructure> GenerateMineShells(int count = 20)
     {
         return null;
     }
 
-    private Dictionary<Vec2i, ChunkStructure> GenerateAbandonedCastleShells(int count = 8)
-    {
-        return null;
-    }
+ 
     #endregion
 
     ///Where we generate the chunk data for all the structure.
@@ -193,6 +226,12 @@ public class ChunkStructureGenerator
                 BanditCampBuilder bcb = new BanditCampBuilder(str as BanditCamp);
                 generatedChunks.AddRange(bcb.Generate(genRan));
                 str.SetLootChest(bcb.FinalLootChest);
+            }else if(str is AbandonedCastle)
+            {
+                AbandonedCastleBuilder acb = new AbandonedCastleBuilder(str as AbandonedCastle, genRan);
+                acb.Generate();
+                generatedChunks.AddRange(acb.ToChunkData());
+                str.SetLootChest(acb.GetMainLootChest());
             }
         }
         //Lock for thread safe adding

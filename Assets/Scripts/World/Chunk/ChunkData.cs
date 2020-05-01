@@ -13,6 +13,8 @@ public class ChunkData
     public int X { get; private set; }
     public int Z { get; private set; }
     public int[,] TileIDs { get; private set; }
+    public float[,] Heights { get; private set; }
+    public float BaseHeight { get; private set; }
     //public Tile[,] Tiles { get; private set; }
     public Dictionary<int, WorldObjectData> Objects { get; private set; }
 
@@ -22,17 +24,18 @@ public class ChunkData
     private int SettlementID;
     [SerializeField]
     private int KingdomID;
-    public ChunkData(int x, int z, int[,] tiles, bool isLand, Dictionary<int, WorldObjectData> objects=null)
+    public ChunkData(int x, int z, int[,] tiles, bool isLand, float baseHeight = 5, float[,] heights=null, Dictionary<int, WorldObjectData> objects=null)
     {
         KingdomID = -1;
         SettlementID = -1;
-
+        Heights = heights;
         X = x;
         Z = z;
         TileIDs = tiles;
         IsLand = isLand;
 
         Objects = objects;
+        BaseHeight = baseHeight;
     }
     public ChunkData(int x, int z, Tile[,] tiles, bool isLand, Dictionary<int, WorldObjectData> objects=null)
     {

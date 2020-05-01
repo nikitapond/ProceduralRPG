@@ -42,16 +42,18 @@ public class EntityPath
     /// <returns></returns>
     public bool UpdateTarget(Vec2i target, EntityPathFinder epf)
     {
-
+        //If we are currently calculating a path
         if (epf.IsRunning)
         {
             if(epf.Target == target)
             {
-                return false;
+                //Target is still valid, so we return true
+                return true;
             }
             else
             {
-                Debug.LogError("Im not sure what to do here?");
+                //Debug.LogError("Im not sure what to do here?");
+                epf.ForceStop();
                 return false;
             }                
         }
@@ -63,7 +65,7 @@ public class EntityPath
         //Check the finder has the same target.
         if(epf.Target == target)
         {
-
+            return true;
         }
 
         Vec2i closestPoint = Path[index];

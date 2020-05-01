@@ -4,7 +4,6 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - Collide
   - Ground
   layers:
   - Default
@@ -15,8 +14,8 @@ TagManager:
   - UI
   - 
   - 
-  - WorldObject
-  - TempCast
+  - Ground
+  - 
   - 
   - 
   - 

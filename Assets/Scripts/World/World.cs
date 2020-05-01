@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// </summary>
 public class World
 {
-
+    public static readonly int ChunkHeight = 64;
     public readonly static int ChunkSize = 16; //Chunk size in tiles
     public readonly static int WorldSize = 256; //World size in chunks
     public readonly static int RegionSize = 32;
@@ -217,6 +217,11 @@ public class World
     public static Vec2i GetChunkPosition(Vector3 position)
     {
         return new Vec2i((int)(position.x / World.ChunkSize), (int)(position.z / World.ChunkSize));
+    }
+    public static Vec2i GetChunkPosition(float x, float z)
+    {
+        return new Vec2i((int)(x / World.ChunkSize), (int)(z / World.ChunkSize));
+
     }
     public static Vec2i GetChunkPosition(Vec2i position)
     {

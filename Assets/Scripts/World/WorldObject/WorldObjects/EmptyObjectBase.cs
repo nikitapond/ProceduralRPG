@@ -17,4 +17,13 @@ public class EmptyObjectBase : WorldObjectData, IMultiTileObjectChild
     {
         return Parent;
     }
+
+    public override WorldObjectData Copy(Vec2i pos)
+    {
+        if (pos == null)
+            pos = WorldPosition;
+
+        return new PractiseDummy(pos, this.MetaData, this.Size);
+
+    }
 }

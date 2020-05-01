@@ -11,8 +11,9 @@ public class ChunkGenerator
     private int[,] EMPTY_DESERT;
 
     private int[,] OCEAN;
-
+    private float[,] OCEAN_HEIGHT;
     private ChunkBase[,] ChunkBases;
+    private GameGenerator GameGen;
     private int Seed;
     /// <summary>
     /// Initiates the ChunkGenerator.
@@ -21,12 +22,14 @@ public class ChunkGenerator
     /// <param name="gameGen"></param>
     public ChunkGenerator(GameGenerator gameGen)
     {
+        GameGen = gameGen;
         ChunkBases = gameGen.TerrainGenerator.ChunkBases;
         Seed = gameGen.Seed;
         //Set up default tile arrays 
         EMPTY_PLAINS = new int[World.ChunkSize, World.ChunkSize];
         OCEAN = new int[World.ChunkSize, World.ChunkSize];
         EMPTY_DESERT = new int[World.ChunkSize, World.ChunkSize];
+        OCEAN_HEIGHT = new float[World.ChunkSize, World.ChunkSize]; 
         for (int x = 0; x < World.ChunkSize; x++)
         {
             for (int z = 0; z < World.ChunkSize; z++)
@@ -34,6 +37,7 @@ public class ChunkGenerator
                 EMPTY_PLAINS[x, z] = Tile.GRASS.ID;
                 OCEAN[x, z] = Tile.WATER.ID;
                 EMPTY_DESERT[x, z] = Tile.SAND.ID;
+                OCEAN_HEIGHT[x, z] = 1;
             }
         }
 
@@ -80,7 +84,7 @@ public class ChunkGenerator
         }
         if(cb.Biome == ChunkBiome.dessert)
         {
-            return new ChunkData(x, z, (int[,])EMPTY_DESERT.Clone(), cb.IsLand);
+            return new ChunkData(x, z, (int[,])EMPTY_DESERT.Clone(), cb.IsLand, 1, (float[,])OCEAN_HEIGHT.Clone());
         }
         int[,] tiles = (int[,])EMPTY_PLAINS.Clone();
 
@@ -90,6 +94,7 @@ public class ChunkGenerator
         //    return new ChunkData(x, z, tiles, cb.IsLand);
 
         Dictionary<int, WorldObjectData> obs = new Dictionary<int, WorldObjectData>(256);
+        float[,] heights = new float[World.ChunkSize, World.ChunkSize];
         for(int i=0; i < World.ChunkSize; i++)
         {
             for(int j=0; j<World.ChunkSize; j++)
@@ -101,9 +106,10 @@ public class ChunkGenerator
                 {
                     //obs.Add(WorldObject.ObjectPositionHash(i, j), new Tree(new Vec2i(x * World.ChunkSize + i, z * World.ChunkSize + j)));
                 }
+                heights[i, j] = GameGen.TerrainGenerator.WorldHeight(x * World.ChunkSize + i, z * World.ChunkSize + j);
             }
         }
-        ChunkData cd = new ChunkData(x, z, tiles, cb.IsLand, obs);
+        ChunkData cd = new ChunkData(x, z, tiles, cb.IsLand,cb.BaseHeight, heights: heights, objects:obs);
         return cd;
     }
 
@@ -118,7 +124,7 @@ public class ChunkGenerator
         GenerationRandom genRan = new GenerationRandom(new Vec2i(x, z).GetHashCode() + Seed);
         int[,] tiles = new int[World.ChunkSize, World.ChunkSize];
         WorldObjectData[,] data = new WorldObjectData[World.ChunkSize, World.ChunkSize];
-
+        float[,] heights = new float[World.ChunkSize, World.ChunkSize];
         RiverNode rn = cb.RiverNode;
         Vec2i exitDelta = rn.RiverExitDelta;
         Vec2i entrDelta = rn.RiverEntranceDelta;
@@ -181,7 +187,7 @@ public class ChunkGenerator
                     Vector2 off = new Vector2(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
                     //Debug.Log("here");
                     tiles[tx, tz] = Tile.WATER.ID;
-
+                    heights[tx, tz] = Mathf.Clamp(cb.BaseHeight - 5, 1, 16);
                     if (!(data[tx, tz] is Water))
                     {
                         data[tx, tz] = new Water(new Vec2i(x * World.ChunkSize + tx, z * World.ChunkSize + tz));
@@ -235,10 +241,14 @@ public class ChunkGenerator
                 else if (dist_sqr < (cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) * 2 / divBy)
                 {
                     tiles[tx, tz] = Tile.SAND.ID;
+                    heights[tx, tz] = cb.BaseHeight;
+
                 }
                 else
                 {
                     tiles[tx, tz] = Tile.GRASS.ID;
+                    heights[tx, tz] = cb.BaseHeight;
+
                     if (genRan.Random() < 0.25f)
                         data[tx, tz] = new Grass(new Vec2i(x * World.ChunkSize + tx + 1, z * World.ChunkSize + tz - 1));
 
@@ -267,7 +277,7 @@ public class ChunkGenerator
             }
         }
 
-        return new ChunkData(x, z, tiles, cb.IsLand, data_);
+        return new ChunkData(x, z, tiles, cb.IsLand,baseHeight:cb.BaseHeight, heights:heights, objects:data_);
     }
 
 

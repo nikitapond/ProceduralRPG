@@ -61,7 +61,7 @@ public abstract class DungeonBuilder
                         }
                     }
                 }
-                chunks[x, z] = new ChunkData(x, z, (int[,])BASE_DIRT.Clone(), true, objs);
+                chunks[x, z] = new ChunkData(x, z, (int[,])BASE_DIRT.Clone(), true, objects:objs);
             }
         }
         return chunks;

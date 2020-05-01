@@ -110,7 +110,7 @@ public class TestMain : MonoBehaviour
         {
             for (int rz = 0; rz < World.RegionSize; rz++)
             {
-                chunk_b[rx,rz] = new ChunkBase(new Vec2i(rx, rz), true);
+                chunk_b[rx,rz] = new ChunkBase(new Vec2i(rx, rz),5, true);
             }
         }
 
@@ -297,7 +297,7 @@ public class TestMain : MonoBehaviour
                 }
             }
 
-            return new ChunkData(x, z, tiles, cb.IsLand, data_);
+            return new ChunkData(x, z, tiles, cb.IsLand, objects:data_);
 
             //Debug.Log("river");
         }
@@ -339,7 +339,7 @@ public class TestMain : MonoBehaviour
         {
             for (int z = 0; z < cSize; z++)
             {
-                cBase[x, z] = new ChunkBase(new Vec2i(x, z), true);
+                cBase[x, z] = new ChunkBase(new Vec2i(x, z), 5, true);
                 int[,] cTiles = new int[World.ChunkSize, World.ChunkSize];
                 WorldObjectData[,] cObj = new WorldObjectData[World.ChunkSize, World.ChunkSize];
                 Dictionary<int, WorldObjectData> wObjData = new Dictionary<int, WorldObjectData>();
@@ -364,7 +364,7 @@ public class TestMain : MonoBehaviour
 
                     }
                 }
-                cData[x, z] = new ChunkData(x, z, cTiles, true, wObjData);
+                cData[x, z] = new ChunkData(x, z, cTiles, true, objects:wObjData);
             }
         }
 

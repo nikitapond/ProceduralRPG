@@ -213,7 +213,7 @@ public class BuildingGenerator
             return false;
             
         }
-        if(!(+nObj.Size.x < building.Width && z+nObj.Size.z < building.Height))
+        if(!(x+nObj.Size.x < building.Width && z+nObj.Size.z < building.Height))
         {
             //If the bounds of the multiu tile object are too big, return false;
             return false;

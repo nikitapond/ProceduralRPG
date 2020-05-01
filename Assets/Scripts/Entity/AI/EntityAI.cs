@@ -64,7 +64,7 @@ public class EntityAI
         }
         
         Vec2i tilePos = Vec2i.FromVector3(Entity.Position);
-        Debug.Log("Attempting path from " + tilePos + " to " + target);
+
 
         /*if(GameManager.PathFinder.NodeValue(tilePos) > 100)
         {
@@ -77,6 +77,7 @@ public class EntityAI
         //if we have no path
         if (EntityPath == null)
         {
+            Debug.Log("[PathFinding] Attempting path from " + tilePos + " to " + target);
             //We check if one is being generated
             if (!EPF.IsRunning)
             {
@@ -122,7 +123,8 @@ public class EntityAI
         }
         else
         {
-            if(Vec2i.QuickDistance(EntityPath.Target, target) < 5)
+            Debug.Log("[PathFinding] Attempting updated path " + tilePos + " to " + target);
+            if (Vec2i.QuickDistance(EntityPath.Target, target) < 5)
             {
                 //If the path exists but doesn't have the same target, but targets are close, we attempt to re-calculate the path
                 return EntityPath.UpdateTarget(target, EPF);

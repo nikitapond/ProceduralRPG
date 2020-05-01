@@ -18,10 +18,10 @@ public class EntityPathFinder
     new Vec2i(0, -1), // below tile
     new Vec2i(-1, 0), // to left of tile
     new Vec2i(0, 1), // above tile
-    new Vec2i(1, 1), // diagonal top right
+    /*new Vec2i(1, 1), // diagonal top right
     new Vec2i(-1, 1), // diagonal top left
     new Vec2i(1, -1), // diagonal bottom right
-    new Vec2i(-1, -1) // diagonal bottom left
+    new Vec2i(-1, -1) // diagonal bottom left*/
   };
     private Object LockSafe;
     private PathFinder Parent;
@@ -47,6 +47,7 @@ public class EntityPathFinder
 
     private Vec2i start;
     public Vec2i Target { get; private set; }
+    private bool NewTarget;
 
     public EntityPathFinder(PathFinder parent)
     {
@@ -67,6 +68,13 @@ public class EntityPathFinder
     public void ForceStop()
     {
         ForceStop_ = true;
+    }
+
+
+    public void SetNewTarget(Vec2i target)
+    {
+        NewTarget = true;
+        Target = target;
     }
 
     private void InternalFindPath(Vec2i start, Vec2i end, bool debug=false)
