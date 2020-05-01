@@ -8,26 +8,28 @@ public class ChunkRegionManager : MonoBehaviour
     public static int LoadChunkRadius = 6;
     private Object ThreadSafe;
     public ChunkRegion[,] LoadedRegions { get; private set; }
-    public Dictionary<Vec2i, LoadedChunk> LoadedChunks { get; private set; }
+    public Dictionary<Vec2i, LoadedChunk2> LoadedChunks { get; private set; }
 
     private World World { get { return GameManager.WorldManager.World; } }
     private Player Player { get { return GameManager.PlayerManager.Player; } }
     public Vec2i LoadedChunksCentre { get; private set; }
-    public Dictionary<Vec2i, LoadedChunk> SubworldChunks { get; private set; }
+    public Dictionary<Vec2i, LoadedChunk2> SubworldChunks { get; private set; }
     private bool InSubworld;
 
-    private List<ChunkData> ToLoadIn;
-    private List<Vec2i> ToLoad;
+
+    private ChunkLoader ChunkLoader;
+
+
     void Awake()
     {
-        LoadedChunks = new Dictionary<Vec2i, LoadedChunk>();
+        LoadedChunks = new Dictionary<Vec2i, LoadedChunk2>();
         LoadedRegions = new ChunkRegion[World.RegionCount, World.RegionCount];
 
-        SubworldChunks = new Dictionary<Vec2i, LoadedChunk>();
-        ToLoadIn = new List<ChunkData>();
-        ToLoad = new List<Vec2i>();
+        SubworldChunks = new Dictionary<Vec2i, LoadedChunk2>();
         InSubworld = false;
         ThreadSafe = new Object();
+
+        ChunkLoader = GetComponent<ChunkLoader>();
     }
     private void Start()
     {
@@ -46,11 +48,6 @@ public class ChunkRegionManager : MonoBehaviour
         if (playerChunk != LoadedChunksCentre)
         {
             LoadChunks(new Vec2i(playerChunk.x, playerChunk.z), LoadChunkRadius, forceLoad);
-
-        }
-        if (ToLoadIn.Count > 0)
-        {
-            ChunkLoadIn(1);
         }
 
 
@@ -58,8 +55,14 @@ public class ChunkRegionManager : MonoBehaviour
     }
 
 
+   
+
+
     public void LoadSubworldChunks(Subworld sub)
     {
+        //TODO - fix this bad boy
+        return;
+        /*
         UnloadAllChunks();
         InSubworld = true;
         foreach (ChunkData c in sub.SubworldChunks)
@@ -75,18 +78,20 @@ public class ChunkRegionManager : MonoBehaviour
 
             loadedChunk.SetChunkData(c, neigh);
             SubworldChunks.Add(new Vec2i(x,z), loadedChunk);
-        }
+        }*/
     }
 
     public void LeaveSubworld()
     {
+        return;
+        /*
         InSubworld = false;
         foreach (KeyValuePair<Vec2i, LoadedChunk> kvp in SubworldChunks)
         {
             Destroy(kvp.Value.gameObject);
 
         }
-        SubworldChunks.Clear();
+        SubworldChunks.Clear();*/
     }
 
     /// <summary>
@@ -96,26 +101,28 @@ public class ChunkRegionManager : MonoBehaviour
     /// <param name="chunkPos"></param>
     /// <returns></returns>
     public bool IsCurrentChunkPositionLoaded(Vec2i chunkPos)
-    {
+    {/*
         if (InSubworld)
         {
             return SubworldChunks.ContainsKey(chunkPos);
-        }
+        }*/
         return LoadedChunks.ContainsKey(chunkPos);
     }
 
 
 
-    public ChunkData GetChunk(int x, int z)
+    public ChunkData2 GetChunk(int x, int z, bool shouldLoad=true)
     {
-        return GetChunk(new Vec2i(x, z));
+        return GetChunk(new Vec2i(x, z), shouldLoad);
     }
-    public ChunkData GetChunk(Vec2i v)
+    public ChunkData2 GetChunk(Vec2i v, bool shouldLoad=true)
     {
         //Find region of chunk and check if valid within bounds
         Vec2i r = World.GetRegionCoordFromChunkCoord(v);
+        Debug.Log("Chunk " + v + " in region " + r);
         if (r.x >= World.RegionCount || r.z >= World.RegionCount || r.x < 0 || r.z < 0)
         {
+            Debug.Log("Region " + r + " out of bounds");
             return null;
         }
         ChunkRegion cr;
@@ -123,25 +130,36 @@ public class ChunkRegionManager : MonoBehaviour
         {
             cr = LoadedRegions[r.x, r.z];
         }
+        
         //Get chunk region, check if it has been loaded
-        if (cr == null)
+        if (cr == null && shouldLoad)
         {
+            Debug.Log("[CRManager] Region null, trying to load");
             //If it has not been laoded, then load it
             LoadRegion(r);
-
-            if (cr == null)
+            cr = LoadedRegions[r.x, r.z];
+            if (cr == null) 
                 return null;
             lock (ThreadSafe)
             {
                 cr = LoadedRegions[r.x, r.z];
             }
             
-            GameManager.PathFinder.LoadRegion(cr);
+            //GameManager.PathFinder.LoadRegion(cr);
+        }else if(cr == null)
+        {
+            Debug.Log("[CRManager] Region " + r + " could not be found - not generating");
+            return null;
         }
-        ChunkData cDat;
+            
+
+        ChunkData2 cDat;
         lock (ThreadSafe)
         {
-            cDat = cr.Chunks[v.x % World.RegionSize, v.z % World.RegionSize]; 
+            int cx = v.x % World.RegionSize;
+            int cz = v.z % World.RegionSize;
+            cDat = cr.Chunks[cx, cz];
+            Debug.Log("[CRManager] Chunk at local region position " + cx + "," + cz + ": " + cDat);
         }
         return cDat;
     }
@@ -151,11 +169,19 @@ public class ChunkRegionManager : MonoBehaviour
         {
             throw new System.Exception("Region " + rPos + " is not within world bounds");
         }
+        
         //If valid, load and add to array
         LoadedRegions[rPos.x, rPos.z] = GameManager.LoadSave.LoadChunkRegion(rPos.x, rPos.z);
         if (LoadedRegions[rPos.x, rPos.z] == null || LoadedRegions[rPos.x, rPos.z].Generated == false)
         {
+            Debug.Log("[CRManager] Region " + rPos + " is null, attempting to generate");
             LoadedRegions[rPos.x, rPos.z] = GameManager.ChunkRegionGenerator.ForceGenerateRegion(rPos);
+            if (LoadedRegions[rPos.x, rPos.z] == null)
+                Debug.Log("[CRManager] Region " + rPos + " could not be loaded");
+        }
+        else
+        {
+            Debug.Log("[CRManager] Region " + rPos + " loaded succesfully");
         }
         GameManager.PathFinder.LoadRegion(LoadedRegions[rPos.x, rPos.z]);
 
@@ -169,159 +195,87 @@ public class ChunkRegionManager : MonoBehaviour
     /// <param name="radius"></param>
     public void LoadChunks(Vec2i middle, int radius, bool forceLoad)
     {
-        LoadedChunksCentre = middle;
-        //Create lists to hold chunks to load and unload
-        List<Vec2i> toLoad = new List<Vec2i>((LoadChunkRadius*2)* (LoadChunkRadius * 2));
-        toLoad.AddRange(ToLoad);
-        List<Vec2i> toUnload = new List<Vec2i>(100);
-        //Iterate all loaded chunks and add to to unload
-        foreach (KeyValuePair<Vec2i, LoadedChunk> kvp in LoadedChunks)
+        //A list containing all the chunks currently loaded
+        List<Vec2i> currentlyLoaded = new List<Vec2i>();
+        foreach(KeyValuePair<Vec2i,LoadedChunk2> kvp in LoadedChunks)
         {
-            toUnload.Add(kvp.Key);
+            currentlyLoaded.Add(kvp.Value.Position);
         }
+        //We do not wish to start generating a chunk if it has already been added to the generation loop
+        currentlyLoaded.AddRange(ChunkLoader.GetCurrentlyLoadingChunks());
+        LoadedChunksCentre = middle;
+
+        //We initiate a list of all the chunks we wish to unload.
+        //To start, this is a list of all currently loaded chunks.
+        List<Vec2i> toUnload = new List<Vec2i>(currentlyLoaded);
+
+        Debug.Log("Currently loaded " + currentlyLoaded.Count);
+
         for (int x = -radius; x <= radius; x++)
         {
             for (int z = -radius; z <= radius; z++)
             {
+                //Check if the requested position is inside world bounds
                 if (x + middle.x < 0 || x + middle.x >= World.WorldSize - 1 || z + middle.z < 0 || z + middle.z >= World.WorldSize - 1)
                     continue;
                 Vec2i pos = new Vec2i(x + middle.x, z + middle.z);
-                //If it is already loaed, remove it from the to remove
-                if (toUnload.Contains(pos))
+                //If this chunk isn't currently loaded/being loaded
+                if(!currentlyLoaded.Contains(pos)){
+                    ChunkData2 cd = GetChunk(pos);
+                    if (cd == null)
+                    {
+                        Debug.Log("Chunk at " + pos +  " was null");
+                        continue;
+                    }
+                    ChunkLoader.LoadChunk(cd);
+                }else if (toUnload.Contains(pos))
+                {
+                    //We check if 'toUnload' contains this position (this should always happen if the chunk
+                    //isn't already loaded.
+                    //We then remove it from this list, as this list will define which chunks need to be unloaded.
                     toUnload.Remove(pos);
-                else if(!toLoad.Contains(pos))
-                    toLoad.Add(pos);
-
+                }
             }
         }
-        foreach (Vec2i v in toLoad)
+        if (forceLoad)
         {
-            if(LoadChunk(v, forceLoad))
+            Debug.Log("[CRManager] Forcing Chunk Loader to load all chunks");
+            ChunkLoader.ForceLoadAll();
+        }
+        if(toUnload.Count != 0)
+        {
+            foreach(Vec2i v in toUnload)
             {
-                ToLoad.Remove(v);
+                if (LoadedChunks.ContainsKey(v))
+                {
+                    LoadedChunk2 lc = LoadedChunks[v];
+                    Destroy(lc.gameObject);
+                    LoadedChunks.Remove(v);
+                }
+                
+                //TODO - unload entity chunk
             }
         }
-        List<LoadedChunk> toUnloadChunks = new List<LoadedChunk>(20);
-        foreach (Vec2i v in toUnload)
-        {
-            LoadedChunk lc = LoadedChunks[v];
-            LoadedChunks.Remove(v);
-            Destroy(lc.gameObject);
-            GameManager.EntityManager.UnloadChunk(v);
-        }
-
-
 
     }
 
-    public LoadedChunk GetLoadedChunk(Vec2i chunk)
+    public LoadedChunk2 GetLoadedChunk(Vec2i chunk)
     {
         return LoadedChunks[chunk];
 
     }
 
-    public bool LoadChunk(Vec2i chunk, bool forceLoad = false)
-    {
-        //Check if chunk is loaded
-        if (LoadedChunks.ContainsKey(chunk))
-        {
-            Debug.Log("Chunk " + chunk + " is already loaded!", Debug.CHUNK_LOADING);
-            return true;
-        }
-
-        //Retrieve data    
-        ChunkData data = GetChunk(chunk.x, chunk.z);
-
-        if (data == null)
-        {
-            Debug.Log("Chunk " + chunk + " could not be found!", Debug.CHUNK_LOADING);
-            return false;
-        }
-            
-
-        if (forceLoad)
-            LoadInSingleChunk(data);
-        else if(!ToLoadIn.Contains(data))
-        {
-            Debug.Log("Added  " + chunk + " to load in", Debug.CHUNK_LOADING);
-            ToLoadIn.Add(data);
-        }
-        return true;
-
-    }
-
-    private void ChunkLoadIn(int maxToGen)
-    {
-        if (ToLoadIn.Count == 0)
-        {
-            Debug.Log("none to load in");
-            DebugGUI.Instance.ClearData("chunks_loading_in");
-        }
-        DebugGUI.Instance.SetData("chunks_loading_in", ToLoadIn.Count);
-           
-        if (ToLoadIn.Count < maxToGen)
-        {
-            for (int i = 0; i < ToLoadIn.Count; i++)
-            {
-                Debug.Log("Loading in " + ToLoadIn[i].X + "," + ToLoadIn[i].Z);
-                LoadInSingleChunk(ToLoadIn[i]);
-            }
-            
-            ToLoadIn.Clear();
-        }
-        else
-        {
-
-            for(int i=0; i<maxToGen; i++)
-            {
-
-                Debug.Log("Loading in " + ToLoadIn[i].X + "," + ToLoadIn[i].Z, Debug.CHUNK_LOADING);
-
-                LoadInSingleChunk(ToLoadIn[i]);
-                
-            }
-            ToLoadIn.RemoveRange(0, maxToGen);
-        }
-
-    }
-
-    private void LoadInSingleChunk(ChunkData data)       
-    {
+   
 
 
-        Debug.BeginDeepProfile("chunk_load");
-        //Initiate chunk
-        Vec2i chunk = new Vec2i(data.X, data.Z);
-
-        if (LoadedChunks.ContainsKey(chunk))
-            return;
-        GameObject chunkObject = Instantiate(ResourceManager.ChunkPrefab);
-        chunkObject.transform.parent = transform;
-        chunkObject.name = "Chunk " + chunk;
-
-        //LoadedChunk loadedChunk = chunkObject.AddComponent<LoadedChunk>();
-        LoadedChunk loadedChunk = chunkObject.GetComponent<LoadedChunk>();
-
-        ChunkData[] neigh = { GetChunk(chunk.x, chunk.z + 1), GetChunk(chunk.x + 1, chunk.z + 1), GetChunk(chunk.x + 1, chunk.z) };
-
-        //ChunkData[] neigh = { null, null, null };
-
-
-        loadedChunk.SetChunkData(data, neigh);
-
-        LoadedChunks.Add(chunk, loadedChunk);
-
-        GameManager.EntityManager.LoadChunk(World.ChunkBases[chunk.x, chunk.z], chunk);
-        Debug.EndDeepProfile("chunk_load");
-    }
-
+   
     public void UnloadChunk(Vec2i chunk)
     {
         if (LoadedChunks.ContainsKey(chunk))
         {
-            LoadedChunk loaded = LoadedChunks[chunk];
+            LoadedChunk2 loaded = LoadedChunks[chunk];
             LoadedChunks.Remove(chunk);
-            GameManager.EntityManager.UnloadChunk(chunk);
+            //GameManager.EntityManager.UnloadChunk(chunk);
             Destroy(loaded.gameObject);
         }
     }
@@ -330,12 +284,26 @@ public class ChunkRegionManager : MonoBehaviour
     {
         List<Vec2i> chunkKeys = new List<Vec2i>();
 
-        foreach (KeyValuePair<Vec2i, LoadedChunk> kpv in LoadedChunks)
+        foreach (KeyValuePair<Vec2i, LoadedChunk2> kpv in LoadedChunks)
         {
             chunkKeys.Add(kpv.Key);
             Destroy(kpv.Value.gameObject);
         }
         LoadedChunks.Clear();
         GameManager.EntityManager.UnloadChunks(chunkKeys);
+    }
+
+    public ChunkData2[] GetNeighbors(Vec2i c)
+    {
+        if(c.x>0 && c.x<World.WorldSize-2 && c.z > 0 && c.z < World.WorldSize - 2)
+        {
+            //TODO - get this data from the CR manager
+            return new ChunkData2[] { GetChunk(c.x, c.z+1, false), GetChunk(c.x+1, c.z + 1, false), GetChunk(c.x+1, c.z, false) };
+        }
+        else
+        {
+            return null;
+        }
+
     }
 }

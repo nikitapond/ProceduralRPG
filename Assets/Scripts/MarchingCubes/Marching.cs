@@ -20,7 +20,7 @@ namespace MarchingCubesProject
 
         public float Surface { get; set; }
 
-        private float[] Cube { get; set; }
+        protected float[] Cube { get; set; }
 
         /// <summary>
         /// Winding order of triangles use 2,1,0 or 0,1,2

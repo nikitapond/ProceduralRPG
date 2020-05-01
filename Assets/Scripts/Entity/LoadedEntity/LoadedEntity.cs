@@ -272,12 +272,17 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
     private float GetWorldHeight(float x, float z)
     {
+        
+        ChunkData2 chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(x,z), false);
+        if (chunk == null)
+            return World.ChunkHeight;
+
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(new Vector3(x,64,z), Vector3.down), out hit, 64, layerMask: GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(new Vector3(x, 64, z), Vector3.down), out hit, 64, layerMask: GROUND_LAYER_MASK))
         {
             return hit.point.y;
         }
-        ChunkData chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(x,z));
+
         if (chunk.Heights != null)
             return  chunk.Heights[(int)x % World.ChunkSize, (int)z % World.ChunkSize];
         else
@@ -288,7 +293,11 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     private float GetWorldHeight()
     {
         float height = 4.5f;
-        ChunkData chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(Entity.TilePos));
+        ChunkData2 chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(Entity.TilePos), false);
+
+        if (chunk == null)
+            return World.ChunkHeight;
+
         if (chunk.Heights != null)
             height = chunk.Heights[Entity.TilePos.x % World.ChunkSize, Entity.TilePos.z % World.ChunkSize];
         else

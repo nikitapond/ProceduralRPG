@@ -175,7 +175,8 @@ public class WorldManager : MonoBehaviour
     /// <param name="worldPos"></param>
     public void DestroyWorldObject(Vec2i worldPos)
     {
-
+        return;
+        /*
         Vec2i chunkPos = World.GetChunkPosition(worldPos);
         ChunkData c = CRManager.GetChunk(chunkPos);
 
@@ -191,7 +192,7 @@ public class WorldManager : MonoBehaviour
                 loaded.LoadedWorldObjects[worldPos.x % World.ChunkSize, worldPos.z % World.ChunkSize] = null;
             }
             
-        }
+        }*/
     }
 
     /// <summary>
@@ -256,8 +257,9 @@ public class WorldManager : MonoBehaviour
     {
         //Get relevent chunk of object placement.
         Vec2i chunkPos = World.GetChunkPosition(worldObject.WorldPosition);
-        ChunkData c = CRManager.GetChunk(chunkPos);
-
+        ChunkData2 c = CRManager.GetChunk(chunkPos);
+        return;
+        /*
         Vec2i localPos = new Vec2i(worldObject.WorldPosition.x % World.ChunkSize, worldObject.WorldPosition.z % World.ChunkSize);
         c.SetObject(localPos.x,localPos.z, worldObject);
 
@@ -268,7 +270,7 @@ public class WorldManager : MonoBehaviour
             WorldObject newObject = worldObject.CreateWorldObject(loaded.transform);
 
             loaded.LoadedWorldObjects[localPos.x, localPos.z] = newObject;            
-        }
+        }*/
     }
 
 }

@@ -9,14 +9,14 @@ public class ChunkRegionGenerator
     private Object LOCK_OBJ;
     private GameGenerator GameGenerator;
     private ChunkGenerator ChunkGenerator;
-    private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
+    private Dictionary<Vec2i, ChunkData2> PreGeneratedChunks;
     private List<Vec2i> RegionsToGen;
     private List<Vec2i> CurrentlyThreadGenerating;
 
     private int[,] EMPTY_PLAINS;
     private int[,] OCEAN;
 
-    public ChunkRegionGenerator(GameGenerator gameGen, Dictionary<Vec2i, ChunkData> preGenChunks)
+    public ChunkRegionGenerator(GameGenerator gameGen, Dictionary<Vec2i, ChunkData2> preGenChunks)
     {
         LOCK_OBJ = new Object();
         GameGenerator = gameGen;
@@ -250,7 +250,7 @@ public class ChunkRegionGenerator
     {
 
         //Define array for all chunks
-        ChunkData[,] regionChunks = new ChunkData[World.RegionSize, World.RegionSize];
+        ChunkData2[,] regionChunks = new ChunkData2[World.RegionSize, World.RegionSize];
         //Iterate all chunks in region
         for (int cx = 0; cx < World.RegionSize; cx++)
         {
@@ -258,7 +258,9 @@ public class ChunkRegionGenerator
             {
                 //Define chunk coordinate
                 Vec2i chunkCoord = new Vec2i(rx * World.RegionSize + cx, rz * World.RegionSize + cz);
-                               
+
+                //regionChunks[cx, cz] = ChunkGenerator.GenerateChunk(rx * World.RegionSize + cx, rz * World.RegionSize + cz);
+                
                 //Check if this chunk is a settlement chunk, if it is, set it as such
                 if (PreGeneratedChunks.ContainsKey(chunkCoord))
                 {

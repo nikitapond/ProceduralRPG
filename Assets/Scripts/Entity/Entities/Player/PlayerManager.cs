@@ -161,19 +161,10 @@ public class PlayerManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        if (TestMain.TEST_MODE)
-        {
-            PlayerCamera = GameObject.Find("PlayerCamera").GetComponent<Camera>();
-            PlayerCameraScript = GameObject.Find("PlayerCamera").GetComponent<PlayerCamera>();
-            //PlayerCamera = GetComponent<Camera>();
-            //PlayerCameraScript = GetComponent<PlayerCamera>();
-                
-        }
-        else
-        {
-            PlayerCamera = transform.Find("PlayerCamera").GetComponent<Camera>();
-            PlayerCameraScript = transform.Find("PlayerCamera").GetComponent<PlayerCamera>();
-        }
+
+        PlayerCamera = transform.Find("PlayerCamera").GetComponent<Camera>();
+        PlayerCameraScript = transform.Find("PlayerCamera").GetComponent<PlayerCamera>();
+        
         
     }
 
@@ -202,13 +193,7 @@ public class PlayerManager : MonoBehaviour
         LoadedPlayer = loadedEntity;
 
 
-        if (TestMain.TEST_MODE)
-        {
-
-        }
-        else
-        {
-        }
+       
 
 
 

@@ -145,13 +145,13 @@ public class ChunkStructureGenerator
     ///Where we generate the chunk data for all the structure.
     #region thread_gen
 
-    private Dictionary<Vec2i, ChunkData> GeneratedChunks;
+    private Dictionary<Vec2i, ChunkData2> GeneratedChunks;
     private Object GeneratedChunksAddLock;
 
-    public Dictionary<Vec2i, ChunkData> GenerateAllStructures()
+    public Dictionary<Vec2i, ChunkData2> GenerateAllStructures()
     {
 
-        GeneratedChunks = new Dictionary<Vec2i, ChunkData>();
+        GeneratedChunks = new Dictionary<Vec2i, ChunkData2>();
         GeneratedChunksAddLock = new Object();
 
         //Create array to hold data we send to the thread
@@ -213,7 +213,7 @@ public class ChunkStructureGenerator
             return;
 
         //Create list to hold generated chunks. Create random (thread safe)
-        List<ChunkData> generatedChunks = new List<ChunkData>(40);
+        List<ChunkData2> generatedChunks = new List<ChunkData2>(40);
         GenerationRandom genRan = new GenerationRandom(toGen[0].Position.x * 13 + toGen[0].Position.z * 3064);
         //iterate all structures to generate, ignore if null
         foreach (ChunkStructure str in toGen)
@@ -238,7 +238,7 @@ public class ChunkStructureGenerator
         lock (GeneratedChunksAddLock)
         {
             //iterate generated threads, add to dictionary
-            foreach (ChunkData cd in generatedChunks)
+            foreach (ChunkData2 cd in generatedChunks)
             {
                 GeneratedChunks.Add(new Vec2i(cd.X, cd.Z), cd);
             }

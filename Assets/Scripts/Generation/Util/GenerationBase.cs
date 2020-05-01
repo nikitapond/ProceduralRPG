@@ -177,9 +177,9 @@ public abstract class GenerationBase
     /// Converts the data of this generator to a list of chunks
     /// </summary>
     /// <returns></returns>
-    public List<ChunkData> ToChunkData()
+    public List<ChunkData2> ToChunkData()
     {
-        List<ChunkData> data = new List<ChunkData>(ChunkSize.x * ChunkSize.z);
+        List<ChunkData2> data = new List<ChunkData2>(ChunkSize.x * ChunkSize.z);
         for (int cx = 0; cx < ChunkSize.x; cx++)
         {
             for (int cz = 0; cz < ChunkSize.z; cz++)
@@ -211,7 +211,7 @@ public abstract class GenerationBase
                         }
                     }
                 }
-                data.Add(new ChunkData(BaseChunk.x + cx, BaseChunk.z + cz, chunkTiles, true, baseHeight: cb.BaseHeight, objects: chunkObjs));
+                data.Add(new ChunkData2(BaseChunk.x + cx, BaseChunk.z + cz, chunkTiles, true, baseHeight: cb.BaseHeight, null));
             }
         }
         return data;

@@ -50,13 +50,13 @@ public class ChunkGenerator
     /// <param name="x"></param>
     /// <param name="z"></param>
     /// <returns></returns>
-    public ChunkData GenerateChunk(int x, int z)
+    public ChunkData2 GenerateChunk(int x, int z)
     {
   
 
 
         ChunkBase cb = ChunkBases[x, z];
-        ChunkData cd = null;
+        ChunkData2 cd = null;
         if (cb.Lake != null)
             cd = GenerateLakeChunk(x, z, cb);
         else if (cb.RiverNode != null)
@@ -75,16 +75,16 @@ public class ChunkGenerator
     /// <param name="z"></param>
     /// <param name="cb"></param>
     /// <returns></returns>
-    private ChunkData GenerateSimpleChunk(int x, int z, ChunkBase cb)
+    private ChunkData2 GenerateSimpleChunk(int x, int z, ChunkBase cb)
     {
         
         if (!cb.IsLand)
         {
-            return new ChunkData(x, z, (int[,])OCEAN.Clone(), cb.IsLand);
+            return new ChunkData2(x, z, (int[,])OCEAN.Clone(), cb.IsLand);
         }
         if(cb.Biome == ChunkBiome.dessert)
         {
-            return new ChunkData(x, z, (int[,])EMPTY_DESERT.Clone(), cb.IsLand, 1, (float[,])OCEAN_HEIGHT.Clone());
+            return new ChunkData2(x, z, (int[,])EMPTY_DESERT.Clone(), cb.IsLand, 1, (float[,])OCEAN_HEIGHT.Clone());
         }
         int[,] tiles = (int[,])EMPTY_PLAINS.Clone();
 
@@ -109,17 +109,17 @@ public class ChunkGenerator
                 heights[i, j] = GameGen.TerrainGenerator.WorldHeight(x * World.ChunkSize + i, z * World.ChunkSize + j);
             }
         }
-        ChunkData cd = new ChunkData(x, z, tiles, cb.IsLand,cb.BaseHeight, heights: heights, objects:obs);
+        ChunkData2 cd = new ChunkData2(x, z, tiles, cb.IsLand,cb.BaseHeight, heightMap: heights);
         return cd;
     }
 
-    private ChunkData GenerateLakeChunk(int x, int z, ChunkBase cb)
+    private ChunkData2 GenerateLakeChunk(int x, int z, ChunkBase cb)
     {
-        ChunkData cd = new ChunkData(x, z, (int[,])OCEAN.Clone(), false);
+        ChunkData2 cd = new ChunkData2(x, z, (int[,])OCEAN.Clone(), false);
         return cd;
     }
 
-    private ChunkData GenerateRiverChunk(int x, int z, ChunkBase cb)
+    private ChunkData2 GenerateRiverChunk(int x, int z, ChunkBase cb)
     {
         GenerationRandom genRan = new GenerationRandom(new Vec2i(x, z).GetHashCode() + Seed);
         int[,] tiles = new int[World.ChunkSize, World.ChunkSize];
@@ -277,7 +277,7 @@ public class ChunkGenerator
             }
         }
 
-        return new ChunkData(x, z, tiles, cb.IsLand,baseHeight:cb.BaseHeight, heights:heights, objects:data_);
+        return new ChunkData2(x, z, tiles, cb.IsLand,baseHeight:cb.BaseHeight, heightMap:heights);
     }
 
 

@@ -39,15 +39,10 @@ public class PlayerCamera : MonoBehaviour
     private void Awake()
     {
         Camera = GetComponent<Camera>();
-        if (TestMain.TEST_MODE)
-        {
-            PlayerManager = GameObject.Find("PlayerManager").gameObject.GetComponent<PlayerManager>();
-        }
-        else
-        {
-            PlayerManager = transform.parent.gameObject.GetComponent<PlayerManager>();
+    
+        PlayerManager = transform.parent.gameObject.GetComponent<PlayerManager>();
 
-        }
+        
         Theta = 0;
         R = 15;
         Phi = 45;

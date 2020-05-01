@@ -29,7 +29,7 @@ public class GameGenerator
     public ChunkStructureGenerator StructureGenerator;
     
     //All chunks that are generated outside of the main chunk generator
-    private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
+    private Dictionary<Vec2i, ChunkData2> PreGeneratedChunks;
 
     /// <summary>
     /// Initiates the GameGenerator with the specified seed
@@ -81,7 +81,7 @@ public class GameGenerator
         //TODO - check if this is still required (probably not)
         ChunkGenerator = new ChunkGenerator(this);
 
-
+        
 
         Debug.BeginDeepProfile("kingdom_set_gen");
         //We then generate empty kingdoms based on these empty chunks
@@ -100,7 +100,7 @@ public class GameGenerator
         StructureGenerator.GenerateStructureShells();
         
         //Iterate all chunks generated for chunk structures, add them to the PreGeneratedChunks
-       foreach(KeyValuePair<Vec2i, ChunkData> kvp in StructureGenerator.GenerateAllStructures())
+       foreach(KeyValuePair<Vec2i, ChunkData2> kvp in StructureGenerator.GenerateAllStructures())
         {
             PreGeneratedChunks.Add(kvp.Key, kvp.Value);
         }
@@ -111,7 +111,7 @@ public class GameGenerator
         //Create a simple map based on the terrain of the world
         GenerateTerrainMap(TerrainGenerator.ChunkBases);
         Debug.EndDeepProfile("terrain_map_gen");
-
+        
     }
 
     /// <summary>

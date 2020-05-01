@@ -94,7 +94,7 @@ public class EntitySpawner
                 continue;
             }
 
-            ChunkData c = GameManager.WorldManager.CRManager.GetLoadedChunk(v).Chunk;
+            ChunkData2 c = GameManager.WorldManager.CRManager.GetLoadedChunk(v).Chunk;
             if (c == null || !c.IsLand)
                 continue;
 

@@ -116,7 +116,7 @@ public class EntityPathFinder
         }
 
         //To include settlement path finding, we must check the start and end points to see if they are in settlements
-        ChunkData startChunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(start));
+        ChunkData2 startChunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(start));
 
         if (startChunk == null)
         {
@@ -131,7 +131,7 @@ public class EntityPathFinder
         Settlement startSet = startChunk.GetSettlement();
 
         //To include settlement path finding, we must check the start and end points to see if they are in settlements
-        ChunkData endChunk=null;
+        ChunkData2 endChunk=null;
         try
         {
             endChunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(end));
@@ -584,19 +584,23 @@ public class PathFinder
                 {
                     for (int z = 0; z < World.ChunkSize; z++)
                     {
-                        ChunkData c = chunkRegion.Chunks[cx, cz];
+                        ChunkData2 c = chunkRegion.Chunks[cx, cz];
                         if (c == null)
                         {
                             Debug.Error("Chunk Region " + chunkRegion.ToString() + " has null chunk with local: " + cx + "," + cz);
                             continue;
                         }
                         float val = tileData[cx * World.ChunkSize + x, cz * World.ChunkSize + z] = c.GetTile(x, z).SpeedMultiplier;
+
+                        //TODO - update this bad boy.
+
+                        /*
                         if (c.Objects != null && c.GetObject(x, z) != null)
                         {
                             WorldObjectData wod = c.GetObject(x, z);
                             if (wod.IsCollision)
                                 val = Mathf.Infinity;
-                        }
+                        }*/
 
                         tileData[cx * World.ChunkSize + x, cz * World.ChunkSize + z] = val;
                     }

@@ -46,17 +46,7 @@ public class GameManager : MonoBehaviour
         EventManager.InvokeNewEvent(new GamePause(pause));
     }
 
-    public static void TestInitiate()
-    {
-       
-        PlayerManager = TestMain.PlayerManager;
-        EventManager = TestMain.EventManager;
-        DebugGUI = TestMain.DebugGUI;
-        GUIManager = TestMain.GUIManager;
-        WorldManager = TestMain.WorldManager;
-        EntityManager = TestMain.EntityManager;
-        IsPlaying = true;
-    }
+
 
     /// <summary>
     /// Initial awake function. 
@@ -156,16 +146,18 @@ public class GameManager : MonoBehaviour
 
         GameGenerator = new GameGenerator(seed);
         GameGenerator.GenerateWorld(WorldManager);
+        
         GameGenerator.GenerateEntities(WorldManager.World);
         GameGenerator.GenerateDungeons();
         GameGenerator.GenerateWorldMap();
-        QuestManager.SetQuests(GameGenerator.GenerateQuests(WorldManager.World));
-
+        //QuestManager.SetQuests(GameGenerator.GenerateQuests(WorldManager.World));
+        
 
         //Vec2i wpos = Vec2i.FromVector2(QuestManager.Unstarted[0].Initiator.GetNPC().Position2);
-        Vec2i wpos = WorldManager.World.GetChunkStructure(0).Position * World.ChunkSize + new Vec2i(2, 2);
+        //Vec2i wpos = WorldManager.World.GetChunkStructure(0).Position * World.ChunkSize + new Vec2i(2, 2);
+        Vec2i wpos = new Vec2i(1, 1) * World.ChunkSize * World.WorldSize / 2;
        // Vec2i wEntr = WorldManager.World.GetSubworld(1).WorldEntrance;
-        TestSettle = QuestManager.Unstarted[0].Initiator.GetNPC().NPCKingdomData.GetSettlement();
+        //TestSettle = QuestManager.Unstarted[0].Initiator.GetNPC().NPCKingdomData.GetSettlement();
         Debug.Log(TestSettle);
 
 

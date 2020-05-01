@@ -18,6 +18,56 @@ namespace MarchingCubesProject
 
 
 		
+		public void Generate(Voxel[] voxels, VoxelBounds b, Voxel current, int width, int height, int depth, IList<Vector3> verts, IList<int> indices)
+		{
+			if (Surface > 0.0f)
+			{
+				WindingOrder[0] = 0;
+				WindingOrder[1] = 1;
+				WindingOrder[2] = 2;
+			}
+			else
+			{
+				WindingOrder[0] = 2;
+				WindingOrder[1] = 1;
+				WindingOrder[2] = 0;
+			}
+
+			int x, y, z, i;
+			int ix, iy, iz;
+			for (x = b.MinX; x < b.MaxX - 1; x++)
+			{
+				for (y = b.MinY; y < b.MaxY - 1; y++)
+				{
+					for (z = b.MinZ; z < b.MaxZ - 1; z++)
+					{
+						//Get the values in the 8 neighbours which make up a cube
+						for (i = 0; i < 8; i++)
+						{
+							ix = x + VertexOffset[i, 0];
+							iy = y + VertexOffset[i, 1];
+							iz = z + VertexOffset[i, 2];
+
+							Voxel v = voxels[ix + iy * width + iz * width * height];
+							if(v == current)
+							{
+								Cube[i] = -1;
+							}
+							else
+							{
+								Cube[i] = 1;
+							}
+
+							
+						}
+
+						//Perform algorithm
+						March(x, y, z, Cube, verts, indices);
+					}
+				}
+			}
+		}
+
 
 		/// <summary>
 		/// MarchCube performs the Marching Cubes algorithm on a single cube

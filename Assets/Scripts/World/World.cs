@@ -202,8 +202,9 @@ public class World
 
     public WorldObjectData GetWorldObject(Vec2i pos)
     {
-        ChunkData c = GameManager.WorldManager.CRManager.GetChunk(GetChunkPosition(pos));
-        return c.GetObject(pos.x, pos.z);
+        return null;
+        //ChunkData c = GameManager.WorldManager.CRManager.GetChunk(GetChunkPosition(pos));
+        //return c.GetObject(pos.x, pos.z);
     }
 
     

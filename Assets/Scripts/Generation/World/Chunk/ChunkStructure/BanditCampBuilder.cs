@@ -28,7 +28,7 @@ public class BanditCampBuilder
     }
 
 
-    public List<ChunkData> Generate(GenerationRandom genRan)
+    public List<ChunkData2> Generate(GenerationRandom genRan)
     {
 
         GenRan = genRan;
@@ -287,9 +287,9 @@ public class BanditCampBuilder
         return pos;
     }
 
-    private List<ChunkData> ToChunkData()
+    private List<ChunkData2> ToChunkData()
     {
-        List<ChunkData> data = new List<ChunkData>(Shell.Size.x * Shell.Size.z);
+        List<ChunkData2> data = new List<ChunkData2>(Shell.Size.x * Shell.Size.z);
         for(int cx=0; cx<Shell.Size.x; cx++)
         {
             for (int cz = 0; cz < Shell.Size.z; cz++)
@@ -311,7 +311,7 @@ public class BanditCampBuilder
                     }
                 }
                 ChunkBase cb = GameGenerator.Instance.TerrainGenerator.ChunkBases[Shell.Position.x + cx, Shell.Position.z + cz];
-                data.Add(new ChunkData(Shell.Position.x + cx, Shell.Position.z + cz, chunkTiles, true, baseHeight: cb.BaseHeight, objects: chunkObjs));
+                data.Add(new ChunkData2(Shell.Position.x + cx, Shell.Position.z + cz, chunkTiles, true, baseHeight: cb.BaseHeight, null));
             }
         }
         return data;

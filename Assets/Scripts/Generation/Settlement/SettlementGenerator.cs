@@ -16,9 +16,9 @@ public class SettlementGenerator
         World = world;
     }
 
-    public Dictionary<Settlement, Dictionary<Vec2i, ChunkData>> GenerateAllSettlements()
+    public Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> GenerateAllSettlements()
     {
-        Dictionary<Settlement, Dictionary<Vec2i, ChunkData>> setChunks = new Dictionary<Settlement, Dictionary<Vec2i, ChunkData>>(Settlements.Count);
+        Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> setChunks = new Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>>(Settlements.Count);
 
    
         foreach (SettlementBase b in Settlements)
@@ -42,18 +42,18 @@ public class SettlementGenerator
         return setChunks;
     }
 
-    public Dictionary<Vec2i, ChunkData> GenerateAllSettlementChunks(SettlementBuilder setBuild, Settlement set)
+    public Dictionary<Vec2i, ChunkData2> GenerateAllSettlementChunks(SettlementBuilder setBuild, Settlement set)
     {
 
         Vec2i baseChunk = new Vec2i(setBuild.BaseCoord.x / World.ChunkSize, setBuild.BaseCoord.z / World.ChunkSize);
-        Dictionary<Vec2i, ChunkData> setChunks = new Dictionary<Vec2i, ChunkData>();
+        Dictionary<Vec2i, ChunkData2> setChunks = new Dictionary<Vec2i, ChunkData2>();
         int setSizeChunks = setBuild.TileSize / World.ChunkSize;
         for(int x=0; x< setSizeChunks; x++)
         {
             for(int z=0; z< setSizeChunks; z++)
             {
                 ChunkBase cb = GameGenerator.TerrainGenerator.ChunkBases[baseChunk.x + x, baseChunk.z + z];
-                ChunkData cd = null;
+                ChunkData2 cd = null;
                 if(cb.RiverNode != null || cb.Lake != null)
                 {
                     cd = GameGenerator.ChunkGenerator.GenerateChunk(baseChunk.x + x, baseChunk.z + z);
@@ -84,7 +84,7 @@ public class SettlementGenerator
                             }
                         }
                     }
-                    cd = new ChunkData(baseChunk.x + x, baseChunk.z + z, cTiles, true, baseHeight:cb.BaseHeight, heights: cHeights, objects:cObj);
+                    cd = new ChunkData2(baseChunk.x + x, baseChunk.z + z, cTiles, true, baseHeight:cb.BaseHeight, heightMap:cHeights, null);
                 }
 
 
