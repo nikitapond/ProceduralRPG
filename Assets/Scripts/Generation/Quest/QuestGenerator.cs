@@ -57,7 +57,7 @@ public class QuestGenerator
     {
         questCount++;
         //Get the dungeon this quest is based on
-        Dungeon dun = chunkStructure.DungeonEntrance.GetDungeon();
+        Dungeon dun = (Dungeon)chunkStructure.DungeonEntrance.GetSubworld();
         //If the dungeon doesn't have a key (generation should be set so it doesn't), we create one
         Key key = dun.GetKey();
         if (key == null)
@@ -105,7 +105,7 @@ public class QuestGenerator
 
 
         endTasks.Add(new QuestTask("Go to " + ranStruct.Name + " and collect the key", QuestTask.QuestTaskType.PICK_UP_ITEM,
-            new object[] { dungeon.GetKey(), ranStruct.WorldMapLocation, (ranStruct.FinalLootChest as WorldObjectData).WorldPosition }));
+            new object[] { dungeon.GetKey(), ranStruct.WorldMapLocation, (ranStruct.FinalLootChest as WorldObjectData).Position }));
 
         //Quest initiator will be a random entity
         //Therefore, we choose a random settlement

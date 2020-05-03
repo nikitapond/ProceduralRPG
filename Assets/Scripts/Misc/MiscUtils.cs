@@ -46,3 +46,15 @@ public class MiscUtils
             s.rect.width / s.texture.width, s.rect.height / s.texture.height);
     }
 }
+
+public static class Vector3Extensions
+{
+    public static Vector3 Mod(this Vector3 v, int mod)
+    {
+        return new Vector3(v.x % mod, v.y % mod, v.z % mod);
+    }
+    public static SerializableVector3 Mod(this SerializableVector3 v, int mod)
+    {
+        return new SerializableVector3(v.x % mod, v.y % mod, v.z % mod);
+    }
+}

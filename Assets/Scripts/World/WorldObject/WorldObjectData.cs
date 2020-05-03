@@ -3,78 +3,104 @@ using UnityEditor;
 [System.Serializable]
 public abstract class WorldObjectData
 {
-
+    /// <summary>
+    /// When the object is loaded this paramater will be set as
+    /// the reference to the currently loaded object.
+    /// </summary>
     [System.NonSerialized]
     public WorldObject LoadedObject;
 
-    public float GroundHeight { get; private set; }
-    public abstract WorldObjects ObjID { get; }
-    public int ID { get { return (int)ObjID; } }
-    public abstract string Name { get; }
-   
+    public GameObject ObjectPrefab { get { return ResourceManager.GetWorldObject((int)ID); } }
+
+
     /// <summary>
-    /// Used by pathfinder to check if the tile containing this game object is passable.
+    /// Returns the Object ID of this object.
     /// </summary>
-    public bool IsCollision { get; protected set; }
+    public abstract WorldObjects ID { get; }
 
-    public Vec2i WorldPosition { get; private set; }
-    private float[] ObjectDeltaPosition_;
-    public Vector3 ObjectDeltaPosition { get { return new Vector3(ObjectDeltaPosition_[0], ObjectDeltaPosition_[1], ObjectDeltaPosition_[2]); } }
-    protected WorldObjectMetaData MetaData;
-    public Vec2i Size { get; protected set; }
-
-    public abstract WorldObjectData Copy(Vec2i pos=null);
+    /// <summary>
+    /// The name of this object
+    /// </summary>
+    public abstract string Name { get; }
     
+    /// <summary>
+    /// The size of the object, measured from the minimum point to the maximum point
+    /// </summary>
+    public abstract SerializableVector3 Size { get; }
 
-    public WorldObjectData(Vec2i worldPosition, Vector3 delta, WorldObjectMetaData meta = null, Vec2i size = null)
+    /// <summary>
+    /// Defines if this object blocks path in the path finder.
+    /// </summary>
+    public abstract bool IsCollision { get; }
+
+    /// <summary>
+    /// Defines if this objects height should be found by ray tracing on initiation
+    /// </summary>
+    public abstract bool AutoHeight { get;  }
+
+    public SerializableVector3 Scale { get; protected set; }
+
+    /// <summary>
+    /// The position of this object, measured from the minimum point
+    /// </summary>
+    public SerializableVector3 Position { get; protected set; }
+    /// <summary>
+    /// The angle between this objects direction and Vector3.forward
+    /// </summary>
+    public float Rotation { get; protected set; }
+
+    public WorldObjectData(Vector3 position, float rotation = 0)
     {
-        WorldPosition = worldPosition;
-        ObjectDeltaPosition_ = new float[]{ delta.x,delta.y,delta.z};
-        MetaData = meta;
-        Size = size;
-        IsCollision = true;
-        GroundHeight = -1;
+        Position = position;
+        Rotation = rotation;
+        Scale = Vector3.one;
     }
-    public WorldObjectData(Vec2i worldPosition, WorldObjectMetaData meta=null, Vec2i size=null)
+    public WorldObjectData(float rotation = 0)
     {
-        WorldPosition = worldPosition;
-        MetaData = meta;
-        ObjectDeltaPosition_ = new float[] { 0,0,0 };
-        Size = size;
-        IsCollision = true;
-        GroundHeight = -1;
+        Position = Vector3.zero;
+        Rotation = rotation;
+        Scale = Vector3.one;
+    }
+
+    public WorldObjectData SetPosition(Vector3 nPos)
+    {
+        Position = nPos;
+        return this;
+    }
+    public WorldObjectData SetPosition(Vec2i nPos)
+    {
+        Position = nPos.AsVector3();
+        return this;
+    }
+
+
+    /// <summary>
+    /// Called when this object is created.
+    /// Used to initiate anything that needs to be initiated (for example, inventory)
+    /// </summary>
+    protected virtual void OnConstructor() { }
+
+    /// <summary>
+    /// Checks if the bounds of the two objects intersect
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public bool Intersects(WorldObjectData obj)
+    {
+        Vector3 aMin = Position;
+        Vector3 bMin = obj.Position;
+        Vector3 aMax = aMin + Size;
+        Vector3 bMax = bMin + obj.Size;
+        return aMin.x < bMax.x && aMin.x > bMin.x && aMin.y < bMax.y && aMin.y > bMin.y && aMin.z < bMax.z && aMin.z > bMin.z ||
+            aMax.x < bMax.x && aMax.x > bMin.x && aMax.y < bMax.y && aMax.y > bMin.y && aMax.z < bMax.z && aMax.z > bMin.z;
 
     }
 
-    public void SetGroundHeight(float gh)
+    public Recti CalculateIntegerBounds()
     {
-        GroundHeight = gh;
+        return new Recti((int)Position.x, (int)Position.z, (int)Size.x, (int)Size.z);
     }
 
-    public void SetPosition(Vec2i worldPos)
-    {
-        WorldPosition = worldPos;
-    }
-
-    public virtual WorldObject CreateWorldObject(Transform transform=null)
-    {
-        WorldObject obj = WorldObject.CreateWorldObject(this, transform);
-        LoadedObject = obj;
-       
-
-        return obj;
-    }
-
-    public bool HasMetaData()
-    {
-        return MetaData != null;
-    }
-    public WorldObjectMetaData GetMetaData(bool create=true)
-    {
-        if (create && MetaData == null)
-            MetaData = new WorldObjectMetaData();
-        return MetaData;
-    }
 
     /// <summary>
     /// Called when the object is instansiated. We pass the world object 
@@ -88,5 +114,6 @@ public abstract class WorldObjectData
     /// </summary>
     /// <param name="obj"></param>
     public virtual void OnObjectUnload(WorldObject obj) { }
+
 
 }

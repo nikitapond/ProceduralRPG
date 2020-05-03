@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// </summary>
 public class WorldObject : MonoBehaviour
 {
-
+    public static int GROUND_LAYER_MASK = -1;
     public static int ObjectPositionHash(int x, int z)
     {
         return (x & (World.ChunkSize-1))*World.ChunkSize + (z & (World.ChunkSize - 1));
@@ -15,42 +15,42 @@ public class WorldObject : MonoBehaviour
     {
         return (v.x & (World.ChunkSize - 1)) * World.ChunkSize + (v.z & (World.ChunkSize - 1));
     }
-    public static WorldObject CreateWorldObject(WorldObjectData data, Transform parent=null)
+    public static WorldObject CreateWorldObject(WorldObjectData data, Transform parent=null, float heightOffset=0)
     {
 
-        GameObject gameObject = Instantiate(ResourceManager.GetWorldObject(data.ID));
+        if(GROUND_LAYER_MASK == -1)
+            GROUND_LAYER_MASK = LayerMask.GetMask("Ground");
+        GameObject gameObject = Instantiate(data.ObjectPrefab);
         //gameObject.layer = 8;
-        WorldObject obj = gameObject.AddComponent<WorldObject>();
-        
+        WorldObject obj = gameObject.GetComponent<WorldObject>();        
 
         if(parent != null)
         {
             gameObject.transform.parent = parent;
         }
-        if (data.HasMetaData())
-        {
-            if (data.GetMetaData().Direction != null)
-            {
-                float angle = Vector2.SignedAngle(new Vector2(0, 1), data.GetMetaData().Direction.AsVector2());
-                obj.transform.rotation = Quaternion.Euler(0, angle, 0);
-            }
-        }
-
-
-        gameObject.transform.localPosition = new Vector3(data.WorldPosition.x%World.ChunkSize, 0, data.WorldPosition.z% World.ChunkSize) + data.ObjectDeltaPosition;
-        if(data.Size != null)
-        {
-            float height = 1;
-            if(data.HasMetaData())
-            {
-                height = data.GetMetaData().Height;
-            }
-            if(!(data is IMultiTileObject))
-                gameObject.transform.localScale = new Vector3(data.Size.x, height, data.Size.z);
-        }
+        gameObject.transform.RotateAround(data.Position + data.Size / 2, Vector3.up, data.Rotation);
+        gameObject.transform.localPosition = data.Position.Mod(World.ChunkSize);
+        gameObject.transform.localScale = data.Scale;
         obj.Data = data;
         data.OnObjectLoad(obj);
         return obj;
+    }
+
+
+    public void AdjustHeight()
+    {
+        Vector3 basePos = new Vector3(transform.position.x, World.ChunkHeight, transform.position.z);
+        RaycastHit hit;
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, World.ChunkHeight, layerMask: ~GROUND_LAYER_MASK))
+        {
+            basePos.y = hit.point.y;
+            transform.position = basePos;
+        }
+        else
+        {
+            Debug.Log("no hit" + "_" + basePos);
+        }
+
     }
 
     public static GameObject InstansiatePrefab(GameObject source, Transform parent = null)
@@ -64,9 +64,13 @@ public class WorldObject : MonoBehaviour
 
     public WorldObjectData Data { get; private set; }
 
-    public void SetData(WorldObjectData data)
+
+    public void OnEntityInteract(Entity ent)
     {
-        Data = data;
+        if(Data is IOnEntityInteract)
+        {
+            (Data as IOnEntityInteract).OnEntityInteract(ent);
+        }
     }
 
     private void OnDestroy()

@@ -12,7 +12,8 @@ public class Vec2i
         this.x = x;
         this.z = z;
     }
-
+    
+    
 
     public int QuickDistance(Vec2i b)
     {
@@ -34,6 +35,8 @@ public class Vec2i
     {
         return Vec2i.ToVector3(this);
     }
+
+
     public static Vec2i operator *(Vec2i a, int s)
     {
         return new Vec2i(a.x * s, a.z * s);

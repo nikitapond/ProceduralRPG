@@ -20,6 +20,8 @@ public class ResourceManager
     private static Dictionary<string, GameObject> ProjectileObjects;
     private static Dictionary<string, GameObject> BeamObjects;
     private static Dictionary<string, GameObject> MiscPrefabs;
+
+    private static Dictionary<Voxel, Material> VoxelMaterials;
     public static void LoadAllResources()
     {
         ChunkPrefab = Resources.Load<GameObject>("Misc/ChunkPrefab");
@@ -33,9 +35,17 @@ public class ResourceManager
         LoadProjectileObjects();
         LoadBeamObjects();
         LoadMiscPrefabs();
+        LoadVoxelMaterials();
     }
 
+    private static void LoadVoxelMaterials()
+    {
+        VoxelMaterials = new Dictionary<Voxel, Material>();
+        VoxelMaterials.Add(Voxel.stone, Resources.Load<Material>("Shaders/Voxel/StoneWallVoxelMat"));
+        VoxelMaterials.Add(Voxel.wood, Resources.Load<Material>("Shaders/Voxel/WoodVoxelMat"));
+        VoxelMaterials.Add(Voxel.glass, Resources.Load<Material>("Shaders/Voxels/GlassVoxelMat"));
 
+    }
     private static void LoadShaders()
     {
         Shaders = new Dictionary<string, Shader>();
@@ -160,6 +170,10 @@ public class ResourceManager
     {
         MiscPrefabs = new Dictionary<string, GameObject>();
         MiscPrefabs.Add("march_sone_wall", Resources.Load<GameObject>("Misc/MarchStoneWall"));
+    }
+    public static Material GetVoxelMaterial(Voxel vox)
+    {
+        return VoxelMaterials[vox];
     }
     public static Material GetMaterial(string name)
     {

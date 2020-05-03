@@ -7,7 +7,7 @@ public enum SettlementType
 {
     CAPITAL, CITY, TOWN, VILLAGE
 }
-public class SettlementBuilder
+public class SettlementBuilder : BuilderBase
 {
     public static int NODE_RES = 16;
     public static bool TEST = true;
@@ -16,12 +16,11 @@ public class SettlementBuilder
 
     private GameGenerator GameGenerator;
     //Defines the minimum xz coordinate of this settlement, such that world positions are equal to BaseCoord+localPosition
-    public Vec2i BaseCoord { get; private set; }
+    //public Vec2i BaseTile { get; private set; }
     //Defines the middle tile of the Settelment in local coordinates
     private Vec2i MidTile { get; }
     //The chunk coordinate at the centre of the settlement, defines its position in the world
     public Vec2i Centre { get; private set; }
-    public Vec2i BaseChunk;
 
     //An array of all the chunks that this settelment contains/belongs to.
     public Vec2i[] SettlementChunks { get; private set; }
@@ -29,9 +28,11 @@ public class SettlementBuilder
     //Array that holds all WorkObjects that will exist in this settlement
     public WorldObjectData[,] SettlementObjects { get; set; }
     //Array that hold all Tiles for this settlement
-    public Tile[,] Tiles { get; set; }
+    //public Tile[,] Tiles { get; set; }
 
-    public float[,] Heights { get; set; }
+    //public float[,] Heights { get; set; }
+
+    //public Voxel[] Voxels;
 
     //Defines the size of the settlement from one edge to another, in units of tiles.
     public int TileSize { get; private set; }
@@ -44,38 +45,34 @@ public class SettlementBuilder
     public List<Recti> BuildingPlots { get; }
     //Used to generate paths inside this settlement
 
-    public SettlementPathNode[,] TestNodes2;
     public SettlementPathFinder SettlementPathFinder;
     public Tile PathTile { get; private set; }
 
     public float AverageHeight = 5;
 
-    public SettlementBuilder(GameGenerator gameGen, SettlementBase set)
+    public SettlementBuilder(GameGenerator gameGen, SettlementBase set) : base (set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize))
     {
         GameGenerator = gameGen;
         if(gameGen != null)
             GenerationRandom = new GenerationRandom(gameGen.Seed);
         else
             GenerationRandom = new GenerationRandom(0);
-        BaseChunk = set.BaseChunk;
         Centre = set.Centre;
-        BaseCoord = set.BaseCoord;
         SettlementChunks = set.SettlementChunks;
         TileSize = set.TileSize;
         PathTile = Tile.STONE_PATH;
         MidTile = new Vec2i(TileSize / 2, TileSize / 2);
-        Tiles = new Tile[TileSize, TileSize];
+        //Tiles = new Tile[TileSize, TileSize];
         SettlementObjects = new WorldObjectData[TileSize, TileSize];
         Buildings = new List<Building>();
         //PathNodes = new List<Vec2i>();
         BuildingPlots = new List<Recti>();
         SettlementType = set.SettlementType;
 
-        Heights = new float[TileSize, TileSize];
+       // Heights = new float[TileSize, TileSize];
         
 
         //TestNodes = new List<SettlementPathNode>();
-        TestNodes2 = new SettlementPathNode[TileSize / NODE_RES, TileSize / NODE_RES];
 
         //Defines a path node to be once every chunk
         PathNodeRes = World.ChunkSize; 
@@ -83,6 +80,9 @@ public class SettlementBuilder
         PNSize = TileSize / PathNodeRes;
 
         AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
+
+
+       // Voxels = new Voxel[(TileSize) * TileSize * World.ChunkHeight];
     }
 
 
@@ -97,7 +97,7 @@ public class SettlementBuilder
         {
             case SettlementType.CAPITAL:
 
-                AddMainBuilding(BuildingGenerator.GenerateCastle(48));
+                //AddMainBuilding(BuildingGenerator.GenerateCastle(48));
                 mustAdd.Add(Building.BLACKSMITH);
                 mustAdd.Add(Building.MARKET);
                 mustAdd.Add(Building.BARACKS);
@@ -128,7 +128,7 @@ public class SettlementBuilder
                 defaultRemaining = Building.HOUSE;
                 break;
             case SettlementType.CITY:
-                AddMainBuilding(BuildingGenerator.GenerateCastle(32));
+               // AddMainBuilding(BuildingGenerator.GenerateCastle(32));
                 //mustAdd.Add(Building.BARACKSCITY);
                 mustAdd.Add(Building.BLACKSMITH);
                 /*
@@ -142,7 +142,7 @@ public class SettlementBuilder
                 }
                 break;
             case SettlementType.TOWN:
-                AddMainBuilding(BuildingGenerator.CreateBuilding(Building.HOLD));
+                //AddMainBuilding(BuildingGenerator.CreateBuilding(Building.HOLD));
                 //mustAdd.Add(Building.BARACKSTOWN);
 
                 mustAdd.Add(Building.BLACKSMITH);
@@ -156,7 +156,7 @@ public class SettlementBuilder
                 break;
 
             case SettlementType.VILLAGE:
-                AddMainBuilding(BuildingGenerator.CreateBuilding(Building.VILLAGEHALL));
+               // AddMainBuilding(BuildingGenerator.CreateBuilding(Building.VILLAGEHALL));
                 mustAdd.Add(Building.BLACKSMITH);
                 /*
                 mustAdd.Add(Building.GENERALMERCHANT);
@@ -211,11 +211,9 @@ public class SettlementBuilder
         {
             PathNodes[xStart, z] = 100;
 
-            TestNodes2[xStart, z] = new SettlementPathNode(new Vec2i(xStart * NODE_RES, z * NODE_RES));
-            TestNodes2[xStart, z].IsMain = true;
+
             SetTile(xStart * NODE_RES, z * NODE_RES, Tile.TEST_BLUE);
         }
-        ENTR_NODE = TestNodes2[xStart, 0];
 
 
         
@@ -273,7 +271,8 @@ public class SettlementBuilder
         {
             for (int z = minZ; z < maxZ; z++)
             {
-                Tiles[x, z] = tile;
+                SetTile(x, z, tile);
+                
             }
         }
     }
@@ -290,8 +289,7 @@ public class SettlementBuilder
         {
             for (int z = 0; z < tSize; z++)
             {
-                if (TestNodes2[x, z] != null)
-                    continue;
+
                 if (PathNodes[x, z] != 0)
                     continue;
                 //Define the position of this node in the settlement
@@ -326,18 +324,7 @@ public class SettlementBuilder
                     if (!IsAreaFree((x - 1) * PathNodeRes, z * PathNodeRes - 1, PathNodeRes, 3, Tile.TEST_BLUE))
                     {
                         PathNodes[x, z] = -1;
-                        /*
-                        //Choose the x coord of the node to remove
-                        int remX = GenerationRandom.RandomInt(-1, 1) + x;
-                        //Check if the node belongs to the main path,
-                        //if so, we remove the other node
-                        if (PathNodes[remX, z] == 100)
-                        {
-                            if (remX == x - 1) PathNodes[x, z] = 0;
-                            else PathNodes[x - 1, z] = 0;
-                        }
-                        else
-                            PathNodes[remX, z] = 0;*/
+                   
                     }
                 }
                 if (z > 0 && PathNodes[x, z - 1] != 0)
@@ -348,17 +335,7 @@ public class SettlementBuilder
                     {
                         PathNodes[x, z] = -1;
                         continue;
-                        //Choose the x coord of the node to remove
-                        int remZ = GenerationRandom.RandomInt(-1, 1) + z;
-                        //Check if the node belongs to the main path,
-                        //if so, we remove the other node
-                        if (PathNodes[x, remZ] == 100)
-                        {
-                            if (remZ == z - 1) PathNodes[x, z] = 0;
-                            else PathNodes[x, z - 1] = 0;
-                        }
-                        else
-                            PathNodes[x, remZ] = 0;
+
                     }
                 }
                 if (x < tSize - 1 && PathNodes[x + 1, z] != 0)
@@ -367,17 +344,7 @@ public class SettlementBuilder
                     {
                         PathNodes[x, z] = -1;
                         continue;
-                        //Choose the x coord of the node to remove
-                        int remX = GenerationRandom.RandomInt(0, 2) + x;
-                        //Check if the node belongs to the main path,
-                        //if so, we remove the other node
-                        if (PathNodes[remX, z] == 100)
-                        {
-                            if (remX == x + 1) PathNodes[x, z] = 0;
-                            else PathNodes[x + 1, z] = 0;
-                        }
-                        else
-                            PathNodes[remX, z] = 0;
+      
                     }
                 }
                 if (z < tSize - 1 && PathNodes[x, z + 1] != 0)
@@ -386,17 +353,6 @@ public class SettlementBuilder
                     {
                         PathNodes[x, z] = -1;
                         continue;
-                        //Choose the x coord of the node to remove
-                        int remZ = GenerationRandom.RandomInt(0, 2) + z;
-                        //Check if the node belongs to the main path,
-                        //if so, we remove the other node
-                        if (PathNodes[x, remZ] == 100)
-                        {
-                            if (remZ == z + 1) PathNodes[x, z] = 0;
-                            else PathNodes[x, z + 1] = 0;
-                        }
-                        else
-                            PathNodes[x, remZ] = 0;
 
                     }
 
@@ -442,7 +398,7 @@ public class SettlementBuilder
 
 
         //Create a settlement path finder, we will use this to find and remove islands
-        SettlementPathFinder = new SettlementPathFinder(BaseCoord, PathNodes);
+        SettlementPathFinder = new SettlementPathFinder(BaseTile, PathNodes);
         
         List<Vec2i> testing;
         List<Vec2i> tested = new List<Vec2i>(PNSize * PNSize / 4);
@@ -591,34 +547,8 @@ public class SettlementBuilder
         return count;
     }
 
-    private void DestroyNode(int x, int z)
-    {
-        SettlementPathNode node = TestNodes2[x, z];
-        if (node == null)
-            return;
-        for(int i=0; i<4; i++)
-        {
-            //SettlementPathNode coni = node.Connected[i];
-            if(node.Connected[i] != null)
-            {
-                GetNode(node.Connected[i])?.AddConnection(SettlementPathNode.OppositeDirection(i), null);
-                node.Connected[i].AddConnection(SettlementPathNode.OppositeDirection(i), null);
-                node.AddConnection(i, null);
-                
-            }
-        }
-        node = null;
-        TestNodes2[x, z] = null;
-    }
 
-    private SettlementPathNode GetNode(SettlementPathNode spn)
-    {
-        if (spn == null || spn.Position == null)
-            return null;
-        int x = spn.Position.x / NODE_RES;
-        int z = spn.Position.z / NODE_RES;
-        return TestNodes2[x, z];
-    }
+
 
     private void PlaceBuildings(List<BuildingPlan> buildings)
     {
@@ -626,12 +556,14 @@ public class SettlementBuilder
 
         foreach (BuildingPlan bp in buildings)
         {
-            Building b = BuildingGenerator.CreateBuilding(bp);
+            
+            Building b = BuildingGenerator.CreateBuilding(GenerationRandom, out BuildingVoxels vox, bp);
+            
             Recti r = null;
             int i = 0;
             while (r == null && i < 5)
             {
-                r = AddBuilding(b);
+                r = AddBuilding(b, vox);
                 i++;
             }
             if (r == null)
@@ -743,7 +675,7 @@ public class SettlementBuilder
         {
             return false;
         }
-        return Tiles[x, z] == null && SettlementObjects[x, z] == null;
+        return GetTile(x, z) == 0;
     }
 
 
@@ -754,7 +686,7 @@ public class SettlementBuilder
         //Vec2i toOut = new Vec2i(MiscMaths.RandomRange(1, TileSize - 2), MiscMaths.RandomRange(1, TileSize - 2));
         while (true)
         {
-            if (Tiles[toOut.x, toOut.z] == null && SettlementObjects[toOut.x, toOut.z] == null)
+            if (GetTile(toOut.x, toOut.z) == 0 && SettlementObjects[toOut.x, toOut.z] == null)
                 return toOut;
             toOut = GenerationRandom.RandomVec2i(1, TileSize - 2);
 
@@ -776,8 +708,8 @@ public class SettlementBuilder
 
         Recti r = null;
 
-        while(r==null)
-            r = AddBuilding(building);
+        //while(r==null)
+        //    r = AddBuilding(building);
         //Add the plot and collect the path nodes
         SettlementPathNode[] nodes = AddPlot(r);
 
@@ -938,12 +870,7 @@ public class SettlementBuilder
     }
 
 
-    public void SetTile(int x, int z, Tile tile)
-    {
-        if (x < 0 || x >= TileSize || z < 0 || z >= TileSize)
-            return;
-        Tiles[x, z] = tile;
-    }
+
     /// <summary>
     /// Sets all tiles on the ground to this tile
     /// </summary>
@@ -954,8 +881,8 @@ public class SettlementBuilder
         {
             for (int z = 0; z < TileSize; z++)
             {
-                if (Tiles[x, z] == null)
-                    Tiles[x, z] = tile;
+                if (GetTile(x, z) == 0)
+                    SetTile(x, z, tile);
             }
         }
     }
@@ -964,10 +891,7 @@ public class SettlementBuilder
     {
         return v.x >= 0 && v.x < TileSize && v.z >= 0 && v.z < TileSize;
     }
-    public bool InBounds(int x, int z)
-    {
-        return x >= 0 && x < TileSize && z >= 0 && z < TileSize;
-    }
+
     public Vec2i ChoosePlot(int width, int height, int attempts = 20)
     {
 
@@ -987,7 +911,7 @@ public class SettlementBuilder
 
 
 
-    public Recti AddBuilding(Building b, Vec2i pos = null, bool force = false)
+    public Recti AddBuilding(Building b, BuildingVoxels vox, Vec2i pos = null, bool force = false)
     {
         if (pos != null)
         {
@@ -1013,23 +937,36 @@ public class SettlementBuilder
         }
 
         float minHeight = GetHighestChunkHeight(pos.x, pos.z, b.Width, b.Height);
-
-
+        //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);
         for (int x = 0; x < b.Width; x++)
         {
             for (int z = 0; z < b.Height; z++)
             {
-                Tiles[x + pos.x, z + pos.z] = b.BuildingTiles[x, z];
-                SettlementObjects[x + pos.x, z + pos.z] = b.BuildingObjects[x, z];
-                Heights[x + pos.x, z + pos.z] = minHeight;
-                if (SettlementObjects[x + pos.x, z + pos.z] != null)
+
+                int cx = WorldToChunk(x);
+                int cz = WorldToChunk(z);
+
+                int deltaHeight = ChunkBases != null ? (int)(minHeight - ChunkBases[cx, cz].BaseHeight) : 0;
+
+                SetTile(x + pos.x, z + pos.z, b.BuildingTiles[x, z]);
+                SetHeight(x + pos.x, z + pos.z, minHeight);
+
+                for(int y=0; y < vox.Height; y++)
                 {
-                    SettlementObjects[x + pos.x, z + pos.z].SetPosition(new Vec2i(x + pos.x, z + pos.z));
-                    SettlementObjects[x + pos.x, z + pos.z].SetGroundHeight(minHeight);
+                    SetVoxel(x + pos.x, y, z + pos.z, vox.GetVoxel(x, y, z));
                 }
             }
         }
-        b.SetSettlementCoord(pos);
+        foreach (WorldObjectData obj in b.GetBuildingObjects())
+        {
+            Debug.Log(obj.Position + " pre trans pos");
+            obj.SetPosition(obj.Position + pos.AsVector3());
+            //We (should) already have checked for object validity when creating the building
+            AddObject(obj, true);
+        }
+
+        b.SetWorldPosition(pos + BaseTile);
+
         Buildings.Add(b);
         //PathNodes.Add(b.Entrance);
         return new Recti(pos.x, pos.z, b.Width, b.Height);
@@ -1047,7 +984,7 @@ public class SettlementBuilder
              if (ri.ContainsPoint(x, z))
                  return false;
                  */
-        if (Tiles[x, z] != null)
+        if (GetTile(x, z) != 0)
             return false;
         return true;
     }
@@ -1058,7 +995,7 @@ public class SettlementBuilder
         if(GameGenerator != null)
         {
             Vec2i baseChunk = BaseChunk + new Vec2i(Mathf.FloorToInt((float)x / World.ChunkSize), Mathf.FloorToInt((float)z / World.ChunkSize));
-            Vec2i cBase = World.GetChunkPosition(this.BaseCoord + new Vec2i(x, z)) - new Vec2i(2,2);
+            Vec2i cBase = World.GetChunkPosition(this.BaseTile + new Vec2i(x, z)) - new Vec2i(2,2);
             int chunkWidth = Mathf.FloorToInt((float)width / World.ChunkSize)+1;
             int chunkHeight = Mathf.FloorToInt((float)height / World.ChunkSize)+1;
 
@@ -1096,9 +1033,9 @@ public class SettlementBuilder
                 }
                 if(ignoreTile != null)
                 {
-                    if (Tiles[x_, z_] != null && Tiles[x_, z_] != ignoreTile)
+                    if (GetTile(x_, z_) != 0 && GetTile(x_, z_) != ignoreTile.ID)
                         return false;
-                }else if (Tiles[x_, z_] != null)
+                }else if (GetTile(x_, z_) != 0)
                     return false;
             }
         }
@@ -1109,10 +1046,10 @@ public class SettlementBuilder
 
     private float GetHighestChunkHeight(int tx, int tz, int width, int height)
     {
-        int lx = (int)(((float)tx+this.BaseCoord.x) / World.ChunkSize);
-        int lz = (int)(((float)tz + this.BaseCoord.z) / World.ChunkSize);
-        int hx = (int)(((float)(tx+width + this.BaseCoord.x)) / World.ChunkSize);
-        int hz = (int)(((float)(tz + height + this.BaseCoord.z)) / World.ChunkSize);
+        int lx = (int)(((float)tx+this.BaseTile.x) / World.ChunkSize);
+        int lz = (int)(((float)tz + this.BaseTile.z) / World.ChunkSize);
+        int hx = (int)(((float)(tx+width + this.BaseTile.x)) / World.ChunkSize);
+        int hz = (int)(((float)(tz + height + this.BaseTile.z)) / World.ChunkSize);
         float curHeight = -1;
         for(int x=lx; x<=hx; x++)
         {

@@ -19,8 +19,8 @@ public class Dungeon : Subworld
         if (!(subChunks[entranceChunk.x, entranceChunk.z].GetObject(SubworldEntrance.x, SubworldEntrance.z) is DungeonEntrance))
         {
             //If the entrance isn't a dungeon entrance.
-            DungeonEntrance de = new CaveDungeonEntrance(subentra, this, new WorldObjectMetaData(direction:new Vec2i(0,-1)));
-            SubworldChunks[entranceChunk.x, entranceChunk.z].SetObject(SubworldEntrance.x, SubworldEntrance.z, de);
+          //  DungeonEntrance de = new CaveDungeonEntrance(subentra, this, new WorldObjectMetaData(direction:new Vec2i(0,-1)));
+            //SubworldChunks[entranceChunk.x, entranceChunk.z].SetObject(SubworldEntrance.x, SubworldEntrance.z, de);
         }
         Key = key;
         if (Key == null)

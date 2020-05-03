@@ -43,13 +43,12 @@ public class Settlement
         KingdomID = kingdom.KingdomID;
         TileSize = builder.TileSize;
         Centre = builder.Centre;
-        BaseCoord = builder.BaseCoord;
+        BaseCoord = builder.BaseTile;
         SettlementBounds = new Recti(BaseCoord.x, BaseCoord.z, TileSize, TileSize);
         SettlementChunks = builder.SettlementChunks;
         Buildings = builder.Buildings;
         SettlementNPCIDs = new List<int>();
         SettlementLeaderNPCIDs = new List<int>();
-        tNodes = builder.TestNodes2;
         //SettlementNPCs = new List<NPC>();
         //setBuild = builder;
 

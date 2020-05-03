@@ -6,6 +6,9 @@ using System.Threading;
 [System.Serializable]
 public class ChunkRegionGenerator
 {
+
+    public static List<ChunkRegion> KeptRegions;
+
     private Object LOCK_OBJ;
     private GameGenerator GameGenerator;
     private ChunkGenerator ChunkGenerator;
@@ -16,8 +19,10 @@ public class ChunkRegionGenerator
     private int[,] EMPTY_PLAINS;
     private int[,] OCEAN;
 
+   
     public ChunkRegionGenerator(GameGenerator gameGen, Dictionary<Vec2i, ChunkData2> preGenChunks)
     {
+        KeptRegions = new List<ChunkRegion>();
         LOCK_OBJ = new Object();
         GameGenerator = gameGen;
         CurrentlyThreadGenerating = new List<Vec2i>();
@@ -64,6 +69,17 @@ public class ChunkRegionGenerator
 
     }
 
+
+    public bool IsGeneratingRegion(Vec2i rPos)
+    {
+        lock (LOCK_OBJ)
+        {
+            if (CurrentlyThreadGenerating.Contains(rPos))
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// Generates the initial 9 regions, then adds the rest to 
     /// </summary>
@@ -95,8 +111,8 @@ public class ChunkRegionGenerator
                     continue;
                     //toGen[i] = null;
                 }
-                    
-                initGenThreads.Add(ThreadGenerateRegions(new Vec2i[] { midpoint + new Vec2i(x, z) }));
+     
+                initGenThreads.Add(ThreadGenerateRegions(new Vec2i[] { midpoint + new Vec2i(x, z) }, true));
 
                 RegionsToGen.Remove(toGen_);
                 /*
@@ -108,7 +124,10 @@ public class ChunkRegionGenerator
                 }*/
             }
         }
-        initGenThreads.Add(ThreadGenerateRegions(toGen));
+        //initGenThreads.Add(ThreadGenerateRegions(toGen));
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
+
         bool isDone = false;
         while (!isDone)
         {
@@ -119,6 +138,8 @@ public class ChunkRegionGenerator
                     isDone = false;
             }
         }
+
+        Debug.Log("[CRGenerator] Initial region generation complete, took time " + (sw.ElapsedMilliseconds));
         RegionsToGen.Sort(delegate (Vec2i a, Vec2i b)
         {
             return Vec2i.QuickDistance(midpoint, a).CompareTo(Vec2i.QuickDistance(midpoint, b));
@@ -130,6 +151,12 @@ public class ChunkRegionGenerator
         }
         Debug.Log(order, Debug.WORLD_GENERATION);
         ThreadGenerateRemainingRegions();
+
+        foreach(ChunkRegion r in KeptRegions)
+        {
+            GameManager.WorldManager.CRManager.LoadedRegions[r.X, r.Z] = r;
+        }
+
     }
 
 
@@ -148,7 +175,6 @@ public class ChunkRegionGenerator
 
         bool isComplete = false;
 
-
         while (!isComplete)
         {
             Vec2i toGen=null;
@@ -162,13 +188,19 @@ public class ChunkRegionGenerator
                     toGen = RegionsToGen[0];
                     RegionsToGen.RemoveAt(0);
                     Debug.Log("Generating region " + toGen + ". " + RegionsToGen.Count + " remaining", Debug.WORLD_GENERATION);
+                    if(toGen != null)
+                        CurrentlyThreadGenerating.Add(toGen);
                 }                    
             }
             if(toGen != null)
             {
                 ChunkRegion cr = GenerateRegion(toGen.x, toGen.z);
                 GameManager.LoadSave.SaveChunkRegion(cr);
-                
+
+                lock (LOCK_OBJ)
+                {
+                    CurrentlyThreadGenerating.Remove(toGen);
+                }
             }
         }
 
@@ -187,14 +219,14 @@ public class ChunkRegionGenerator
     /// </summary>
     /// <param name="regions"></param>
     /// <returns></returns>
-    private Thread ThreadGenerateRegions(Vec2i[] regions)
+    private Thread ThreadGenerateRegions(Vec2i[] regions, bool keep = false)
     {
         lock (LOCK_OBJ)
         {
             CurrentlyThreadGenerating.AddRange(regions);
         }
         //Initiate
-        Thread thread = new Thread(() => ThreadGenerate(regions));
+        Thread thread = new Thread(() => ThreadGenerate(regions, keep));
         thread.Start();
 
 
@@ -208,9 +240,11 @@ public class ChunkRegionGenerator
     /// to save the region via <see cref="LoadSave.SaveChunkRegion(ChunkRegion)"/>
     /// </summary>
     /// <param name="regions"></param>
-    private void ThreadGenerate(Vec2i[] regions)
+    private void ThreadGenerate(Vec2i[] regions, bool keep=false)
     {
         threadN++;
+        //UnityEngine.Profiling.Profiler.BeginThreadProfiling("region_gen", "thread_" + threadN);
+     
         //Create empty list to store created ChunkRegions
         List<ChunkRegion> genedReg = new List<ChunkRegion>(5);
         foreach (Vec2i v in regions)
@@ -227,14 +261,25 @@ public class ChunkRegionGenerator
         {
             GameManager.LoadSave.SaveChunkRegion(r);
         }
+
+
         //Set to null and GC ?? (TODO - check if needed)
-        genedReg = null;
-        System.GC.Collect();
+        
         lock (LOCK_OBJ)
         {
             foreach (Vec2i v in regions)
                 CurrentlyThreadGenerating.Remove(v);
+            if (keep)
+            {
+                KeptRegions.AddRange(genedReg);
+            }
         }
+        genedReg = null;
+        System.GC.Collect();
+   
+
+        //UnityEngine.Profiling.Profiler.EndThreadProfiling();
+
     }
 
     /// <summary>
@@ -268,8 +313,10 @@ public class ChunkRegionGenerator
                 }
                 else
                 {
+            
                     //otherwise, generate the chunk via 
                     regionChunks[cx, cz] = ChunkGenerator.GenerateChunk(rx * World.RegionSize + cx, rz * World.RegionSize + cz);
+               
                 }                            
             }
         }

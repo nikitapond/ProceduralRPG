@@ -214,6 +214,10 @@ public class KingdomsGenerator
                     {
                         int cx = x + v.x;
                         int cz = z + v.z;
+
+                        if (cx < 0 || cz < 0 || cx >= World.WorldSize || cz >= World.WorldSize)
+                            canDo = false;
+
                         ChunkBase cb = TerrainGenerator.ChunkBases[cx, cz];
                         if (cb.Kingdom != kingdom || cb.HasSettlement || !cb.IsLand)
                             canDo = false;
@@ -227,6 +231,8 @@ public class KingdomsGenerator
                         else if (!TerrainGenerator.ChunkBases[Mathf.Clamp(x + v.x, 0, World.WorldSize - 1), Mathf.Clamp(z + v.z, 0, World.WorldSize - 1)].IsLand)
                             canDo = false;
                             */
+                        if (!canDo)
+                            return null;
                     }
                 }
             }
@@ -470,13 +476,17 @@ public class KingdomsGenerator
         //We select the first kingdom to have a random position.
 
 
+        int checkSize = 8;
 
         kingdomCapitals.Add(MiscUtils.RandomFromArray(land, Random.value));
         for (int i = 1; i < count; i++)
         {
             //We choose a random point
             Vec2i ran = MiscUtils.RandomFromArray(land, Random.value);
-            if (kingdomCapitals.Contains(ran))
+
+            if (ran.x - checkSize < 0 || ran.z - checkSize < 0 || ran.x + checkSize >= World.WorldSize || ran.z + checkSize >= World.WorldSize)
+                i--;
+            else if (kingdomCapitals.Contains(ran))
             {
                 i--;
             }

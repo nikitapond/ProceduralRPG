@@ -43,29 +43,3 @@ public struct WorkBuildingData
     }
 
 }
-
-[System.Serializable]
-public class WorkEquiptmentPlacement
-{
-    public WorkEquiptmentData Equiptment { get; private set; }
-    public WorkEquiptmentData Equiptment_ { get { return (WorkEquiptmentData)GameManager.WorldManager.World.GetWorldObject(WorldPosition); } }
-    public Vec2i LocalPositon { get; private set; }
-    public Vec2i WorldPosition { get; private set; }
-
-    public Entity User { get; private set; }
-
-    public WorkEquiptmentPlacement(WorkEquiptmentData equipt, Vec2i localPosition)
-    {
-        Equiptment = equipt;
-        LocalPositon = localPosition;
-
-    }
-    public void SetWorldPosition(Vec2i wPos)
-    {
-        WorldPosition = wPos;
-    }
-    public void SetUser(Entity entity)
-    {
-        User = entity;
-    }
-}

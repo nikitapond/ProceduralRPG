@@ -15,7 +15,7 @@ public class WorldManager : MonoBehaviour
     public ChunkRegionManager CRManager { get; private set; }
     public World World { get; private set; }
     public Subworld CurrentSubworld { get; private set; }
-    public List<LoadedChunk> SubworldChunks { get; private set; }
+    //public List<LoadedChunk> SubworldChunks { get; private set; }
     public Vec2i LoadedChunksCentre { get; private set; }
 
     //public int LoadedChunksRadius = 10;
@@ -24,7 +24,6 @@ public class WorldManager : MonoBehaviour
     public ChunkRegion[,] LoadedRegions;
 
     public Dictionary<Vec2i, ChunkRegion> LoadedChunkRegions { get; private set; }
-    public Dictionary<Vec2i, LoadedChunk> LoadedChunks { get; private set; }
 
     public List<LoadedProjectile> LoadedProjectiles { get; private set; }
 
@@ -109,10 +108,7 @@ public class WorldManager : MonoBehaviour
         Debug.Log("leaving subworld");
         if (CurrentSubworld != null)
         {
-            foreach (LoadedChunk c in SubworldChunks)
-            {
-                Destroy(c.gameObject);
-            }
+        
             CRManager.LeaveSubworld();
             Player.SetPosition(CurrentSubworld.WorldEntrance);
             CurrentSubworld = null;
@@ -123,10 +119,8 @@ public class WorldManager : MonoBehaviour
 
     void Awake()
     {
-        LoadedChunks = new Dictionary<Vec2i, LoadedChunk>();
         LoadedRegions = new ChunkRegion[World.RegionCount, World.RegionCount];
 
-        SubworldChunks = new List<LoadedChunk>();
         LoadedProjectiles = new List<LoadedProjectile>();
         CRManager = GetComponent<ChunkRegionManager>();
     }
@@ -256,8 +250,8 @@ public class WorldManager : MonoBehaviour
     public void AddNewObject(WorldObjectData worldObject)
     {
         //Get relevent chunk of object placement.
-        Vec2i chunkPos = World.GetChunkPosition(worldObject.WorldPosition);
-        ChunkData2 c = CRManager.GetChunk(chunkPos);
+        //Vec2i chunkPos = World.GetChunkPosition(worldObject.WorldPosition);
+        //ChunkData2 c = CRManager.GetChunk(chunkPos);
         return;
         /*
         Vec2i localPos = new Vec2i(worldObject.WorldPosition.x % World.ChunkSize, worldObject.WorldPosition.z % World.ChunkSize);

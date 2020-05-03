@@ -23,7 +23,7 @@ public class GenerationUtil
        
         while (!(x==b.x && z==b.z))
         {
-            data[x, z] = copy.Copy(globalPos + new Vec2i(x, z));
+            //data[x, z] = copy.Copy(globalPos + new Vec2i(x, z));
 
             
 

@@ -18,10 +18,10 @@ public class ChunkData2
 
     public ChunkVoxelData VoxelData { get; private set; }
 
-    public List<WorldObjectData2> WorldObjects;
+    public List<WorldObjectData> WorldObjects;
 
     public ChunkData2(int x, int z, int[,] tiles, bool isLand, 
-        float baseHeight = 5, float[,] heightMap=null, List<WorldObjectData2> objects=null)
+        float baseHeight = 5, float[,] heightMap=null, List<WorldObjectData> objects=null)
     {
         X = x;
         Z = z;
@@ -29,6 +29,14 @@ public class ChunkData2
         IsLand = isLand;
         BaseHeight = baseHeight;
         Heights = heightMap;
+        WorldObjects = objects;
+    }
+
+    public float GetHeight(Vec2i v)
+    {
+        if (Heights == null)
+            return BaseHeight;
+        return Heights[v.x, v.z];
     }
 
     public void SetVoxelData(ChunkVoxelData cvd)

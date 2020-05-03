@@ -18,7 +18,7 @@ public class BuildingGenerator
     /// <param name="height"></param>
     /// <param name="entrance"></param>
     /// <returns></returns>
-    public static Building CreateBuilding(BuildingPlan plan, int width=-1, int height=-1, int entrance = 0)
+    public static Building CreateBuilding(GenerationRandom genRan, out BuildingVoxels vox, BuildingPlan plan, int width=-1, int height=-1, int entrance = 0)
     {
         if (width == -1)
             width = MiscMaths.RandomRange(plan.MinSize, plan.MaxSize);
@@ -34,9 +34,12 @@ public class BuildingGenerator
         else if (height > plan.MaxSize)
             height = plan.MaxSize;
 
-        Tile[,] buildingBase = new Tile[width, height];
-        WorldObjectData[,] buildingObjects = new WorldObjectData[width, height];
+        if(plan == Building.BLACKSMITH)
+        {
+            return BlacksmithGenerator.GenerateBlacksmith(genRan, new Blacksmith(width, height), out vox);
+        }
 
+        /*
         if(plan == Building.HOUSE)
         {
             House h = new House(width, height);
@@ -79,291 +82,279 @@ public class BuildingGenerator
             
         }*/
 
-        //Default for now
-        House ht = new House(width, height);
-        ht.SetBuilding(buildingBase, buildingObjects);
-        return GenerateHouse(ht, BuildingStyle.stone);
+        return HouseGenerator.GenerateHouse(genRan, new House(width, height), out vox);
+        //return GenerateHouse(out vox, width, height);
         
     }
 
+
     /// <summary>
-    /// Generates the basic walls, floor, and entrance for any building.
-    /// Picks the exact position of entrance, and returns it
+    /// Places a roof over the specified building.
+    /// The roof will only cover the tile specified by 'roofTileID'. If this is null, 
+    /// then a roof over the total building will be created
     /// </summary>
-    /// <param name="width"></param>
-    /// <param name="height"></param>
-    /// <param name="buildingObjects">Building objects to be filled with walls</param>
-    /// <param name="buildTiles"></param>
-    /// <param name="entranceID"></param>
-    /// <param name="style"></param>
-    /// <returns></returns>
-    public static Vec2i GenerateWallsFloorAndEntrance(int width, int height, WorldObjectData[,] buildingObjects, 
-        Tile[,] buildTiles, int entranceID, BuildingStyle style, int entraceDis=-1, WorldObjectData wallType =null, Tile tileType=null)
+    /// <param name="vox"></param>
+    /// <param name="build"></param>
+    /// <param name="roofTileID"></param>
+    public static void AddRoof(BuildingVoxels vox, Building build, Voxel roofVox, int roofStartY=4, Tile roofTileReplace=null)
     {
-
-        int entWidth = 2;
-        if(entraceDis == -1)
+        if(roofTileReplace == null)
         {
-            if (entranceID == NORTH_ENTRANCE || entranceID == SOUTH_ENTRANCE)
-                entraceDis = MiscMaths.RandomRange(1, width - 1);
-            else
-                entraceDis = MiscMaths.RandomRange(1, height - 1);
-        }
-
-        //Decide the position of the entrance
-        Vec2i entrance = null;
-        if (entranceID == NORTH_ENTRANCE)
-            entrance = new Vec2i(entraceDis, height-1);
-        else if (entranceID == SOUTH_ENTRANCE)
-            entrance = new Vec2i(entraceDis, 0);
-        else if (entranceID == EAST_ENTRANCE)
-            entrance = new Vec2i(width-1, entraceDis);
-        else if (entranceID == WEST_ENTRANCE)
-            entrance = new Vec2i(0, entraceDis);
-        
-        
-        //Assign correct wall type if none given
-        if(wallType == null)
-        {
-            switch (style)
+            for(int x=0; x<build.Width; x++)
             {
-                case BuildingStyle.stone:
-                    wallType = new BrickWall(new Vec2i(0,0));
-                    break;
-                case BuildingStyle.wood:
-                    //TODO - Add
-                    wallType = new BrickWall(new Vec2i(0, 0));
-                    break;
-            }
-        }//Asign correct tile type if none given
-        if(tileType == null)
-        {
-            switch (style)
-            {
-                case BuildingStyle.stone:
-                    tileType = Tile.STONE_FLOOR;
-                    break;
-                case BuildingStyle.wood:
-                    tileType = Tile.WOOD_FLOOR;
-                    break;
-            }
-        }
-        //Iterate all points
-        for(int x=0; x<width; x++)
-        {
-            for(int z=0; z < height; z++)
-            {
-                //Asign tile
-                buildTiles[x, z] = tileType;
-                if(x==0 || x==width-1 || z==0 || z == height - 1)
+                for(int z=0; z<build.Height; z++)
                 {
-                    //Asign wall if no entrance
-                    if (!(entrance.x == x & entrance.z == z))
-                    {
-                        if (x == 3)
-                        {
-                            buildingObjects[x, z] = new BuildingWall(new Vec2i(0, 0), "brick", 5,
-                                new GlassWindow(new Vec2i(0, 0), new Vec2i(0, 1)), 2);
-                        }
-                        else
-                        {
-                            buildingObjects[x, z] = new BuildingWall(new Vec2i(0,-1), "brick", 5);
-                        }
-                        
-                    }
-                        
+                    vox.SetVoxel(x, roofStartY, z, roofVox);
                 }
             }
         }
-        //(buildingObjects[0, 0] as BuildingWall).AddRoof(new Roof(new Vec2i(0, 0), new Vec2i(width, height)));
-
-        return entrance;
     }
 
-    /// <summary>
-    /// Adds given object to the array of building objects. 
-    /// Checks if the designated spot is already filled, if so we do not place the object and returns false.
-    /// If the object covers a single tile, we add it and return true
-    /// If the object is multi tile, we check if it is placed within bounds, and if every child tile is free.
-    /// if so, we return true, otherwise we return false and do not place the object
-    /// </summary>
-    /// <param name="current"></param>
-    /// <param name="nObj"></param>
-    /// <param name="x"></param>
-    /// <param name="z"></param>
-    public static bool AddObject(Building building, WorldObjectData nObj, int x, int z, bool nInstance=false)
+    public static bool AddWindow(GenerationRandom genRan, BuildingVoxels vox, Building build, int wallIndex = -1, int size = 2, int height=1,bool autoReattempt = true)
     {
-        //If not in bounds, return false
-        if(!(x > 0 && x<building.Width && z>0 && z < building.Height))
+        //if default index, we choose one randomly
+        if (wallIndex == -1)
+            wallIndex = genRan.RandomInt(0, build.BoundingWall.Length);
+        int wp1 = (wallIndex + 1) % build.BoundingWall.Length;
+
+        Vec2i dif = build.BoundingWall[wp1] - build.BoundingWall[wallIndex];
+
+        int absX = Mathf.Abs(dif.x);
+        int signX = (int)Mathf.Sign(dif.x);
+
+
+        int absZ = Mathf.Abs(dif.z);
+        int signZ = (int)Mathf.Sign(dif.z);
+
+
+        Vec2i dir = new Vec2i(absX==0?0:signX, absZ == 0 ? 0 : signZ);
+
+
+
+        int len = absX + absZ;
+        //if the selected wall has a length that is not large enough to house the window, 
+        if (len < size + 4)
         {
+            if (autoReattempt)
+                return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+            //Then we do not build a window
             return false;
         }
-        //Check if this is a single tile object
-        if(!(nObj is IMultiTileObject))
+
+
+        int dx = dir.x == 0 ? 0 : genRan.RandomInt(1, absX - size-2);
+        int dz = dir.z == 0 ? 0 : genRan.RandomInt(1, absZ - size-2);
+        Vec2i dPos = dir*(dx+dz);
+        Vec2i start = build.BoundingWall[wallIndex];
+
+        Vec2i cur = start + dPos;
+
+        //If the building has an entrance, we iterate all window points
+        //to make sure we aren't breaking a door
+        if (build.Entrance != null)
         {
-            //Single tile objects, we only need to check the single tile
-            if(building.BuildingObjects[x,z] == null)
-            {
-                //If the tile is empty, add object and return true
-                building.BuildingObjects[x, z] = nObj;
-                building.AddObjectReference(nObj);
-                return true;
+
+            //If we are too close to the door
+            if(cur.QuickDistance(build.Entrance) < (size+1) * (size+1)){
+                if (autoReattempt)
+                    return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+                return false;
             }
-            //If the tile is taken, we don't place the object
-            return false;
+            else
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    cur = start + dPos + (dir * i);
+                    if (cur.x > 0 && cur.z > 0 && cur.x < build.Width && cur.z < build.Height)
+                    {
+                        if (vox.GetVoxel(cur.x, 2, cur.z) == Voxel.glass)
+                        {
+                            if (autoReattempt)
+                                return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if (autoReattempt)
+                            return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+                        return false;
+                    }
+                    
+                    
+
+                }
+            }
+
+        }
+        cur = start + dPos;
+
+        Vector3 position = (cur - dir).AsVector3() + Vector3.up*1.75f;
+        Vector3 scale = new Vector3(0.5f, 2, -(dir.x + dir.z)*size);
+        float rotation = Mathf.Acos(dir.z)*Mathf.Rad2Deg;
+        GlassWindow window = new GlassWindow(position, scale, rotation);
+        build.AddObjectReference(window);
+        
+        for (int i = 0; i < size; i++)
+        {
+            
+            for (int y=2; y<2+height; y++)
+            {
+
+                vox.SetVoxel(cur.x, y, cur.z, Voxel.none);
+            }
             
         }
-        if(!(x+nObj.Size.x < building.Width && z+nObj.Size.z < building.Height))
-        {
-            //If the bounds of the multiu tile object are too big, return false;
-            return false;
-        }
-        //For multi tile objects, we iterate the whole size
-        for(int i=0; i<nObj.Size.x; i++)
-        {
-            for (int j = 0; j < nObj.Size.z; j++)
-            {
-                //if any of the tiles is not null, we don't place and return false
-                if (building.BuildingObjects[x + i, z + j] != null)
-                    return false;
-            }
-        }
-        //Set reference, then get chilren
-        building.AddObjectReference(nObj);
-        building.BuildingObjects[x, z] = nObj;
-        IMultiTileObjectChild[,] children = (nObj as IMultiTileObject).GetChildren();
-        //Iterate again to set children
-        for (int i = 0; i < nObj.Size.x; i++)
-        {
-            for (int j = 0; j < nObj.Size.z; j++)
-            {
-                if (i == 0 && j == 0)
-                    continue;
 
-                //if any of the tiles is not null, we don't place and return false
-                building.BuildingObjects[x + i, z + j] = (children[i, j] as WorldObjectData);
-                    
-            }
-        }
+       
 
         return true;
     }
 
-    public static Vec2i AddEntrance(Building b, int entranceSide, int disp = -1)
+    public static void ChooseEntrancePoint(GenerationRandom genRan, BuildingVoxels vox, Building build)
     {
 
-        if(disp == -1)
+
+        int doorIndex = genRan.RandomInt(0, build.BoundingWall.Length);
+        int dp1 = (doorIndex + 1) % build.BoundingWall.Length;
+
+
+        Vec2i dif = build.BoundingWall[dp1] - build.BoundingWall[doorIndex];
+        Vec2i entr = build.BoundingWall[doorIndex] + dif / 2;
+        build.SetEntrancePoint(entr);
+
+        for(int y=0; y<3; y++)
         {
-            //If entrance is facing z axis, displacement in in x
-            if (entranceSide == NORTH_ENTRANCE || entranceSide == SOUTH_ENTRANCE)
-                disp = MiscMaths.RandomRange(1, b.Width - 1);
-            else
-                disp = MiscMaths.RandomRange(1, b.Height - 1);
+            vox.SetVoxel(entr.x, y, entr.z, Voxel.none);
         }
-        
-        Vec2i entrance = null;
-        if (entranceSide == NORTH_ENTRANCE)
-            entrance = new Vec2i(disp, b.Height - 1);
-        else if (entranceSide == SOUTH_ENTRANCE)
-            entrance = new Vec2i(disp, 0);
-        else if (entranceSide == EAST_ENTRANCE)
-            entrance = new Vec2i(b.Width - 1, disp);
-        else if (entranceSide == WEST_ENTRANCE)
-            entrance = new Vec2i(0, disp);
-        b.BuildingObjects[entrance.x, entrance.z] = null; //TODO - Set to door of correct type
-        
-        return entrance;
+
     }
 
-    public static House GenerateHouse(Building building, BuildingStyle style, WorldObject wallType = null, Tile tileType = null)
-    {
-        int width = building.Width;
-        int height = building.Height;
-        Vec2i entr = GenerateWallsFloorAndEntrance(width, height, building.BuildingObjects, building.BuildingTiles, 0, BuildingStyle.stone, tileType:Tile.TEST_RED);
-        //AddObject(building.BuildingObjects, WorldObject.BED, 2, 3);
-        building.SetEntrancePoint(entr);
-        return building as House;
-    }
-    
-    public static Blacksmith GenerateBlacksmith(Blacksmith building, BuildingStyle style = BuildingStyle.stone)
-    {
-        int width = building.Width;
-        int height = building.Height;
-        Vec2i entr = GenerateWallsFloorAndEntrance(width, height, building.BuildingObjects, building.BuildingTiles, 0, style, tileType:Tile.TEST_MAGENTA);
-        building.SetEntrancePoint(entr);
-        WorkEquiptmentData anvil = new Anvil(new Vec2i(1, 3));
-        WorkEquiptmentData forge = new Anvil(new Vec2i(4,4));
-        AddObject(building, anvil, 1,3);
-        AddObject(building, forge, 4, 4);
-
-        NPCJob[] jobs = new NPCJob[] { new NPCJobBlackSmith(building), 
-                                       new NPCJobBlackSmith(building), 
-                                       new NPCJobBlackSmith(building) };
-
-        building.SetWorkBuildingData(new WorkBuildingData(jobs));
-        AddEntrance(building, 0);
-        //building.WorkEquiptment.Add(new WorkEquiptmentPlacement(anvil, new Vec2i(1, 3)));
-        //building.WorkEquiptment.Add(new WorkEquiptmentPlacement(forge, new Vec2i(4, 4)));
-        return building;
-    }
-
-    public static MarketPlace GenerateMarket(MarketPlace building, BuildingStyle style = BuildingStyle.stone)
-    {
-        int width = building.Width;
-        int height = building.Height;
-        Vec2i entr = GenerateWallsFloorAndEntrance(width, height, building.BuildingObjects, building.BuildingTiles, 0, style, tileType: Tile.TEST_YELLOW);
-        building.SetEntrancePoint(entr);
-        MarketStall s1 = new MarketStall(new Vec2i(3, 3));
-        MarketStall s2 = new MarketStall(new Vec2i(building.Width - 3, building.Height - 3));
-        AddObject(building, s1, 3, 3);
-        AddObject(building, s2, building.Width - 3, building.Height - 3);
-        NPCJob[] jobs = new NPCJob[] { new NPCJobMarketStall("Market runner", building, s1), new NPCJobMarketStall("Market runner", building, s2) };
-        building.SetWorkBuildingData(new WorkBuildingData(jobs));
-
-        return building;
-    }
-
-    public static Baracks GenerateBaracks(Baracks building, BuildingStyle style = BuildingStyle.stone)
+    public static void ConnectBoundingWall(BuildingVoxels vox, Vec2i[] bounds, Voxel voxel, int wallHeight=5)
     {
 
-        int width = building.Width;
-        int height = building.Height;
 
-        Vec2i entr = GenerateWallsFloorAndEntrance(width, height, building.BuildingObjects, building.BuildingTiles, 0, style, tileType: Tile.TEST_PURPLE);
-        building.SetEntrancePoint(entr);
-        List<NPCJob> jobs = new List<NPCJob>();
-        for(int x=2; x<building.Width; x+=3)
+        for(int i=0; i<bounds.Length; i++)
         {
-            AddObject(building, new Bed(new Vec2i(2, 2)), x, 2);
-            jobs.Add(new NPCJobSoldier(building));
-        }
-        NPCJob[] jobs_ = jobs.ToArray();
-        building.SetWorkBuildingData(new WorkBuildingData(jobs_));
+            Vec2i a = bounds[i];
+            Vec2i b = bounds[(i + 1) % bounds.Length];
+            int x = a.x;
+            int z = a.z;
 
-        return building;
+            int xDir = (int)Mathf.Sign(b.x - a.x);
+            int zDir = (int)Mathf.Sign(b.z - a.z);
+
+            while (!(x == b.x && z == b.z))
+            {
+                for(int y=0; y<wallHeight; y++)
+                {
+                    vox.SetVoxel(x, y, z, voxel);
+                }
+                
+                //data[x, z] = copy.Copy(globalPos + new Vec2i(x, z));
+
+
+
+                int dx = (int)Mathf.Abs(b.x - x);
+                int dz = (int)Mathf.Abs(b.z - z);
+
+                if (dx > dz)
+                {
+                    x += xDir;
+                }
+                else if (dz > dx)
+                {
+                    z += zDir;
+
+                }
+                else
+                {
+                    x += xDir;
+                    z += zDir;
+                }
+
+            }
+        }
+
+
+    }
+    //public static void ChooseRandomEntrance()
+    public static void BuildBoundingWallRect(BuildingVoxels vox, int width, int depth, int wallHeight, Voxel wallVox)
+    {
+        for(int y=0; y<wallHeight; y++)
+        {
+
+            for(int x=0; x<width; x++)
+            {
+                vox.SetVoxel(x, y, 0, wallVox);
+                vox.SetVoxel(x, y, depth-1, wallVox);
+            }
+            for(int z=0; z<depth; z++)
+            {
+                vox.SetVoxel(0, y, z, wallVox);
+                vox.SetVoxel(width - 1, y, z, wallVox);
+            }
+
+
+        }
     }
 
     /// <summary>
-    /// Creates a castle, size must be 48x48
+    /// Sets all tiles in 'tileMap' enclosed by the region (x,z)->(x+width,z+depth)
+    /// to the tile specified by 'toPlace'
     /// </summary>
-    /// <returns></returns>
-    public static Castle GenerateCastle(int size)
+    public static void SetTiles(Tile[,] tileMap, int x, int z, int width, int depth, Tile toPlace)
     {
-        Tile[,] buildingBase = new Tile[size, size];
-        WorldObjectData[,] buildingObjects = new WorldObjectData[size, size];
-        Castle c = new Castle(size, size);
-        c.SetBuilding(buildingBase, buildingObjects);
-        //c.Entrances.Add(new BuildingEntrance(new Vec2i(1, size / 2 - 2), new Vec2i(1, size / 2 + 2)));
-        Vec2i entr = GenerateWallsFloorAndEntrance(size, size, c.BuildingObjects, c.BuildingTiles, 0, BuildingStyle.stone, entraceDis:size/2);
-        
-        
-        AddEntrance(c, 0, entr.x - 1);
-        AddEntrance(c, 0, entr.x - 2);
+        for(int x_=x; x_<width+x; x_++)
+        {
+            for(int z_=z; z_<z+depth; z_++)
+            {
+                tileMap[x_, z_] = toPlace;
+            }
+        }
+    }
 
-        AddEntrance(c, 0, entr.x + 1);
-        AddEntrance(c, 0, entr.x + 2);
 
-        return c;
+    public static bool AddObject(Building build, BuildingVoxels vox, WorldObjectData obj, bool force=false)
+    {
+
+        if (force)
+        {
+            build.AddObjectReference(obj);
+            return true;
+        }
+        else
+        {
+            //Iterate all objects in the building and check for intersection.
+            foreach(WorldObjectData obj_ in build.GetBuildingObjects())
+            {
+                //If they intersect, then we cannot place this object.
+                if (obj_.Intersects(obj))
+                    return false;
+            }
+
+            //Find the integer bounds
+            Recti bounds = obj.CalculateIntegerBounds();
+            int yMin = (int)obj.Position.y;
+            int yMax = yMin + (int)obj.Size.y;
+            //Iterate the voxel position of the object bounds.
+            for(int x=bounds.X; x<bounds.X + bounds.Width; x++)
+            {
+                for(int z=bounds.Y; z<bounds.Y + bounds.Height; z++)
+                {
+                    for(int y=yMin; y<yMax; y++)
+                    {
+                        //If any single voxel is non-none, then we cannot place the object here.
+                        if (vox.GetVoxel(x, y, z) != Voxel.none)
+                            return false;
+                    }
+                }
+            }
+            build.AddObjectReference(obj);
+            return true;
+
+        }
+
     }
 
 }

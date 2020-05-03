@@ -53,7 +53,7 @@ public class InventoryGUI2 : MonoBehaviour
             if(currentSpace == null)
             {
                 //if there is no object here, we create one
-                LootSack lootsack = new LootSack(playerPos);
+                LootSack lootsack = new LootSack(playerPos.AsVector3());
                 GameManager.WorldManager.AddNewObject(lootsack);
                 SecondInventory.SetInventory(lootsack.GetInventory());
 
@@ -69,7 +69,7 @@ public class InventoryGUI2 : MonoBehaviour
                 if(surSpace == null)
                 {
                     //if there is no object here, we create one
-                    LootSack lootsack = new LootSack(v);
+                    LootSack lootsack = new LootSack(v.AsVector3());
                     GameManager.WorldManager.AddNewObject(lootsack);
                     SecondInventory.SetInventory(lootsack.GetInventory());
 

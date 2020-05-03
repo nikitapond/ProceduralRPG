@@ -151,11 +151,13 @@ public class GameManager : MonoBehaviour
         GameGenerator.GenerateDungeons();
         GameGenerator.GenerateWorldMap();
         //QuestManager.SetQuests(GameGenerator.GenerateQuests(WorldManager.World));
-        
+
 
         //Vec2i wpos = Vec2i.FromVector2(QuestManager.Unstarted[0].Initiator.GetNPC().Position2);
         //Vec2i wpos = WorldManager.World.GetChunkStructure(0).Position * World.ChunkSize + new Vec2i(2, 2);
-        Vec2i wpos = new Vec2i(1, 1) * World.ChunkSize * World.WorldSize / 2;
+
+        Vec2i wpos = WorldManager.World.GetSettlement(0).Centre * World.ChunkSize;
+        //Vec2i wpos = new Vec2i(1, 1) * World.ChunkSize * World.WorldSize / 2;
        // Vec2i wEntr = WorldManager.World.GetSubworld(1).WorldEntrance;
         //TestSettle = QuestManager.Unstarted[0].Initiator.GetNPC().NPCKingdomData.GetSettlement();
         Debug.Log(TestSettle);

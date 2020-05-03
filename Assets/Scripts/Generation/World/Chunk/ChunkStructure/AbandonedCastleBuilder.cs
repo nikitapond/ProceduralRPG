@@ -17,6 +17,7 @@ public class AbandonedCastleBuilder : GenerationBase, IChunkStructureGenerationB
 
         BoundryPoints = this.DefineRectangularWall(0);
         Vec2i[] internalPoints = DefineRectangularWall(3);
+        /*
         WorldObjectData wall = new BrickWall(new Vec2i(0, 0));
         for(int i=0; i<4; i++)
         {
@@ -34,8 +35,8 @@ public class AbandonedCastleBuilder : GenerationBase, IChunkStructureGenerationB
                     Objects[x+ EntrancePosition.x, z+ EntrancePosition.z] = null;
                 }
             }
-        }
-        Chest chest = new Chest(BaseCoord + Size / 2);
+        }*/
+        LootSack chest = new LootSack((BaseCoord + Size / 2).AsVector3());
         Objects[Size.x / 2, Size.z / 2] = chest;
         this.MainLootChest = chest;
 

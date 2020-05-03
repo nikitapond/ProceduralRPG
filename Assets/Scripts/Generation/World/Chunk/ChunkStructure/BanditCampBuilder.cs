@@ -52,7 +52,7 @@ public class BanditCampBuilder
         GenerateWall();
 
         Vec2i tilebase = Shell.Position * World.ChunkSize;
-        
+        /*
         if (Shell.BanditCampLevel > 1 && Shell.Size.x>3 && Shell.Size.z > 3)
         {
             //If this camp is large enough, generate a dungeon entrance.
@@ -81,7 +81,7 @@ public class BanditCampBuilder
             Debug.Log("Generated Bandit Camp no Dungeon at " + this.Shell.Position, Debug.CHUNK_STRUCTURE_GENERATION);
 
         }
-
+        */
         for(int i=0; i<4; i++)
         {
             AddGaurdTower();
@@ -93,14 +93,14 @@ public class BanditCampBuilder
         {
             chestPos = RandomPointWithinBounds();
         }
-        Chest chest = new Chest(chestPos + tilebase);
+        //Chest chest = new Chest(chestPos + tilebase);
 
-        Debug.Log("Placing chest at " + chestPos + "_ " + chest + "_" + chest.GetInventory());
+       // Debug.Log("Placing chest at " + chestPos + "_ " + chest + "_" + chest.GetInventory());
 
-        Objects[chestPos.x, chestPos.z] = chest;
+        //Objects[chestPos.x, chestPos.z] = chest;
         //Objects[11, 11] = new LootSack(tilebase + new Vec2i(11, 11));
 
-        FinalLootChest = chest;
+        //FinalLootChest = chest;
         Debug.Log("final loot chest " + FinalLootChest);
         EntityFaction banditFaction = new EntityFaction("Bandit_Camp");
         for(int x=0; x<Shell.Size.x; x++)
@@ -128,8 +128,8 @@ public class BanditCampBuilder
         Recti bound = FindObjectPlot(new Vec2i(3, 3));
         if (bound == null)
             return;
-        BanditGaurdTower gbt = new BanditGaurdTower(new Vec2i(bound.X, bound.Y) + TileBase);
-        AddObject(gbt, bound.X, bound.Y);
+        //BanditGaurdTower gbt = new BanditGaurdTower(new Vec2i(bound.X, bound.Y) + TileBase);
+       // AddObject(gbt, bound.X, bound.Y);
         
     }
 
@@ -222,7 +222,7 @@ public class BanditCampBuilder
 
             int wallX = Mathf.Clamp((int)(mid.x + sinT * R), 0, TileSize.x-1);
             int wallZ = Mathf.Clamp((int)(mid.z + cosT * R), 0, TileSize.z-1);
-            Objects[wallX, wallZ] = new WoodSpikeWall(tilebase + new Vec2i(wallX, wallZ));
+           // Objects[wallX, wallZ] = new WoodSpikeWall(tilebase + new Vec2i(wallX, wallZ));
 
             BoundaryPoints[i] = new Vec2i(wallX, wallZ);
 
@@ -233,7 +233,7 @@ public class BanditCampBuilder
         for (int i = 0; i < pointCount; i++)
         {
             int ip1 = (i + 1) % pointCount;
-            GenerationUtil.ConnectPointsWithObject(Objects, BoundaryPoints[i], BoundaryPoints[ip1], new WoodSpikeWall(tilebase), tilebase);
+            //GenerationUtil.ConnectPointsWithObject(Objects, BoundaryPoints[i], BoundaryPoints[ip1], new WoodSpikeWall(tilebase), tilebase);
             //GenerationUtil.FillTriangleWithTile(Tiles, mid, points[i], points[ip1], Tile.DIRT.ID);
                 
             if(BoundaryPoints[i].x == BoundaryPoints[ip1].x || BoundaryPoints[i].z == BoundaryPoints[ip1].z)
@@ -363,6 +363,7 @@ public class BanditCampBuilder
         {
             return false;
         }
+        /*
         //Check if this is a single tile object
         if (!(nObj is IMultiTileObject))
         {
@@ -407,7 +408,7 @@ public class BanditCampBuilder
                 Objects[x + i, z + j] = (children[i, j] as WorldObjectData);
 
             }
-        }
+        }*/
 
         return true;
     }

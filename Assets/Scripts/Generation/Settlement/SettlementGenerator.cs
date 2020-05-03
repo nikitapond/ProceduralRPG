@@ -45,9 +45,21 @@ public class SettlementGenerator
     public Dictionary<Vec2i, ChunkData2> GenerateAllSettlementChunks(SettlementBuilder setBuild, Settlement set)
     {
 
-        Vec2i baseChunk = new Vec2i(setBuild.BaseCoord.x / World.ChunkSize, setBuild.BaseCoord.z / World.ChunkSize);
+        Vec2i baseChunk = new Vec2i(setBuild.BaseTile.x / World.ChunkSize, setBuild.BaseTile.z / World.ChunkSize);
         Dictionary<Vec2i, ChunkData2> setChunks = new Dictionary<Vec2i, ChunkData2>();
         int setSizeChunks = setBuild.TileSize / World.ChunkSize;
+
+        foreach(ChunkData2 cDat in setBuild.ToChunkData())
+        {
+            cDat.SetSettlement(set);
+            setChunks.Add(new Vec2i(cDat.X, cDat.Z), cDat);
+        }
+
+
+        set.AfterApplyToWorld();
+        return setChunks;
+        /*
+         * 
         for(int x=0; x< setSizeChunks; x++)
         {
             for(int z=0; z< setSizeChunks; z++)
@@ -60,13 +72,23 @@ public class SettlementGenerator
                 }
                 else
                 {
+
+
+
                     int[,] cTiles = new int[World.ChunkSize, World.ChunkSize];
                     float[,] cHeights = new float[World.ChunkSize, World.ChunkSize]; ;
                     Dictionary<int, WorldObjectData> cObj = new Dictionary<int, WorldObjectData>();
+                    ChunkVoxelData vox = new ChunkVoxelData();
                     for (int x_ = 0; x_ < World.ChunkSize; x_++)
                     {
                         for (int z_ = 0; z_ < World.ChunkSize; z_++)
                         {
+
+                            for(int y_=0; y_<World.ChunkHeight; y_++)
+                            {
+                                vox.SetVoxel(x_, y_, z_, setBuild.GetVoxel(x * World.ChunkSize + x_, y_, z * World.ChunkSize + z_));
+                            }
+
                             if(setBuild.Heights[x * World.ChunkSize + x_, z * World.ChunkSize + z_] > 0)
                             {
                                 cHeights[x_, z_] = setBuild.Heights[x * World.ChunkSize + x_, z * World.ChunkSize + z_];
@@ -85,14 +107,14 @@ public class SettlementGenerator
                         }
                     }
                     cd = new ChunkData2(baseChunk.x + x, baseChunk.z + z, cTiles, true, baseHeight:cb.BaseHeight, heightMap:cHeights, null);
+                    cd.SetVoxelData(vox);
                 }
 
 
                 cd.SetSettlement(set);
                 setChunks.Add(new Vec2i(cd.X, cd.Z), cd);
             }
-        }
-        set.AfterApplyToWorld();
-        return setChunks;
+        }*/
+
     }
 }

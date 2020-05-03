@@ -16,8 +16,8 @@ public abstract class Animal : Entity
         //If no items, we do nothing
         if (Inventory.GetItems().Count == 0)
             return;
-
-        LootSack lootSack = new LootSack(Vec2i.FromVector3(Position));
+        
+        LootSack lootSack = new LootSack(Vec2i.FromVector3(Position).AsVector3());
         foreach(ItemStack it in Inventory.GetItems())
         {
             lootSack.GetInventory().AddItemStack(it);

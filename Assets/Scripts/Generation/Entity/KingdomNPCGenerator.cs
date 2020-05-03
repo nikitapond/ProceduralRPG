@@ -257,6 +257,8 @@ public class KingdomNPCGenerator
             {
                 //Get the jobs for each building
                 NPCJob[] js = (b as IWorkBuilding).GetWorkData.BuildingJobs;
+                if (js == null)
+                    continue;
                 foreach(NPCJob j in js)
                 {
                     if (!rankedJobs.ContainsKey(j.RequiredRank))

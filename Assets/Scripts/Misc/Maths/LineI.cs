@@ -5,11 +5,19 @@ public class LineI
 {
 
     public Vec2i Start, End;
+    public float Mag { get; private set; }
+    public Vector2 Grad { get; private set; }
     public LineI(Vec2i start, Vec2i end)
     {
         Start = start;
         End = end;
+        Grad = (end - start).AsVector2();
+        Mag = Grad.magnitude;
+        Grad /= Mag;
     }
+
+
+   
 
     public bool Intersects(LineI l2)
     {

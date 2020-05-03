@@ -117,12 +117,15 @@ public class ChunkRegionManager : MonoBehaviour
     }
     public ChunkData2 GetChunk(Vec2i v, bool shouldLoad=true)
     {
+        Debug.BeginDeepProfile("get_chunk");
         //Find region of chunk and check if valid within bounds
         Vec2i r = World.GetRegionCoordFromChunkCoord(v);
         Debug.Log("Chunk " + v + " in region " + r);
         if (r.x >= World.RegionCount || r.z >= World.RegionCount || r.x < 0 || r.z < 0)
         {
             Debug.Log("Region " + r + " out of bounds");
+            Debug.EndDeepProfile("get_chunk");
+
             return null;
         }
         ChunkRegion cr;
@@ -138,8 +141,11 @@ public class ChunkRegionManager : MonoBehaviour
             //If it has not been laoded, then load it
             LoadRegion(r);
             cr = LoadedRegions[r.x, r.z];
-            if (cr == null) 
+            if (cr == null)
+            {
+                Debug.EndDeepProfile("get_chunk");
                 return null;
+            }
             lock (ThreadSafe)
             {
                 cr = LoadedRegions[r.x, r.z];
@@ -148,6 +154,8 @@ public class ChunkRegionManager : MonoBehaviour
             //GameManager.PathFinder.LoadRegion(cr);
         }else if(cr == null)
         {
+            Debug.EndDeepProfile("get_chunk");
+
             Debug.Log("[CRManager] Region " + r + " could not be found - not generating");
             return null;
         }
@@ -161,6 +169,8 @@ public class ChunkRegionManager : MonoBehaviour
             cDat = cr.Chunks[cx, cz];
             Debug.Log("[CRManager] Chunk at local region position " + cx + "," + cz + ": " + cDat);
         }
+        Debug.EndDeepProfile("get_chunk");
+
         return cDat;
     }
     public void LoadRegion(Vec2i rPos)
@@ -169,8 +179,10 @@ public class ChunkRegionManager : MonoBehaviour
         {
             throw new System.Exception("Region " + rPos + " is not within world bounds");
         }
-        
+
         //If valid, load and add to array
+        if (GameManager.ChunkRegionGenerator.IsGeneratingRegion(rPos))
+            return;
         LoadedRegions[rPos.x, rPos.z] = GameManager.LoadSave.LoadChunkRegion(rPos.x, rPos.z);
         if (LoadedRegions[rPos.x, rPos.z] == null || LoadedRegions[rPos.x, rPos.z].Generated == false)
         {
@@ -195,6 +207,9 @@ public class ChunkRegionManager : MonoBehaviour
     /// <param name="radius"></param>
     public void LoadChunks(Vec2i middle, int radius, bool forceLoad)
     {
+        Debug.BeginDeepProfile("load_chunks");
+
+        Debug.BeginDeepProfile("load_chunks1");
         //A list containing all the chunks currently loaded
         List<Vec2i> currentlyLoaded = new List<Vec2i>();
         foreach(KeyValuePair<Vec2i,LoadedChunk2> kvp in LoadedChunks)
@@ -210,6 +225,8 @@ public class ChunkRegionManager : MonoBehaviour
         List<Vec2i> toUnload = new List<Vec2i>(currentlyLoaded);
 
         Debug.Log("Currently loaded " + currentlyLoaded.Count);
+        Debug.EndDeepProfile("load_chunks1");
+        Debug.BeginDeepProfile("load_chunks2");
 
         for (int x = -radius; x <= radius; x++)
         {
@@ -237,6 +254,8 @@ public class ChunkRegionManager : MonoBehaviour
                 }
             }
         }
+        Debug.EndDeepProfile("load_chunks2");
+
         if (forceLoad)
         {
             Debug.Log("[CRManager] Forcing Chunk Loader to load all chunks");
@@ -256,12 +275,18 @@ public class ChunkRegionManager : MonoBehaviour
                 //TODO - unload entity chunk
             }
         }
+        Debug.EndDeepProfile("load_chunks");
+
 
     }
 
     public LoadedChunk2 GetLoadedChunk(Vec2i chunk)
     {
-        return LoadedChunks[chunk];
+        if(LoadedChunks.TryGetValue(chunk, out LoadedChunk2 val))
+        {
+            return val;
+        }
+        return null;
 
     }
 

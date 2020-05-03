@@ -38,69 +38,17 @@ public class DungeonGenerator
 
     private Dungeon GenerateDungeon(DungeonEntrance entrance)
     {
+        /*
         switch (entrance.DungeonType)
         {
             case DungeonType.FIRE:
                 return GenerateFireDungeon(entrance);
             case DungeonType.CAVE:
                 return GenerateCaveDungeon(entrance);
-        }
+        }*/
         return null;
     }
 
-    private Dungeon GenerateCaveDungeon(DungeonEntrance entr)
-    {
-        ChunkStructure cStruc = entr.ChunkStructure;
-
-        if(cStruc is BanditCamp)
-        {
-            BanditCaveDungeonBuilder bcdb = new BanditCaveDungeonBuilder(cStruc.Position, cStruc.Size);
-            Dungeon dun = bcdb.Generate(entr, GenRan);
-            entr.SetDungeon(dun);
-            return dun;
-        }
-        return null;
-    }
-
-    private Dungeon GenerateFireDungeon(DungeonEntrance entrance)
-    {
-
-        ChunkData[,] dungeonChunks = new ChunkData[5, 5];
-        Dictionary<int, WorldObjectData>[,] chunkObjects = new Dictionary<int, WorldObjectData>[5,5];
-        
-
-        for(int x=0; x<5; x++)
-        {
-            for (int z = 0; z < 5; z++)
-            {
-                chunkObjects[x, z] = new Dictionary<int, WorldObjectData>();
-
-
-                dungeonChunks[x, z] = new ChunkData(x, z, (int[,])BASE_DIRT.Clone(), true, objects:chunkObjects[x, z]);
-
-            }
-        }
-        Vec2i chunkPos = World.GetChunkPosition(entrance.WorldPosition);
-        Vec2i dungEntr = new Vec2i(5, 5);
-        EntityFaction dungFact = new EntityFaction("Dungeon_faction");
-        List<Entity> dungeonEntities = new List<Entity>();
-        DungeonBoss testBoss = new DungeonBossTest(new BasicHumanoidCombatAI(), new CreatureTaskAI());
-        testBoss.SetEntityFaction(dungFact);
-
-        for(int i=0; i<25; i++)
-        {
-            Vec2i randomPos = GenRan.RandomVec2i(World.ChunkSize, 5 * World.ChunkSize - 5);
-            Entity newEnt = new Bandit();
-            newEnt.SetPosition(randomPos);
-            newEnt.SetEntityFaction(dungFact);
-            dungeonEntities.Add(newEnt);
-        }
-        Dungeon dungeon = new Dungeon(dungeonChunks, dungEntr, entrance.WorldPosition, dungeonEntities, testBoss);
-
-        entrance.SetDungeon(dungeon);
-        return dungeon;
-
-    }
 
 
 

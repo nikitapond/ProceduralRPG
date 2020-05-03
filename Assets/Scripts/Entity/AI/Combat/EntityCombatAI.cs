@@ -279,7 +279,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
             }
             else if (blocking.CompareTag("MainCamera"))
                 continue;
-            else if (blocking.GetComponent<LoadedChunk>() != null)
+            else if (blocking.GetComponent<LoadedChunk2>() != null)
                 continue;
             else
             {

@@ -31,7 +31,11 @@ public class PreLoadedChunk
         if (pmesh.Colours != null)
             mesh.colors = pmesh.Colours;
         if (pmesh.UV != null)
+        {
+            Debug.Log("setting UV");
             mesh.uv = pmesh.UV;
+        }
+            
 
         return mesh;
     }

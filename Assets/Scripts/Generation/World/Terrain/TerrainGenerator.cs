@@ -81,7 +81,8 @@ public class TerrainGenerator
                 //if ((x - mid.x) * (x - mid.x) + (z - mid.z) * (z - mid.z) < r_sqr)
                 if (c > 5 && !(x==0||z==0||x==World.WorldSize-1 || z==World.WorldSize-1))
                 { //If point within this radius of middle
-                    ChunkBases[x, z] = new ChunkBase(v, c, true);
+
+                    ChunkBases[x, z] = new ChunkBase(v, Mathf.FloorToInt(c), true);
                     LandChunks.Add(v);
 
 

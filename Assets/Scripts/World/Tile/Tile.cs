@@ -14,6 +14,8 @@ public class Tile
         switch (id)
         {
             case 0:
+                return Tile.NULL;
+            case 15:
                 return Tile.WATER;
             case 1:
                 return GRASS;
@@ -42,10 +44,11 @@ public class Tile
             case 14:
                 return DIRT;
         }
-        return WATER;
+        return NULL;
     }
 
-    public static readonly Tile WATER = new Tile(0, Color.blue, 0.3f);
+    public static readonly Tile NULL = new Tile(0, Color.magenta, 1);
+    public static readonly Tile WATER = new Tile(15, Color.blue, 0.3f);
     public static readonly Tile GRASS = new Tile(1, Color.green, 1f);
     public static readonly Tile WOOD_FLOOR = new Tile(2, new Color(0.6f, 0.3f, 0), 1.5f);
     public static readonly Tile STONE_FLOOR = new Tile(3, new Color(0.8f, 0.8f, 0.8f), 2f);

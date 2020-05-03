@@ -101,7 +101,7 @@ public class ChunkGenerator
             {
                 if(genRan.Random() < 0.01f)
                 {
-                    obs.Add(WorldObject.ObjectPositionHash(i,j), new Tree(new Vec2i(x * World.ChunkSize + i, z * World.ChunkSize + j)));
+                    //obs.Add(WorldObject.ObjectPositionHash(i,j), new Tree(new Vec2i(x * World.ChunkSize + i, z * World.ChunkSize + j)));
                 }else if(genRan.Random() < 0.3f)
                 {
                     //obs.Add(WorldObject.ObjectPositionHash(i, j), new Tree(new Vec2i(x * World.ChunkSize + i, z * World.ChunkSize + j)));
@@ -188,6 +188,7 @@ public class ChunkGenerator
                     //Debug.Log("here");
                     tiles[tx, tz] = Tile.WATER.ID;
                     heights[tx, tz] = Mathf.Clamp(cb.BaseHeight - 5, 1, 16);
+                    /*
                     if (!(data[tx, tz] is Water))
                     {
                         data[tx, tz] = new Water(new Vec2i(x * World.ChunkSize + tx, z * World.ChunkSize + tz));
@@ -235,7 +236,7 @@ public class ChunkGenerator
                     {
                         data[tx + 1, tz - 1] = new Water(new Vec2i(x * World.ChunkSize + tx + 1, z * World.ChunkSize + tz - 1));
                         (data[tx + 1, tz - 1] as Water).SetUVOffset(off + new Vector2(1, -1));
-                    }
+                    }*/
 
                 }
                 else if (dist_sqr < (cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) * 2 / divBy)
@@ -249,8 +250,8 @@ public class ChunkGenerator
                     tiles[tx, tz] = Tile.GRASS.ID;
                     heights[tx, tz] = cb.BaseHeight;
 
-                    if (genRan.Random() < 0.25f)
-                        data[tx, tz] = new Grass(new Vec2i(x * World.ChunkSize + tx + 1, z * World.ChunkSize + tz - 1));
+                    //if (genRan.Random() < 0.25f)
+                    //    data[tx, tz] = new Grass(new Vec2i(x * World.ChunkSize + tx + 1, z * World.ChunkSize + tz - 1));
 
                 }
             }
@@ -261,9 +262,9 @@ public class ChunkGenerator
             GenerateRiverBridge(cb, data);
  
         }
-        data[0, 0] = new Tree(new Vec2i(x * World.ChunkSize, z * World.ChunkSize));
+        //data[0, 0] = new Tree(new Vec2i(x * World.ChunkSize, z * World.ChunkSize));
 
-        data[2, 2] = new RockFormation(new Vec2i(x * World.ChunkSize + 2, z * World.ChunkSize + 2));
+        //data[2, 2] = new RockFormation(new Vec2i(x * World.ChunkSize + 2, z * World.ChunkSize + 2));
 
 
         Dictionary<int, WorldObjectData> data_ = new Dictionary<int, WorldObjectData>();
@@ -308,16 +309,16 @@ public class ChunkGenerator
         }
         
 
-        RiverBridgeObject rbObj = new RiverBridgeObject(start, end, absDir);
-        IMultiTileObjectChild[,] childs = rbObj.GetChildren();
-
+     //   RiverBridgeObject rbObj = new RiverBridgeObject(start, end, absDir);
+     //   IMultiTileObjectChild[,] childs = rbObj.GetChildren();
+     /*
         for (int x = 0; x < rbObj.Size.x; x++)
         {
             for (int z = 0; z < rbObj.Size.z; z++)
             {
                 chunkObjs[start.x + x, start.z + z] = childs[x, z] as WorldObjectData;
             }
-        }
+        }*/
 
         /*
         //If these do not sum to 1, the direction is not simple (i.e, diagonal) and no bridge can be made

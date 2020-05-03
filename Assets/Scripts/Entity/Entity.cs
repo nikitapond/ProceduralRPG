@@ -117,7 +117,7 @@ public abstract class Entity
         GameManager.EntityManager.UnloadEntity(GetLoadedEntity());
         if (!Inventory.IsEmpty)
         {
-            LootSack loot = new LootSack(Vec2i.FromVector3(GetLoadedEntity().transform.position));
+            LootSack loot = new LootSack(Vec2i.FromVector3(GetLoadedEntity().transform.position).AsVector3());
             loot.GetInventory().AddAll(Inventory);
             GameManager.WorldManager.AddNewObject(loot);
         }

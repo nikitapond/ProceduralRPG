@@ -20,7 +20,7 @@ public class ChunkLoader : MonoBehaviour
     private List<Vec2i> ChunksToLoadPositions;
     private List<ChunkData2> ChunksToLoad;
     private List<PreLoadedChunk> PreLoadedChunks;
-    private List<WorldObjectData2> ObjectsToLoad;
+    private List<WorldObjectData> ObjectsToLoad;
 
 
     private List<Vector3> CurrentVerticies;
@@ -40,12 +40,12 @@ public class ChunkLoader : MonoBehaviour
         PreLoadedChunks = new List<PreLoadedChunk>(60);
 
         ObjectsToLoadLock = new Object();
-        ObjectsToLoad = new List<WorldObjectData2>();
+        ObjectsToLoad = new List<WorldObjectData>();
 
-        CurrentVerticies = new List<Vector3>(World.ChunkSize * World.ChunkSize);
-        CurrentTriangles = new List<int>(World.ChunkSize * World.ChunkSize);
-        CurrentUVs = new List<Vector2>(World.ChunkSize * World.ChunkSize);
-        CurrentColours = new List<Color>(World.ChunkSize * World.ChunkSize);
+        CurrentVerticies = new List<Vector3>(World.ChunkSize * World.ChunkSize * 6);
+        CurrentTriangles = new List<int>(World.ChunkSize * World.ChunkSize * 6);
+        CurrentUVs = new List<Vector2>(World.ChunkSize * World.ChunkSize * 6);
+        CurrentColours = new List<Color>(World.ChunkSize * World.ChunkSize * 6);
 
         ChunkRegionManager = GetComponent<ChunkRegionManager>();
 
@@ -64,8 +64,8 @@ public class ChunkLoader : MonoBehaviour
         ForceLoad = true;
         //Wait for the thread to finish
         MainThread?.Join();
-        
 
+        Debug.BeginDeepProfile("force_chunk_load");
         //All threads have stopped now, so we are not required to be thread safe.
         //TODO - add some thread generation here to improve performance?
         Debug.Log("[ChunkLoader] Force load starting - " + ChunksToLoad.Count + " chunks to load");
@@ -91,6 +91,8 @@ public class ChunkLoader : MonoBehaviour
         PreLoadedChunks.Clear();
         ChunksToLoadPositions.Clear();
         ForceLoad = false;
+        Debug.EndDeepProfile("force_chunk_load");
+
     }
 
     /// <summary>
@@ -122,6 +124,47 @@ public class ChunkLoader : MonoBehaviour
             }
         }
 
+        if(ObjectsToLoad.Count > 0)
+        {
+            Debug.Log("[ChunkLoader] " + ObjectsToLoad.Count + " objects to load in");
+            LoadSingleObject();
+        }
+
+    }
+
+
+    private void LoadSingleObject(int count=0)
+    {
+        if (count > 10)
+            return;
+
+        WorldObjectData objData = null;
+
+
+        lock (ObjectsToLoadLock) {
+            objData = ObjectsToLoad[0];
+            ObjectsToLoad.RemoveAt(0);
+        }
+        //Find the chunk for the first object to generate
+        Vec2i chunk = World.GetChunkPosition(objData.Position);
+        LoadedChunk2 lc2 = ChunkRegionManager.GetLoadedChunk(chunk);
+
+        if (lc2 == null)
+        {
+            Debug.Log("[ChunkLoader] Chunk for object is not loaded, attempting another object");
+            //if the chunk is null, we throw this object to the end of the que and try again.  
+            lock (ObjectsToLoadLock)
+            {
+                ObjectsToLoad.Add(objData);
+            }
+            LoadSingleObject(count+1);
+            return;
+        }
+        Vec2i localPos = Vec2i.FromVector3(objData.Position.Mod(World.ChunkSize));
+        float off = lc2.Chunk.GetHeight(localPos);
+        WorldObject obj = WorldObject.CreateWorldObject(ObjectsToLoad[0], lc2.transform, off + 0.7f);
+        if (objData.AutoHeight)
+            obj.AdjustHeight();
     }
 
     /// <summary>
@@ -134,6 +177,7 @@ public class ChunkLoader : MonoBehaviour
     {
         GameObject cObj = Instantiate(ChunkPrefab);
         cObj.transform.parent = transform;
+
         cObj.name = "chunk_" + pChunk.Position;
         LoadedChunk2 loaded = cObj.GetComponent<LoadedChunk2>();
 
@@ -156,7 +200,7 @@ public class ChunkLoader : MonoBehaviour
                 MeshCollider voxelMc = voxelObj.GetComponent<MeshCollider>();
                 voxelMc.sharedMesh = voxelMf.mesh;
                 voxelObj.transform.parent = cObj.transform;
-                voxelObj.transform.localPosition = Vector3.zero;
+                voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.8f);
 
                 voxelMf.mesh.RecalculateNormals();
             }
@@ -242,6 +286,8 @@ public class ChunkLoader : MonoBehaviour
         //Form loop that lasts while we generate all chunks
         while (shouldLive)
         {
+            UnityEngine.Profiling.Profiler.BeginSample("chunk_pre_load");
+            Debug.BeginDeepProfile("chunk_pre_load");
             //thread safety
             lock (ChunkToLoadLock)
             {
@@ -272,6 +318,9 @@ public class ChunkLoader : MonoBehaviour
                 if(toLoad.WorldObjects != null)
                     ObjectsToLoad.AddRange(toLoad.WorldObjects);
             }
+            Debug.EndDeepProfile("chunk_pre_load");
+            UnityEngine.Profiling.Profiler.EndSample();
+
             //If we have requested a force load, we exit the thread.
             if (ForceLoad)
             {
@@ -417,7 +466,7 @@ public class ChunkLoader : MonoBehaviour
                 CurrentColours.Clear();
                 CurrentUVs.Clear();
                 //Generate the voxel mesh
-                MarchingCubes.Generate(chunk.VoxelData.Voxels, vb, v, World.ChunkSize, World.ChunkHeight, World.ChunkSize, CurrentVerticies, CurrentTriangles);
+                MarchingCubes.Generate(chunk.VoxelData.Voxels, vb, v, World.ChunkSize+1, World.ChunkHeight+1, World.ChunkSize+1, CurrentVerticies, CurrentTriangles);
                 PreMesh voxelMesh = new PreMesh();
                 voxelMesh.Verticies = CurrentVerticies.ToArray();
                 voxelMesh.Triangles = CurrentTriangles.ToArray();
@@ -425,6 +474,14 @@ public class ChunkLoader : MonoBehaviour
                 preChunk.VoxelMesh.Add(v, voxelMesh);
             }
 
+        }
+        if(chunk.WorldObjects != null)
+        {
+            lock (ObjectsToLoadLock)
+            {
+                ObjectsToLoad.AddRange(chunk.WorldObjects);
+            }
+           
         }
 
 

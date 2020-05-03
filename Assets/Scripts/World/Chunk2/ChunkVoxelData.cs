@@ -15,14 +15,14 @@ public class ChunkVoxelData
 
     public ChunkVoxelData()
     {
-        Voxels = new Voxel[World.ChunkSize * World.ChunkSize * World.ChunkHeight];
+        Voxels = new Voxel[(World.ChunkSize+1) * (World.ChunkSize+1) * (World.ChunkHeight+1)];
         VoxelTypeBounds = new Dictionary<Voxel, VoxelBounds>();
     }
 
 
     public void SetVoxel(int x, int y, int z, Voxel voxel)
     {
-        int idx = x + y * (World.ChunkSize) + z * (World.ChunkHeight) * (World.ChunkSize);
+        int idx = x + y * (World.ChunkSize+1) + z * (World.ChunkHeight+1) * (World.ChunkSize+1);
         Voxels[idx] = voxel;
         //If a voxel of this type has been added already, we re-define the bounds
         if (VoxelTypeBounds.TryGetValue(voxel, out VoxelBounds t))
@@ -48,6 +48,11 @@ public class ChunkVoxelData
             VoxelTypeBounds.Add(voxel, new VoxelBounds(x,y,z));
         }
 
+    }
+    public Voxel GetVoxel(int x, int y, int z)
+    {
+        int idx = x + y * (World.ChunkSize+1) + z * (World.ChunkHeight+1) * (World.ChunkSize+1);
+        return Voxels[idx];
     }
 
 }

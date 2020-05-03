@@ -35,12 +35,19 @@ namespace MarchingCubesProject
 
 			int x, y, z, i;
 			int ix, iy, iz;
-			for (x = b.MinX; x < b.MaxX - 1; x++)
+			for (x = 0; x < width - 1; x++)
 			{
-				for (y = b.MinY; y < b.MaxY - 1; y++)
+				for (y = 0; y < height - 1; y++)
 				{
-					for (z = b.MinZ; z < b.MaxZ - 1; z++)
+					for (z = 0; z < depth - 1; z++)
 					{
+						/*
+						for (x = b.MinX; x < b.MaxX - 1; x++)
+						{
+							for (y = b.MinY; y < b.MaxY - 1; y++)
+							{
+								for (z = b.MinZ; z < b.MaxZ - 1; z++)
+								{*/
 						//Get the values in the 8 neighbours which make up a cube
 						for (i = 0; i < 8; i++)
 						{
@@ -49,13 +56,19 @@ namespace MarchingCubesProject
 							iz = z + VertexOffset[i, 2];
 
 							Voxel v = voxels[ix + iy * width + iz * width * height];
+
+
+
 							if(v == current)
 							{
 								Cube[i] = -1;
+
 							}
 							else
 							{
 								Cube[i] = 1;
+								
+								
 							}
 
 							

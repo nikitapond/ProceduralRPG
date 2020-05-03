@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// </summary>
 public class World
 {
-    public static readonly int ChunkHeight = 64;
+    public static readonly int ChunkHeight = 16;
     public readonly static int ChunkSize = 16; //Chunk size in tiles
     public readonly static int WorldSize = 256; //World size in chunks
     public readonly static int RegionSize = 32;
@@ -131,7 +131,7 @@ public class World
     /// <returns></returns>
     public Vec2i[] EmptyTilesAroundWorldObject(WorldObjectData obj)
     {
-        Vec2i instPos = obj.WorldPosition;
+        Vec2i instPos = Vec2i.FromVector3(obj.Position);
         if (instPos == null)
         {
             Debug.Error("Provided world object has no instance: " + obj.ToString());

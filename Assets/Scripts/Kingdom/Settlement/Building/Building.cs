@@ -28,16 +28,17 @@ public abstract class Building
     public static BuildingPlan HOUSE = House.BuildingPlan;
     public static BuildingPlan BARACKS = Baracks.BuildingPlanCity;
     public int SettlementID { get; private set; }
-    public Vec2i SettlementCoord { get; private set; }
+
     public Tile[,] BuildingTiles { get; private set; }
-    public WorldObjectData[,] BuildingObjects { get; private set; }
-    private List<WorldObjectData> BuildingObjects_; 
+    private List<WorldObjectData> BuildingObjects; 
     public int Width { get; private set; }
     public int Height { get; private set; }
     public float BaseValue { get { return Width * Height; } }
     public float ValueModifier { get; private set; }
     public float Value { get { return BaseValue * ValueModifier; } }
-    
+
+    public Vec2i[] BoundingWall;
+
     public Vec2i WorldPosition { get; private set; }
 
     private Recti WorldBounds;
@@ -45,14 +46,21 @@ public abstract class Building
 
 
     public Vec2i Entrance { get; private set; }
-    public Building(int width, int height)
+    public Building(int width, int height, Vec2i[] boundingWall=null)
     {
         Width = width;
         Height = height;
 
         BuildingTiles = new Tile[width, height];
-        BuildingObjects = new WorldObjectData[width, height];
-        BuildingObjects_ = new List<WorldObjectData>();
+        BuildingObjects = new List<WorldObjectData>();
+        if(boundingWall == null)
+        {
+            BoundingWall = new Vec2i[] { new Vec2i(0, 0), new Vec2i(width, 0), new Vec2i(width, height), new Vec2i(0, height) };
+        }
+        else
+        {
+            BoundingWall = boundingWall;
+        }
     }
     /// <summary>
     /// Called after the building has been added to the world.
@@ -64,10 +72,24 @@ public abstract class Building
         BuildingTiles = null;
         BuildingObjects = null;
     }
+    /// <summary>
+    /// Sets the global position of this building.
+    /// Re-sets all objects such that their positions
+    /// become 'obj.Position + wPos'
+    /// </summary>
+    /// <param name="wPos"></param>
+    public void SetWorldPosition(Vec2i wPos)
+    {
+        WorldPosition = wPos;
+        foreach(WorldObjectData obj in BuildingObjects)
+        {
+            obj.SetPosition(obj.Position + wPos.AsVector3());
+        }
+    }
 
     public List<WorldObjectData> GetBuildingObjects()
     {
-        return BuildingObjects_;
+        return BuildingObjects;
     }
 
     /// <summary>
@@ -76,7 +98,7 @@ public abstract class Building
     /// WARNING - this does not add the object to the array of objects itself
     /// </summary>
     public void AddObjectReference(WorldObjectData obj) {
-        BuildingObjects_.Add(obj);
+        BuildingObjects.Add(obj);
     }
 
     public void SetValueModifier(float v)
@@ -88,31 +110,21 @@ public abstract class Building
         Entrance = v;
     }
 
-    public void SetBuilding(Tile[,] buildingTiles, WorldObjectData[,] buildingObjects)
+    /// <summary>
+    /// TODO - remove building objects as paramater
+    /// </summary>
+    /// <param name="buildingTiles"></param>
+    /// <param name="buildingObjects"></param>
+    public void SetBuilding(Tile[,] buildingTiles, WorldObjectData[,] buildingObjects=null)
     {
         BuildingTiles = buildingTiles;
-        BuildingObjects = buildingObjects;
     }
 
-    public void SetSettlementCoord(Vec2i setCoord)
-    {
-        SettlementCoord = setCoord;
-    }
     public void SetSettlement(Settlement settle)
     {
-        WorldPosition = settle.BaseCoord + this.SettlementCoord;
-        if(Entrance != null)
-            Entrance += settle.BaseCoord + this.SettlementCoord;
+
         SettlementID = settle.SettlementID;
 
-        Vec2i delta = settle.BaseCoord + SettlementCoord;
-        foreach(WorldObjectData obj in BuildingObjects)
-        {
-            if(obj != null)
-            {
-                obj.SetPosition(obj.WorldPosition + delta);
-            }
-        }
         
     }
 
@@ -139,10 +151,10 @@ public abstract class Building
             {
                 for(int z=0; z<Height; z++)
                 {
-                    if(BuildingObjects[x,z] == null)
-                    {
+                    //if(BuildingObjects[x,z] == null)
+                    //{
                         SpawnableTiles.Add(new Vec2i(worldPos.x + x, worldPos.z + z));
-                    }
+                    //}
                 }
             }
         }

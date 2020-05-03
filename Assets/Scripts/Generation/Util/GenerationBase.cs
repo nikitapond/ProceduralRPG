@@ -71,7 +71,7 @@ public abstract class GenerationBase
 
         while (!(x == b.x && z == b.z))
         {
-            Objects[x, z] = copy.Copy(BaseCoord + new Vec2i(x, z));
+            //Objects[x, z] = copy.Copy(BaseCoord + new Vec2i(x, z));
 
 
 
@@ -265,6 +265,7 @@ public abstract class GenerationBase
     /// <param name="z"></param>
     public bool AddObject(WorldObjectData nObj, int x, int z)
     {
+        /*
         //If not in bounds, return false
         if (!(x > 0 && x < Size.x && z > 0 && z < Size.z))
         {
@@ -315,7 +316,7 @@ public abstract class GenerationBase
 
             }
         }
-
+        */
         return true;
     }
 
