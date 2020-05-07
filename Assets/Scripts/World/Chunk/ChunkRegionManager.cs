@@ -117,14 +117,14 @@ public class ChunkRegionManager : MonoBehaviour
     }
     public ChunkData2 GetChunk(Vec2i v, bool shouldLoad=true)
     {
-        Debug.BeginDeepProfile("get_chunk");
+        //Debug.BeginDeepProfile("get_chunk");
         //Find region of chunk and check if valid within bounds
         Vec2i r = World.GetRegionCoordFromChunkCoord(v);
-        Debug.Log("Chunk " + v + " in region " + r);
+        //Debug.Log("Chunk " + v + " in region " + r);
         if (r.x >= World.RegionCount || r.z >= World.RegionCount || r.x < 0 || r.z < 0)
         {
-            Debug.Log("Region " + r + " out of bounds");
-            Debug.EndDeepProfile("get_chunk");
+           // Debug.Log("Region " + r + " out of bounds");
+            //Debug.EndDeepProfile("get_chunk");
 
             return null;
         }
@@ -137,13 +137,13 @@ public class ChunkRegionManager : MonoBehaviour
         //Get chunk region, check if it has been loaded
         if (cr == null && shouldLoad)
         {
-            Debug.Log("[CRManager] Region null, trying to load");
+            //Debug.Log("[CRManager] Region null, trying to load");
             //If it has not been laoded, then load it
             LoadRegion(r);
             cr = LoadedRegions[r.x, r.z];
             if (cr == null)
             {
-                Debug.EndDeepProfile("get_chunk");
+                //Debug.EndDeepProfile("get_chunk");
                 return null;
             }
             lock (ThreadSafe)
@@ -154,9 +154,9 @@ public class ChunkRegionManager : MonoBehaviour
             //GameManager.PathFinder.LoadRegion(cr);
         }else if(cr == null)
         {
-            Debug.EndDeepProfile("get_chunk");
+            //Debug.EndDeepProfile("get_chunk");
 
-            Debug.Log("[CRManager] Region " + r + " could not be found - not generating");
+            //Debug.Log("[CRManager] Region " + r + " could not be found - not generating");
             return null;
         }
             
@@ -167,9 +167,9 @@ public class ChunkRegionManager : MonoBehaviour
             int cx = v.x % World.RegionSize;
             int cz = v.z % World.RegionSize;
             cDat = cr.Chunks[cx, cz];
-            Debug.Log("[CRManager] Chunk at local region position " + cx + "," + cz + ": " + cDat);
+            //Debug.Log("[CRManager] Chunk at local region position " + cx + "," + cz + ": " + cDat);
         }
-        Debug.EndDeepProfile("get_chunk");
+        //Debug.EndDeepProfile("get_chunk");
 
         return cDat;
     }
@@ -244,6 +244,7 @@ public class ChunkRegionManager : MonoBehaviour
                         Debug.Log("Chunk at " + pos +  " was null");
                         continue;
                     }
+                    GameManager.EntityManager.LoadChunk(pos);
                     ChunkLoader.LoadChunk(cd);
                 }else if (toUnload.Contains(pos))
                 {
@@ -323,7 +324,10 @@ public class ChunkRegionManager : MonoBehaviour
         if(c.x>0 && c.x<World.WorldSize-2 && c.z > 0 && c.z < World.WorldSize - 2)
         {
             //TODO - get this data from the CR manager
-            return new ChunkData2[] { GetChunk(c.x, c.z+1, false), GetChunk(c.x+1, c.z + 1, false), GetChunk(c.x+1, c.z, false) };
+            return new ChunkData2[] { GetChunk(c.x, c.z+1, false), GetChunk(c.x+1, c.z + 1, false), 
+                                      GetChunk(c.x+1, c.z, false),/* GetChunk(c.x+1, c.z - 1, false),
+                                      GetChunk(c.x, c.z-1, false), GetChunk(c.x-1, c.z-1, false)  ,
+                                      GetChunk(c.x-1,c.z, false), GetChunk(c.x-1, c.z+1 , false)*/};
         }
         else
         {

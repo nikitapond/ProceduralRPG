@@ -68,20 +68,20 @@ public class ChunkLoader : MonoBehaviour
         Debug.BeginDeepProfile("force_chunk_load");
         //All threads have stopped now, so we are not required to be thread safe.
         //TODO - add some thread generation here to improve performance?
-        Debug.Log("[ChunkLoader] Force load starting - " + ChunksToLoad.Count + " chunks to load");
+        Debug.Log("[ChunkLoader] Force load starting - " + ChunksToLoad.Count + " chunks to load", Debug.CHUNK_LOADING);
         foreach(ChunkData2 cd in ChunksToLoad)
         {
             PreLoadedChunks.Add(GeneratePreLoadedChunk(cd));
         }
         ChunksToLoad.Clear();
-        Debug.Log("[ChunkLoader] Force load - " + PreLoadedChunks.Count + " chunks to create");
+        Debug.Log("[ChunkLoader] Force load - " + PreLoadedChunks.Count + " chunks to create", Debug.CHUNK_LOADING);
 
         foreach (PreLoadedChunk plc in PreLoadedChunks)
         {
             //If for some reason this has already been generated, don't bother
             if (ChunkRegionManager.LoadedChunks.ContainsKey(plc.Position))
             {
-                Debug.Log("[ChunkLoader] Loaded chunk at position " + plc.Position + " has already generated");
+                Debug.Log("[ChunkLoader] Loaded chunk at position " + plc.Position + " has already generated", Debug.CHUNK_LOADING);
                 continue;
             }
                 
@@ -126,7 +126,7 @@ public class ChunkLoader : MonoBehaviour
 
         if(ObjectsToLoad.Count > 0)
         {
-            Debug.Log("[ChunkLoader] " + ObjectsToLoad.Count + " objects to load in");
+            Debug.Log("[ChunkLoader] " + ObjectsToLoad.Count + " objects to load in", Debug.CHUNK_LOADING);
             LoadSingleObject();
         }
 
@@ -151,7 +151,7 @@ public class ChunkLoader : MonoBehaviour
 
         if (lc2 == null)
         {
-            Debug.Log("[ChunkLoader] Chunk for object is not loaded, attempting another object");
+            Debug.Log("[ChunkLoader] Chunk for object is not loaded, attempting another object", Debug.CHUNK_LOADING);
             //if the chunk is null, we throw this object to the end of the que and try again.  
             lock (ObjectsToLoadLock)
             {
@@ -162,9 +162,8 @@ public class ChunkLoader : MonoBehaviour
         }
         Vec2i localPos = Vec2i.FromVector3(objData.Position.Mod(World.ChunkSize));
         float off = lc2.Chunk.GetHeight(localPos);
-        WorldObject obj = WorldObject.CreateWorldObject(ObjectsToLoad[0], lc2.transform, off + 0.7f);
-        if (objData.AutoHeight)
-            obj.AdjustHeight();
+        WorldObject obj = WorldObject.CreateWorldObject(objData, lc2.transform, off + 0.7f);        
+        obj.AdjustHeight();
     }
 
     /// <summary>
@@ -196,11 +195,13 @@ public class ChunkLoader : MonoBehaviour
             {
                 GameObject voxelObj = Instantiate(ChunkVoxelPrefab);
                 MeshFilter voxelMf = voxelObj.GetComponent<MeshFilter>();
+                MeshRenderer voxelMr = voxelObj.GetComponent<MeshRenderer>();
+                voxelMr.material = ResourceManager.GetVoxelMaterial(v);
                 voxelMf.mesh = PreLoadedChunk.CreateMesh(pmesh);
                 MeshCollider voxelMc = voxelObj.GetComponent<MeshCollider>();
                 voxelMc.sharedMesh = voxelMf.mesh;
                 voxelObj.transform.parent = cObj.transform;
-                voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.8f);
+                voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.7f);
 
                 voxelMf.mesh.RecalculateNormals();
             }
@@ -223,7 +224,6 @@ public class ChunkLoader : MonoBehaviour
         {
             list = new List<Vec2i>(ChunksToLoadPositions);
         }
-        Debug.Log(list.Count + " herhehrhehe");
         return list;
     }
 
@@ -235,7 +235,7 @@ public class ChunkLoader : MonoBehaviour
     public void LoadChunk(ChunkData2 chunk)
     {
         Vec2i position = new Vec2i(chunk.X, chunk.Z);
-        Debug.Log("[ChunkLoader] Adding chunk " + position + " to chunk loader");
+        Debug.Log("[ChunkLoader] Adding chunk " + position + " to chunk loader", Debug.CHUNK_LOADING);
 
         //Stay thread safe - add object 
         lock (ChunkToLoadLock)
@@ -248,7 +248,7 @@ public class ChunkLoader : MonoBehaviour
         {
             //We start/restart the internal load loop
             MainThread = new Thread(() => InternalThreadLoop());
-            Debug.Log("[ChunkLoader] Chunk Loader thread starting");
+            Debug.Log("[ChunkLoader] Chunk Loader thread starting", Debug.CHUNK_LOADING);
             MainThread.Start();
         }
     }
@@ -299,11 +299,11 @@ public class ChunkLoader : MonoBehaviour
                 ChunksToLoad.RemoveAt(0);
                 position = new Vec2i(toLoad.X, toLoad.Z);
             }
-            Debug.Log("[ChunkLoader] Chunk Loader starting to generate chunk " + toLoad);
+            Debug.Log("[ChunkLoader] Chunk Loader starting to generate chunk " + toLoad, Debug.CHUNK_LOADING);
 
             //Create pre-generated chunk
             PreLoadedChunk preLoaded = GeneratePreLoadedChunk(toLoad);
-            Debug.Log("[ChunkLoader] Finished creating PreChunk: " + toLoad);
+            Debug.Log("[ChunkLoader] Finished creating PreChunk: " + toLoad, Debug.CHUNK_LOADING);
 
             //Thread safe add the preloaded chunk
             lock (PreLoadedChunkLock)
@@ -324,7 +324,7 @@ public class ChunkLoader : MonoBehaviour
             //If we have requested a force load, we exit the thread.
             if (ForceLoad)
             {
-                Debug.Log("[ChunkLoader] Force load is starting, need to finish loading chunk " + new Vec2i(toLoad.X, toLoad.Z));
+                Debug.Log("[ChunkLoader] Force load is starting, need to finish loading chunk " + new Vec2i(toLoad.X, toLoad.Z), Debug.CHUNK_LOADING);
                 return;
             }
                 
@@ -432,20 +432,37 @@ public class ChunkLoader : MonoBehaviour
         //March the terrain map
         MarchingCubes.Generate(cube, World.ChunkSize + 1, World.ChunkHeight + 1, World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
 
+        //We iterate each triangle
+        for(int i=0; i<CurrentTriangles.Count; i += 3)
+        {
+            int tri1 = CurrentTriangles[i];
+            int tri2 = CurrentTriangles[i+1];
+            int tri3 = CurrentTriangles[i+2];
+
+            //We find the average/mid point of this triangle
+            Vector3 mid = (CurrentVerticies[tri1] + CurrentVerticies[tri2] + CurrentVerticies[tri3]) / 3;
+            Vec2i tMid = Vec2i.FromVector3(mid);
+            Color c = colourMap[tMid.x, tMid.z];
+        
+            CurrentColours.Add(c);
+            CurrentColours.Add(c);
+            CurrentColours.Add(c);
+        }
+        /*
         for (int i = 0; i < CurrentVerticies.Count; i++)
         {
             int x = (int)CurrentVerticies[i].x;
             int z = (int)CurrentVerticies[i].z;
             CurrentColours.Add(colourMap[x, z]);
             
-        }
+        }*/
 
         //We create a thread safe mesh for the terrain
         PreMesh terrainMesh = new PreMesh();
         terrainMesh.Verticies = CurrentVerticies.ToArray();
         terrainMesh.Triangles = CurrentTriangles.ToArray();
         terrainMesh.Colours = CurrentColours.ToArray();
-        Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies");
+        Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies", Debug.CHUNK_LOADING);
         //Create the base pre-loaded chunk
         PreLoadedChunk preChunk = new PreLoadedChunk(new Vec2i(chunk.X, chunk.Z), terrainMesh, chunk);
         //if we have no voxel data, return just the terrain map
@@ -460,6 +477,7 @@ public class ChunkLoader : MonoBehaviour
                 continue;
             //If the chunk has this type of voxel in it
             if(chunk.VoxelData.VoxelTypeBounds.TryGetValue(v, out VoxelBounds vb)){
+
                 //Clear all lists to prepair
                 CurrentVerticies.Clear();
                 CurrentTriangles.Clear();
@@ -470,6 +488,7 @@ public class ChunkLoader : MonoBehaviour
                 PreMesh voxelMesh = new PreMesh();
                 voxelMesh.Verticies = CurrentVerticies.ToArray();
                 voxelMesh.Triangles = CurrentTriangles.ToArray();
+                voxelMesh.UV = CreateUV(voxelMesh);
                 //Add it the the pre loaded chunk
                 preChunk.VoxelMesh.Add(v, voxelMesh);
             }
@@ -477,8 +496,10 @@ public class ChunkLoader : MonoBehaviour
         }
         if(chunk.WorldObjects != null)
         {
+            
             lock (ObjectsToLoadLock)
             {
+                Debug.Log("[ChunkLoader] Chunk " + chunk.X + "," + chunk.Z + " has " + chunk.WorldObjects.Count + " objects to load", Debug.CHUNK_LOADING);
                 ObjectsToLoad.AddRange(chunk.WorldObjects);
             }
            
@@ -489,4 +510,36 @@ public class ChunkLoader : MonoBehaviour
         return preChunk;
     }
 
+    /// <summary>
+    /// Generates the UV coordinates for a marching cube mesh
+    /// </summary>
+    /// <param name="pmesh"></param>
+    /// <returns></returns>
+    private Vector2[] CreateUV(PreMesh pmesh, float scaleFactor=0.5f)
+    {
+        Vector2[] UV = new Vector2[pmesh.Verticies.Length];
+        for (int index = 0; index < pmesh.Triangles.Length; index += 3)
+        {
+            // Get the three vertices bounding this triangle.
+            Vector3 v1 = pmesh.Verticies[pmesh.Triangles[index]];
+            Vector3 v2 = pmesh.Verticies[pmesh.Triangles[index + 1]];
+            Vector3 v3 = pmesh.Verticies[pmesh.Triangles[index + 2]];
+
+            // Compute a vector perpendicular to the face.
+            Vector3 normal = Vector3.Cross(v3 - v1, v2 - v1);
+
+            // Form a rotation that points the z+ axis in this perpendicular direction.
+            // Multiplying by the inverse will flatten the triangle into an xy plane.
+            Quaternion rotation = Quaternion.Inverse(Quaternion.LookRotation(normal));
+
+            // Assign the uvs, applying a scale factor to control the texture tiling.
+            UV[pmesh.Triangles[index]] = (Vector2)(rotation * v1) * scaleFactor;
+            UV[pmesh.Triangles[index + 1]] = (Vector2)(rotation * v2) * scaleFactor;
+            UV[pmesh.Triangles[index + 2]] = (Vector2)(rotation * v3) * scaleFactor;
+
+        }
+        return UV;
+
+
+    }
 }
