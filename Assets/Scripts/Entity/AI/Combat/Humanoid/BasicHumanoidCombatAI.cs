@@ -95,6 +95,11 @@ public class BasicHumanoidCombatAI : EntityCombatAI
 
     }
 
+    public override string ToString()
+    {
+        return base.ToString();
+    }
+
     public override void OnDealDamage(Entity source)
     {
 

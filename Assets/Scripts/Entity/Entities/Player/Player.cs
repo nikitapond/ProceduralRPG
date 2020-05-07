@@ -21,14 +21,14 @@ public class Player : HumanoidEntity
         if (cPos != LastChunkPosition)
         {
 
-            GameManager.EntityManager.UpdateEntityChunk(this, LastChunkPosition, cPos);
+            EntityManager.Instance.UpdateEntityChunk(this, LastChunkPosition, cPos);
             LastChunkPosition = cPos;
         }
         Debug.EndDeepProfile("player_update_main");
 
         SpellCastData data = new SpellCastData();
         data.Source = this;
-        data.Target = GameManager.PlayerManager.GetWorldMousePosition();
+        data.Target = PlayerManager.Instance.GetWorldMousePosition();
         CombatManager.SpellManager.Update(data);
 
     }

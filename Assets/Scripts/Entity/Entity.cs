@@ -69,7 +69,7 @@ public abstract class Entity
         Vec2i cPos = World.GetChunkPosition(Position);
         if(cPos != LastChunkPosition)
         {
-            GameManager.EntityManager.UpdateEntityChunk(this, LastChunkPosition, cPos);
+            EntityManager.Instance.UpdateEntityChunk(this, LastChunkPosition, cPos);
             LastChunkPosition = cPos;
         }
         EntityAI.Update();
@@ -79,7 +79,6 @@ public abstract class Entity
 
     public void Tick()
     {
-
         if (LastTick == -1)
             LastTick = Time.time;
 

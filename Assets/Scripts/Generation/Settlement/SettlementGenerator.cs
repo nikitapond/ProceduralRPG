@@ -18,16 +18,18 @@ public class SettlementGenerator
 
     public Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> GenerateAllSettlements()
     {
+        
         Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> setChunks = new Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>>(Settlements.Count);
 
-   
+        
         foreach (SettlementBase b in Settlements)
         {
 
-
+            
             SettlementBuilder setBuild = new SettlementBuilder(GameGenerator, b);
-           
+            
             setBuild.GenerateSettlement();
+            
             //Debug.EndProfile();
 
             Settlement set = new Settlement(Kingdom, "set", setBuild);

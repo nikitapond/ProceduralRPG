@@ -8,6 +8,13 @@ public abstract class EntityCombatAI : IWorldCombatEvent
     protected Entity CurrentTarget;
     public bool InCombat { get { return CurrentCombatEvent != null; } }
     protected Entity Entity;
+
+    private bool IsRunningFromCombat;
+    private List<Entity> NearEntities;
+
+    private string currentCombatTask;
+
+
     #region abstract_functions
     protected abstract bool ShouldRun(Entity entity);
     protected abstract bool ShouldCombat(Entity entity);
@@ -27,19 +34,21 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         //If in combat, updating will be done in main update function
         if (InCombat)
         {
+
+            Entity.GetLoadedEntity().SpeechBubble.SetText(Entity.EntityAI.ToString());
+
             return;
         }
         else
         {
 
             //If not currently in combat, gather all near entities
-            List<Entity> nearEntities = GameManager.EntityManager.GetEntitiesNearChunk(Entity.LastChunkPosition);
+            NearEntities = EntityManager.Instance.GetEntitiesNearChunk(Entity.LastChunkPosition);
             //If no near entities, then no combat loop to run
-            if (nearEntities == null || nearEntities.Count == 0)
+            if (NearEntities == null || NearEntities.Count == 0)
                 return;
-            Entity.GetLoadedEntity().NearEntities = nearEntities;
             //Iterate all near entities
-            foreach (Entity ent in nearEntities)
+            foreach (Entity ent in NearEntities)
             {
                 //Skip this entity
                 if (ent.Equals(Entity))
@@ -51,7 +60,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
                     {
                         Debug.Log("[EntityCombatAI] Entity " + Entity + " has seen Entity " + ent + " and is entering combat");
                         //Enter into combat
-                        CurrentCombatEvent = GameManager.EntityManager.NewCombatEvent(Entity, ent);
+                        CurrentCombatEvent = EntityManager.Instance.NewCombatEvent(Entity, ent);
                         CurrentTarget = ent;
                     }
 
@@ -66,6 +75,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
             //If the combat event is complete, then run no combat update
             if (CurrentCombatEvent.IsComplete)
             {
+                IsRunningFromCombat = false;
                 return;
             }
 
@@ -165,7 +175,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
 
     protected virtual void MeleeCombat()
     {
-
+        currentCombatTask = "melee combat\n";
         Entity.LookAt(CurrentTarget.Position2);
 
         float attackRange = Entity.CombatManager.GetCurrentWeaponRange();
@@ -177,10 +187,19 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         if (distance < attackRange)
         {
             if (Entity.CombatManager.CanAttack())
+            {
+                currentCombatTask += " - attacking!";
                 Entity.CombatManager.UseEquiptWeapon();
+            }
+            else
+            {
+                currentCombatTask += "waiting to attack";
+            }
+                
         }
         else
         {
+            currentCombatTask += " too far too attack (dist/range): " + distance + "/" + attackRange;
             RunToCombat();
         }
     }
@@ -188,11 +207,34 @@ public abstract class EntityCombatAI : IWorldCombatEvent
     /// Default RunFromCombat results in the entity moving in directly the 
     /// opposite direction from the current target.
     /// </summary>
-    protected virtual void RunFromCombat()
+    protected virtual void RunFromCombat(Vec2i combatPosition=null)
     {
+        currentCombatTask = "running from combat";
+        //If we are currently running, we don't need to update
+        if (IsRunningFromCombat)
+            return;
+        //We now define that we are running from combat
+        IsRunningFromCombat = true;
+        //If the combats position is not defined, then we set it to the entities position
+        if (combatPosition == null)
+            combatPosition = Entity.TilePos;
+
+        Vector2 movementDirection = Entity.Position2 - combatPosition.AsVector2();
+
+
+        //If our movement is 0, we define it to be in a random direction.
+        if(movementDirection == Vector2.zero)
+        {
+            movementDirection = GameManager.RNG.RandomVector2(-1, 1).normalized;
+        }
+        //Define the target position as at least 2 chunks away
+        Vector2 targetPosition = Entity.Position2 + movementDirection * 32;
+        //Set the AI target
+        Entity.GetLoadedEntity().LEPathFinder.SetTarget(targetPosition);
+        /*
         Vector2 movement = Entity.Position2 - CurrentTarget.Position2;
         Entity.GetLoadedEntity().MoveInDirection(movement);
-        Entity.LookAt(Entity.Position2 + movement);
+        Entity.LookAt(Entity.Position2 + movement);*/
     }
     /// <summary>
     /// Default RunToCombat causes the entity to look at its target
@@ -200,9 +242,14 @@ public abstract class EntityCombatAI : IWorldCombatEvent
     /// </summary>
     protected virtual void RunToCombat()
     {
+
+
+        //Entity.EntityAI.GeneratePath(Vec2i.FromVector3(CurrentTarget.Position));
+        Entity.GetLoadedEntity().LEPathFinder.SetEntityTarget(CurrentTarget, 1.5f);
         Entity.LookAt(CurrentTarget.Position2);
         Entity.GetLoadedEntity().SetRunning(true);
 
+        return;
         if (LineOfSight(CurrentTarget))
         {
             DebugGUI.Instance.SetData(Entity.Name, "line of sight");
@@ -222,6 +269,20 @@ public abstract class EntityCombatAI : IWorldCombatEvent
             Vector2 movement = CurrentTarget.Position2 - Entity.Position2;
             Entity.GetLoadedEntity().MoveInDirection(movement);
         }
+    }
+
+
+    public override string ToString()
+    {
+        string data = "";
+        if (InCombat)
+        {
+            data += "In combat with ";
+            data += CurrentTarget == null ? "null" : CurrentTarget.ToString();
+            data += "\n" + currentCombatTask;
+        }
+
+        return data;
     }
 
 

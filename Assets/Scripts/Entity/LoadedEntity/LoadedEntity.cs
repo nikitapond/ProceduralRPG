@@ -3,8 +3,12 @@ using UnityEditor;
 using UnityEngine.Animations;
 using System.Collections.Generic;
 using System.Collections;
+using UnityEngine.AI;
+using Pathfinding;
 public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 {
+
+
 
     public bool Selected;
 
@@ -13,37 +17,42 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     public float slopeThreshold = 0.01f;
 
     public static readonly float LOOK_ROTATION_SPEED = 5;
+
     private int GROUND_LAYER_MASK;
     public Entity Entity { get; private set; }
     public LoadedEntityAnimationManager AnimationManager { get; private set; }
     public Rigidbody RigidBody { get; private set; }
 
+
+    public LEPathFinder LEPathFinder { get; private set; }
+
+    /// <summary>
+    /// Defines if this entity is the player or not
+    /// </summary>
+    private bool IsPlayer;
+
+
     private float VerticalVelocity;
-    private float Height = -1;
     private EntityHealthBar EntityHealthBar;
+    public EntitySpeechBubble SpeechBubble;
     private CapsuleCollider Collider;
-    //private float targetRotation;
-    private float DistToGround;
+
 
     private Vector3 LookTowards;
 
     private Vector2 MoveDirection;
     private Vector2 TargetPosition;
 
-    //public WeaponController WeaponController { get; private set; }
 
     //Used to check for entities, if Idle 
     public bool IsIdle { get; private set; }
 
-    //private Vector3 moveDirection = Vector3.zero;
-    private CharacterController controller;
-
-    public List<Entity> NearEntities;
-
 
     void OnDrawGizmos()
     {
-
+        Vector3 floorPos = new Vector3(transform.position.x, 0, transform.position.z);
+        floorPos.y = GetWorldHeight();
+        Gizmos.DrawSphere(floorPos, 0.2f);
         if (!Selected)
             return;
         Color prev = Gizmos.color;
@@ -65,32 +74,11 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
                 }
             }
         }
-        if(NearEntities != null)
-        {
-           // GameManager.DebugGUI.SetData("Entity_" + Entity.ID + "_near:", NearEntities.Count);
-            foreach(Entity e in NearEntities)
-            {
-                if (e.Equals(Entity))
-                    continue;
-                Color c = Color.red;
-                if (Entity.EntityAI.CombatAI.LineOfSight(e))
-                {
-                    c = Color.green;
-                }
-                Color oldC = Gizmos.color;
-                Gizmos.color = c;
-                Gizmos.DrawLine(Entity.Position, e.Position);
-                Gizmos.color = oldC;               
-  
 
-            }
-        }
 
         if(Entity is Player)
         {
-            Vector3 floorPos = new Vector3(transform.position.x, 0, transform.position.z);
-            floorPos.y = GetWorldHeight();
-            Gizmos.DrawSphere(floorPos, 0.2f);
+            
         }
     }
 
@@ -102,33 +90,45 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         Entity = entity;
         AnimationManager = GetComponent<LoadedEntityAnimationManager>();
 
-        DistToGround = 0;
         transform.position = new Vector3(entity.Position.x, transform.position.y, entity.Position.z);
         RigidBody = GetComponent<Rigidbody>();
         Collider = GetComponent<CapsuleCollider>();
 
-
+        //Initiate the health bar for this entity
         GameObject entityhealthBar = Instantiate(ResourceManager.GetEntityGameObject("healthbar"));
         entityhealthBar.transform.parent = transform;
         entityhealthBar.transform.localPosition = new Vector3(0, 2, 0);
-
         EntityHealthBar = entityhealthBar.GetComponentInChildren<EntityHealthBar>();
-        controller = GetComponent<CharacterController>();
+
+
+
         GROUND_LAYER_MASK = LayerMask.GetMask("Ground");
-        // AnimControll = GetComponentInChildren<AnimatorController>();
+
+        if (!(entity is Player))
+        {
+            IsPlayer = false;
+
+            LEPathFinder = gameObject.AddComponent<LEPathFinder>();
+            Destroy(gameObject.GetComponent<Rigidbody>());
+
+            GameObject speechBubble = Instantiate(ResourceManager.GetEntityGameObject("speechbubble"));
+            speechBubble.transform.SetParent(transform);
+            speechBubble.transform.localPosition = Vector3.zero;
+            SpeechBubble = speechBubble.GetComponent<EntitySpeechBubble>();
+            SpeechBubble.SetText("this is a test", 5);
+
+        }
+        else
+        {
+            IsPlayer = true;
+        }
 
     }
+
 
     public void SetIdle(bool idle)
     {
         IsIdle = idle;
-    }
-
-
-    public void ResetPhysics()
-    {
-        VerticalVelocity = 0;
-
     }
 
 
@@ -189,30 +189,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         IsWaitingForJump = true;
         StartCoroutine(WaitForJumpAnimation());
     }
-    void OnCollisionEnter(Collision col)
-    {
-        
-        if (col.gameObject.CompareTag("Ground"))
-        {
-            IsGrounded = true;
-        }
-            
-    }
-    void OnCollisionExit(Collision col)
-    {
-        if (col.gameObject.CompareTag("Ground"))
-        {
-            IsGrounded = false;
-        }
-            
-    }
-    void OnCollisionStay(Collision col)
-    {
-        if (col.gameObject.CompareTag("Ground"))
-        {
-            IsGrounded = true;
-        }            
-    }
+
 
 
     /// <summary>
@@ -239,7 +216,19 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     public void SetRunning(bool running)
     {
         IsIdle = false;
+        if (IsPlayer)
+        {
 
+        }
+        else
+        {
+            float speed = running ? Entity.MovementData.RunSpeed : Entity.MovementData.WalkSpeed;
+
+            LEPathFinder?.SetSpeed(speed);
+            AnimationManager.SetSpeedPercentage(1);
+        }
+
+     
         IsRunning = running;
     }
 
@@ -292,7 +281,16 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
     private float GetWorldHeight()
     {
+        Vector3 basePos = new Vector3(transform.position.x, 64, transform.position.z);
+
+        RaycastHit hit;
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 64, layerMask:GROUND_LAYER_MASK))
+        {
+            return hit.point.y;
+        }
         float height = 4.5f;
+        return height;
+        /*
         ChunkData2 chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(Entity.TilePos), false);
 
         if (chunk == null)
@@ -303,14 +301,9 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         else
             height = chunk.BaseHeight;
 
-        Vector3 basePos = new Vector3(transform.position.x, 64, transform.position.z);
-
+        */
         
-        RaycastHit hit;
-        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 64, layerMask: GROUND_LAYER_MASK))
-        {
-            return hit.point.y;
-        }
+        
         /*
         if (transform.position.y < height)
         {
@@ -370,6 +363,24 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     /// </summary>
     private void FixedUpdate() {
 
+
+
+
+        if(!(Entity is Player))
+        {
+            
+            float gHeight = GetWorldHeight();
+
+            if (transform.position.y<gHeight)
+            {
+                transform.position = new Vector3(transform.position.x, gHeight, transform.position.z);
+            }
+            AnimationManager.SetSpeedPercentage(LEPathFinder.CurrentSpeed() / Entity.MovementData.RunSpeed);
+        }
+
+        
+
+        Entity.SetPosition(transform.position);
         //RigidBody.angularVelocity = Vector3.zero;
         if (GameManager.Paused)
             return;
@@ -379,15 +390,18 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             return;
         }
 
-
+        if (!IsPlayer)
+            return;
 
         Debug.BeginDeepProfile("le_fixed_update");
 
 
-        EntityHealthBar.SetHealthPct(Entity.CombatManager.CurrentHealth / Entity.CombatManager.MaxHealth);
+        EntityHealthBar?.SetHealthPct(Entity.CombatManager.CurrentHealth / Entity.CombatManager.MaxHealth);
 
 
         Vec2i cPos = World.GetChunkPosition(transform.position);
+
+        /*
 
         //Check if the current chunk is loaded
         if (!GameManager.WorldManager.CRManager.IsCurrentChunkPositionLoaded(cPos))
@@ -396,7 +410,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             transform.position = new Vector3(transform.position.x, 6, transform.position.z);
             return;
         }
-
+        */
 
         float ground = GetWorldHeight();
 
@@ -791,6 +805,10 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
     public void GamePauseEvent(bool pause)
     {
-      
+        if (!IsPlayer)
+        {
+
+            LEPathFinder.SetPause(pause);
+        }
     }
 }

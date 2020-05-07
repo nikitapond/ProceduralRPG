@@ -152,9 +152,10 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
                 else
                 {
                     Debug.Log("[WorldCombatEvent] Entity " + Entity + " is running from combat event");
-
+                    RunFromCombat(wce.Position);
+                    /*
                     Vec2i runPos = Entity.TilePos + GameManager.RNG.RandomVec2i(10, 20) * GameManager.RNG.RandomSign();
-                    Entity.EntityAI?.TaskAI.SetTask(new EntityTaskGoto(Entity, runPos, priority: 10, running: true));
+                    Entity.EntityAI?.TaskAI.SetTask(new EntityTaskGoto(Entity, runPos, priority: 10, running: true));*/
                 }//if our agression is low, we check for 
                 //If neither team has a friend/family, we 
 
@@ -166,6 +167,11 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
 
     }
 
+
+    public override string ToString()
+    {
+        return base.ToString();
+    }
     protected override void ChooseEquiptWeapon()
     {
     }

@@ -26,8 +26,8 @@ public class GameGenerator
     public RiverGenerator RiverGenerator;
     public LakeGenerator LakeGenerator;
     public ChunkGenerator ChunkGenerator;
-    public ChunkStructureGenerator StructureGenerator;
-    
+    ChunkStructureGenerator StructureGenerator;
+
     //All chunks that are generated outside of the main chunk generator
     private Dictionary<Vec2i, ChunkData2> PreGeneratedChunks;
 
@@ -85,25 +85,30 @@ public class GameGenerator
 
         Debug.BeginDeepProfile("kingdom_set_gen");
         //We then generate empty kingdoms based on these empty chunks
+        Debug.Log("[GameGen] Generating Kingdoms");
         KingdomsGenerator kingGen = new KingdomsGenerator(World, this);
         //We also generate the all empty settlements for the world.
         kingGen.GenerateEmptyKingdomsFromBaseChunks(4);
         //Generates all settlement chunks
+        Debug.Log("[GameGen] Generating Settlements");
+        
         PreGeneratedChunks = kingGen.GenerateSettlements();
-
         Debug.EndDeepProfile("kingdom_set_gen");
 
 
-        Debug.BeginDeepProfile("chunk_struct_gen");
+        // Debug.BeginDeepProfile("chunk_struct_gen");
         //Generate chunk structures (bandit camps, etc)
+        Debug.Log("[GameGen] Generating Chunk Structures");
+
         StructureGenerator = new ChunkStructureGenerator(this);
         StructureGenerator.GenerateStructureShells();
         
+
         //Iterate all chunks generated for chunk structures, add them to the PreGeneratedChunks
-       foreach(KeyValuePair<Vec2i, ChunkData2> kvp in StructureGenerator.GenerateAllStructures())
+       /* foreach (KeyValuePair<Vec2i, ChunkData2> kvp in StructureGenerator.GenerateAllStructures())
         {
             PreGeneratedChunks.Add(kvp.Key, kvp.Value);
-        }
+        }*/
         Debug.EndDeepProfile("chunk_struct_gen");
 
 
@@ -191,7 +196,7 @@ public class GameGenerator
     {
         Debug.BeginDeepProfile("dungeon_gen");
 
-        
+        /*
         List<DungeonEntrance> dungeonEntrances = new List<DungeonEntrance>();
         //Iterate all chunk structures, if they have a dungeon entrance add it to the list
 
@@ -209,7 +214,7 @@ public class GameGenerator
         foreach(Dungeon d in genDun)
         {
             World.AddSubworld(d);
-        }
+        }*/
 
         Debug.EndDeepProfile("dungeon_gen");
 
@@ -256,6 +261,7 @@ public class GameGenerator
     public void GenerateEntities(World world)
     {
         Debug.BeginDeepProfile("entity_gen");
+        Debug.Log("[GameGen] Generating Entities");
 
         //initiate a new instance of EntityGenerator, and then use this to general all entities that belong to a kingdom (most NPCs)
         EntityGenerator entityGen = new EntityGenerator(this, GameManager.EntityManager);

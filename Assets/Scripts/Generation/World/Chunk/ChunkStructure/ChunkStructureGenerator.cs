@@ -12,7 +12,7 @@ public class ChunkStructureGenerator
     public ChunkStructureGenerator(GameGenerator gameGen)
     {
         GameGenerator = gameGen;
-        GenerationRandom = new GenerationRandom(gameGen.Seed * 13 + 29535);
+        //GenerationRandom = new GenerationRandom(gameGen.Seed * 13 + 29535);
     }
 
     ///Shell creation - where we generate the empty shells for all structures
@@ -24,6 +24,7 @@ public class ChunkStructureGenerator
     /// </summary>
     public void GenerateStructureShells()
     {
+        return;
         //Create dictionary to store shells
         ChunkStructureShells = new Dictionary<Vec2i, ChunkStructure>();
         //Generate all bandit camps, iterate and add to lists

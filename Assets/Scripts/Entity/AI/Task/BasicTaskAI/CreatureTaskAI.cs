@@ -17,5 +17,9 @@ public class CreatureTaskAI : EntityTaskAI
         return null;
     }
 
+    public override string ToString()
+    {
+        return base.ToString();
+    }
 
 }

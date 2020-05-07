@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Pathfinding;
 public class PlayerManager : MonoBehaviour
 {
     public static PlayerManager Instance;
@@ -192,6 +192,8 @@ public class PlayerManager : MonoBehaviour
        // Player.EquiptmentManager.AddDefaultItem(new Trousers());
         LoadedPlayer = loadedEntity;
 
+        GetComponent<ProceduralGridMover>().target = Player.GetLoadedEntity().transform;
+
 
        
 
@@ -202,7 +204,7 @@ public class PlayerManager : MonoBehaviour
     public void Tick(float time)
     {
         Player.CombatManager.Tick(time);
-        GameManager.PathFinder.SetPlayerPosition(Player.TilePos);
+        //GameManager.PathFinder.SetPlayerPosition(Player.TilePos);
     }
 
     private Vec2i LastChunk;
@@ -250,6 +252,7 @@ public class PlayerManager : MonoBehaviour
         Player.Update();
 
         MovementUpdate();
+        return;
         PlayerSelectUpdate();
         /*
         float x = Input.GetAxis("Horizontal");
@@ -328,7 +331,6 @@ public class PlayerManager : MonoBehaviour
     void PlayerSelectUpdate()
     {
         LookObject = PlayerCameraScript.CameraController.GetViewObject();
-
         if(LookObject == null)
         {
             DebugGUI.Instance.ClearData("player_view");

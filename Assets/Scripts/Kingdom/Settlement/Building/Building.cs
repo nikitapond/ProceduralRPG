@@ -39,6 +39,10 @@ public abstract class Building
 
     public Vec2i[] BoundingWall;
 
+    public Vec2i[] InsideWallPoints;
+
+    
+
     public Vec2i WorldPosition { get; private set; }
 
     private Recti WorldBounds;
@@ -55,7 +59,7 @@ public abstract class Building
         BuildingObjects = new List<WorldObjectData>();
         if(boundingWall == null)
         {
-            BoundingWall = new Vec2i[] { new Vec2i(0, 0), new Vec2i(width, 0), new Vec2i(width, height), new Vec2i(0, height) };
+            BoundingWall = new Vec2i[] { new Vec2i(0, 0), new Vec2i(width-1, 0), new Vec2i(width-1, height-1), new Vec2i(0, height-1) };
         }
         else
         {
@@ -72,24 +76,36 @@ public abstract class Building
         BuildingTiles = null;
         BuildingObjects = null;
     }
+
     /// <summary>
-    /// Sets the global position of this building.
-    /// Re-sets all objects such that their positions
-    /// become 'obj.Position + wPos'
+    /// Sets the global position of this building based on the position of the settlement
+    /// in the world, as well as this buildings location within the settlement
     /// </summary>
-    /// <param name="wPos"></param>
-    public void SetWorldPosition(Vec2i wPos)
+    /// <param name="settlementBaseCoord">The base tile of the settlement in global coords</param>
+    /// <param name="buildingSettlementCoord">The coordinate of this building in the settlement</param>
+    public void SetPositions(Vec2i settlementBaseCoord, Vec2i buildingSettlementCoord)
     {
-        WorldPosition = wPos;
-        foreach(WorldObjectData obj in BuildingObjects)
+        WorldPosition = settlementBaseCoord + buildingSettlementCoord;
+        foreach (WorldObjectData obj in BuildingObjects)
         {
-            obj.SetPosition(obj.Position + wPos.AsVector3());
+            obj.SetPosition(obj.Position + settlementBaseCoord.AsVector3());
         }
     }
+
 
     public List<WorldObjectData> GetBuildingObjects()
     {
         return BuildingObjects;
+    }
+
+    public bool ObjectIntersects(WorldObjectData obj)
+    {
+        foreach(WorldObjectData obj_ in BuildingObjects)
+        {
+            if (obj.Intersects(obj_))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -99,6 +115,7 @@ public abstract class Building
     /// </summary>
     public void AddObjectReference(WorldObjectData obj) {
         BuildingObjects.Add(obj);
+
     }
 
     public void SetValueModifier(float v)

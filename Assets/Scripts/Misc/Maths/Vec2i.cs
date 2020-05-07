@@ -12,8 +12,8 @@ public class Vec2i
         this.x = x;
         this.z = z;
     }
-    
-    
+
+    public static readonly Vec2i Forward = new Vec2i(0, 1);
 
     public int QuickDistance(Vec2i b)
     {
@@ -25,6 +25,30 @@ public class Vec2i
         float angle = Vector2.SignedAngle(Vector2.up, rotate.AsVector2());
         Vector2 final = Quaternion.Euler(0, 0, angle) * initial.AsVector2();
         return Vec2i.FromVector2(final);
+       
+    }
+    /// <summary>
+    /// Returns the angle (in degrees) between the two vectors
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <returns></returns>
+    public static float Angle(Vec2i a, Vec2i b)
+    {
+        if (a.x == b.x && a.z == b.z)
+            return 0;
+
+        float ang = Mathf.Atan2(a.x * b.z - a.z * b.x, a.x * b.x + a.z * b.z);
+        ang *= Mathf.Rad2Deg;
+        int angInt = (int)ang;
+        if (angInt == 90 || angInt == -90)
+            angInt *= -1;
+        return angInt;
+            
+        float dot = a.x * b.x + a.z * b.z;
+        float mag = Mathf.Sqrt((a.x*a.x + a.z*a.z) * ( b.x*b.x + b.z*b.z));
+        float angleRad = Mathf.Acos(dot / mag);
+        return angleRad * Mathf.Rad2Deg;
     }
 
     public Vector2 AsVector2()

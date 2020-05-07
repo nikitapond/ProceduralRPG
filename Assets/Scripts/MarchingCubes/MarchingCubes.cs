@@ -18,8 +18,8 @@ namespace MarchingCubesProject
 
 
 		
-		public void Generate(Voxel[] voxels, VoxelBounds b, Voxel current, int width, int height, int depth, IList<Vector3> verts, IList<int> indices)
-		{
+		public void Generate(VoxelNode[] voxels, VoxelBounds b, Voxel current, int width, int height, int depth, IList<Vector3> verts, IList<int> indices)
+		{			
 			if (Surface > 0.0f)
 			{
 				WindingOrder[0] = 0;
@@ -41,13 +41,7 @@ namespace MarchingCubesProject
 				{
 					for (z = 0; z < depth - 1; z++)
 					{
-						/*
-						for (x = b.MinX; x < b.MaxX - 1; x++)
-						{
-							for (y = b.MinY; y < b.MaxY - 1; y++)
-							{
-								for (z = b.MinZ; z < b.MaxZ - 1; z++)
-								{*/
+						
 						//Get the values in the 8 neighbours which make up a cube
 						for (i = 0; i < 8; i++)
 						{
@@ -55,9 +49,30 @@ namespace MarchingCubesProject
 							iy = y + VertexOffset[i, 1];
 							iz = z + VertexOffset[i, 2];
 
+							int index = ix + iy * width + iz * width * height;						
+							
+							if (voxels[index].ContainsVoxel(current))
+							{
+								Cube[i] = -1;
+							}
+							else
+							{
+								Cube[i] = 1;
+							}
+							/*
 							Voxel v = voxels[ix + iy * width + iz * width * height];
 
+						if (v == current)
+							{
+								Cube[i] = -1;
 
+							}
+							else
+							{
+								Cube[i] = 1;
+
+
+							}
 
 							if(v == current)
 							{
@@ -69,9 +84,9 @@ namespace MarchingCubesProject
 								Cube[i] = 1;
 								
 								
-							}
+							}*/
 
-							
+
 						}
 
 						//Perform algorithm

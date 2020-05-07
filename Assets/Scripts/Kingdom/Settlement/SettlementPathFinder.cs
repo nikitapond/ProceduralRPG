@@ -14,7 +14,7 @@ public class SettlementPathFinder
         PathNodes = settlementPathNodes;
         Size = PathNodes.GetLength(0)-1;
 
-        Debug.Log(Size);
+       // Debug.Log(Size);
     }
 
     /// <summary>

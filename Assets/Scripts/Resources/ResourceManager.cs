@@ -9,7 +9,6 @@ using System.Linq;
 public class ResourceManager
 {
 
-    public static GameObject ChunkPrefab { get; private set; }
     private static Dictionary<string, Shader> Shaders;
     private static Dictionary<string, Material> Materials;
     private static Dictionary<string, GameObject> EntityGameObjects;
@@ -24,7 +23,6 @@ public class ResourceManager
     private static Dictionary<Voxel, Material> VoxelMaterials;
     public static void LoadAllResources()
     {
-        ChunkPrefab = Resources.Load<GameObject>("Misc/ChunkPrefab");
         LoadShaders();
         CreateMaterials();
         LoadEntityGameObjects();
@@ -43,7 +41,9 @@ public class ResourceManager
         VoxelMaterials = new Dictionary<Voxel, Material>();
         VoxelMaterials.Add(Voxel.stone, Resources.Load<Material>("Shaders/Voxel/StoneWallVoxelMat"));
         VoxelMaterials.Add(Voxel.wood, Resources.Load<Material>("Shaders/Voxel/WoodVoxelMat"));
-        VoxelMaterials.Add(Voxel.glass, Resources.Load<Material>("Shaders/Voxels/GlassVoxelMat"));
+        VoxelMaterials.Add(Voxel.glass, Resources.Load<Material>("Shaders/Voxel/GlassVoxelMat"));
+        VoxelMaterials.Add(Voxel.thatch, Resources.Load<Material>("Shaders/Voxel/ThatchVoxelMat"));
+
 
     }
     private static void LoadShaders()
@@ -67,6 +67,7 @@ public class ResourceManager
         EntityGameObjects = new Dictionary<string, GameObject>();
         string root = "Entity/";
         EntityGameObjects.Add("healthbar", Resources.Load<GameObject>(root + "EntityHealthBar"));
+        EntityGameObjects.Add("speechbubble", Resources.Load<GameObject>(root + "EntitySpeechBubble"));
         EntityGameObjects.Add("default", Resources.Load<GameObject>(root + "default"));
 
         EntityGameObjects.Add("bear", Resources.Load<GameObject>(root + "bear"));
@@ -95,12 +96,18 @@ public class ResourceManager
         AllWorldObjects.Add((int)WorldObjects.ROCK, Resources.Load<GameObject>(root + "Natural/Rock/Rock"));
         AllWorldObjects.Add((int)WorldObjects.WOOD_SPIKE, Resources.Load<GameObject>(root + "Structure/Wood/WoodSpike"));
         AllWorldObjects.Add((int)WorldObjects.ANVIL, Resources.Load<GameObject>(root + "Building/Work/Blacksmith/Anvil"));
+        AllWorldObjects.Add((int)WorldObjects.WEAPON_STAND, placeholder);
+        AllWorldObjects.Add((int)WorldObjects.ARMOUR_STAND, placeholder);
+
         AllWorldObjects.Add((int)WorldObjects.GLASS_WINDOW, Resources.Load<GameObject>(root + "Structure/Glass/Window"));
         AllWorldObjects.Add((int)WorldObjects.ROOF, Resources.Load<GameObject>(root + "Building/Roof"));
         AllWorldObjects.Add((int)WorldObjects.DOOR, Resources.Load<GameObject>(root + "Structure/Door/Door"));
         AllWorldObjects.Add((int)WorldObjects.DUNGEON_ENTRANCE, Resources.Load<GameObject>(root + "Null"));
         AllWorldObjects.Add((int)WorldObjects.BED, Resources.Load<GameObject>(root + "Building/House/Bed"));
+        AllWorldObjects.Add((int)WorldObjects.DOUBLE_BED, Resources.Load<GameObject>(root + "Building/House/DoubleBed"));
+
         AllWorldObjects.Add((int)WorldObjects.MARKET_STALL, Resources.Load<GameObject>(root + "Building/Work/Market/MarketStall"));
+        AllWorldObjects.Add((int)WorldObjects.WALL_TORCH, Resources.Load<GameObject>(root + "Building/Misc/Torch"));
 
 
 
@@ -173,6 +180,7 @@ public class ResourceManager
     }
     public static Material GetVoxelMaterial(Voxel vox)
     {
+    
         return VoxelMaterials[vox];
     }
     public static Material GetMaterial(string name)

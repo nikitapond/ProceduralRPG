@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
+
 using System.Diagnostics;
 public class GameManager : MonoBehaviour
 {
@@ -16,6 +18,8 @@ public class GameManager : MonoBehaviour
     public static Settlement TestSettle;
 
     public static string GameToLoad = "none";
+
+    private NavMeshSurface NavMeshSurf;
 
     /// <summary>
     /// Here we define various static objects. These link to instances that are frequently
@@ -55,7 +59,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     void Awake()
     {
-
+        NavMeshSurf = GetComponent<NavMeshSurface>();
         IsPlaying = true;
 
         Debug.Log(Application.persistentDataPath);
@@ -91,7 +95,6 @@ public class GameManager : MonoBehaviour
             //UnityEngine.Profiling.CustomSampler gen = UnityEngine.Profiling.CustomSampler.Create("GenSampler");
             int seed = 0;
             Debug.Log("No game to load, generating with seed " + seed);
-            
             GenerateGame(seed);
             PathFinder = new PathFinder(WorldManager.World);
             PathFinder.SetPlayerPosition(PlayerManager.Player.TilePos);
@@ -127,6 +130,11 @@ public class GameManager : MonoBehaviour
         RNG = new GenerationRandom(System.DateTime.Now.Millisecond);
     }
 
+    public void RecalculateNavMesh()
+    {
+        NavMeshSurf.BuildNavMesh();
+    }
+
     private void OnApplicationQuit()
     {
         TestSettle = null;
@@ -146,7 +154,6 @@ public class GameManager : MonoBehaviour
 
         GameGenerator = new GameGenerator(seed);
         GameGenerator.GenerateWorld(WorldManager);
-        
         GameGenerator.GenerateEntities(WorldManager.World);
         GameGenerator.GenerateDungeons();
         GameGenerator.GenerateWorldMap();

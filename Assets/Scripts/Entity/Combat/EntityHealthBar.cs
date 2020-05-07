@@ -11,12 +11,15 @@ public class EntityHealthBar : MonoBehaviour
     void Start()
     {
         SetHealthPct(1);
+        if (PlayerManager.Instance == null)
+            return;
         canvas.worldCamera = PlayerManager.Instance.PlayerCamera;
     }
 
     public void SetHealthPct(float pct)
     {
-
+        if (canvas == null || PlayerManager.Instance == null)
+            return;
         image.fillAmount = pct;
         if(pct == 1)
         {

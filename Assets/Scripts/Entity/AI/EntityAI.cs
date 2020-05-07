@@ -41,13 +41,28 @@ public class EntityAI
         //Only run tasks while not in combat
         if (!CombatAI.InCombat)
             TaskAI.Tick();
+
+
+       // Entity.GetLoadedEntity().SpeechBubble.SetText(ToString());
+    }
+
+    public override string ToString()
+    {
+
+        string data = Entity.ToString() + "\n";
+        data += CombatAI.ToString() + "\n";
+        data += TaskAI.ToString();
+        return data;
     }
 
 
+    private Vec2i Target;
     public bool GeneratePath(Vec2i target)
     {
+        Entity.GetLoadedEntity().LEPathFinder?.SetTarget(target.AsVector2());
+        Target = target;
 
-
+        return true;
         //if no target, null previous paths and return.
         if (target == null)
         {
@@ -155,6 +170,8 @@ public class EntityAI
     
     public bool FollowPath()
     {
+        Debug.Log("OMGOMGOMGOMG" + "Entity " + Entity + " is moving to " + Target);
+        return true;
         if (EntityPath == null)
             return false;
         Vec2i nexti_ = EntityPath.CurrentIndex();
@@ -183,7 +200,7 @@ public class EntityAI
     /// </summary>
     public void OnEntityLoad()
     {
-        GameManager.EventManager.AddListener(CombatAI);
+        EventManager.Instance.AddListener(CombatAI);
         CombatAI.CheckEquiptment();
         CombatAI.SetEntity(Entity);
         TaskAI.SetEntity(Entity);

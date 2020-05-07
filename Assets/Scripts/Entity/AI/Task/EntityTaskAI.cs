@@ -70,4 +70,11 @@ public abstract class EntityTaskAI
 
 
     }
+
+    public override string ToString()
+    {
+        if (CurrentTask == null)
+            return "no task";
+        return CurrentTask.ToString();
+    }
 }

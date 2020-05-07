@@ -5,6 +5,9 @@ using System;
 
 public class EntityManager : MonoBehaviour
 {
+
+    public static EntityManager Instance;
+
     /// <summary>
     /// IDLE_CHUNK_DISTANCE - An entity that is further than this many chunks away from the player
     /// will be set to idle.
@@ -37,6 +40,7 @@ public class EntityManager : MonoBehaviour
 
     void Awake()
     {
+        Instance = this;
         FixedEntities = new Dictionary<Vec2i, List<int>>();
         FixedEntities_ = new Dictionary<int, Entity>();
         LoadedEntities = new List<LoadedEntity>();
@@ -84,7 +88,8 @@ public class EntityManager : MonoBehaviour
         foreach (LoadedEntity e in LoadedEntities)
         {
 
-            int quickDist = Vec2i.QuickDistance(e.Entity.TilePos, GameManager.PlayerManager.Player.TilePos);
+            int quickDist = Vec2i.QuickDistance(e.Entity.TilePos, PlayerManager.Instance.Player.TilePos);
+            e.LEPathFinder?.SetDistanceToPlayer(quickDist);
             if(quickDist > IDLE_DISTANCE_SQR)
             {
                 e.SetIdle(true);
@@ -98,7 +103,7 @@ public class EntityManager : MonoBehaviour
             
         }
 
-        GameManager.DebugGUI.SetData("loaded_entity_count",(LoadedEntities.Count-idleEnt) + "/" + LoadedEntities.Count);
+        DebugGUI.Instance.SetData("loaded_entity_count",(LoadedEntities.Count-idleEnt) + "/" + LoadedEntities.Count);
 
 
         //Increminent timer and run AI loop if required.
@@ -192,7 +197,7 @@ public class EntityManager : MonoBehaviour
     {
         WorldCombat combatEvent = new WorldCombat(a, b);
         CurrentWorldCombatEvents.Add(combatEvent);
-        GameManager.EventManager.InvokeNewEvent(combatEvent);
+        EventManager.Instance.InvokeNewEvent(combatEvent);
         Debug.Log("Entity " + a.ToString() + " is attacking " + b.ToString());
         return combatEvent;
     }
@@ -234,6 +239,7 @@ public class EntityManager : MonoBehaviour
 
         int total=0;
         int enabled=0;
+        /*
         foreach(Vec2i v in LoadedChunks)
         {
             MeshCollider mc = GameManager.WorldManager.CRManager.GetLoadedChunk(v).GetComponent<MeshCollider>();
@@ -249,7 +255,7 @@ public class EntityManager : MonoBehaviour
             {
                // mc.enabled = false;
             }
-        }
+        }*/
         /*
         foreach(KeyValuePair<Vec2i, List<Entity>> kvp in LoadedEntityChunks)
         {
@@ -447,7 +453,7 @@ public class EntityManager : MonoBehaviour
         return LoadedChunks;
     }
 
-    public void LoadChunk(ChunkBase cb, Vec2i v)
+    public void LoadChunk(Vec2i v)
     {
         //Debug.Log("Loading chunk with entities");
         LoadedChunks.Add(v);
@@ -462,10 +468,7 @@ public class EntityManager : MonoBehaviour
 
             FixedEntities[v].Clear();
         }
-        if(cb != null)
-        {
-            EntitySpawner.SpawnChunkEntities(cb);
-        }
+        
     }
 
     public void UnloadChunk(Vec2i chunk)

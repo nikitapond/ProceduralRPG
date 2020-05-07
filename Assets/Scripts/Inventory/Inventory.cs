@@ -35,7 +35,7 @@ public class Inventory
         Debug.Log("removing item ");
         Items.Remove(itemStack);
         if (InventoryObject != null)
-            InventoryObject.OnRemoveItem();
+            InventoryObject.OnRemoveItem(itemStack.Item);
     }
 
     public void RemoveItem(Item item)
@@ -99,13 +99,13 @@ public class Inventory
             {
                 itSt.AddToStack(item.Count);
                 if (InventoryObject != null)
-                    InventoryObject.OnAddItem();
+                    InventoryObject.OnAddItem(item.Item);
                 return;
             }
         }
         Items.Add(item);
         if (InventoryObject != null)
-            InventoryObject.OnAddItem();
+            InventoryObject.OnAddItem(item.Item);
     }
     public void AddItem(Item item)
     {
@@ -113,13 +113,13 @@ public class Inventory
         if(toStack != null)
         {
             if (InventoryObject != null)
-                InventoryObject.OnAddItem();
+                InventoryObject.OnAddItem(item);
             toStack.AddToStack();
         }
         if(toStack == null)
         {
             if (InventoryObject != null)
-                InventoryObject.OnAddItem();
+                InventoryObject.OnAddItem(item);
             toStack = new ItemStack(item);
             Items.Add(toStack);
         }

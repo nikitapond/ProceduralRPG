@@ -88,4 +88,9 @@ public class BasicNPCTaskAI : EntityTaskAI
     {
         return NPC.NPCData.NPCJob.WorkLocation.WorkBuilding.GetWorldBounds().ContainsPoint(Entity.TilePos);
     }
+
+    public override string ToString()
+    {
+        return base.ToString();
+    }
 }

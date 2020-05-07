@@ -7,6 +7,12 @@ public class LineI
     public Vec2i Start, End;
     public float Mag { get; private set; }
     public Vector2 Grad { get; private set; }
+
+    /// <summary>
+    /// Coefficients that define the equation of this line:
+    /// Ax + By + C = 0
+    /// </summary>
+    private float a, b, c;
     public LineI(Vec2i start, Vec2i end)
     {
         Start = start;
@@ -14,10 +20,24 @@ public class LineI
         Grad = (end - start).AsVector2();
         Mag = Grad.magnitude;
         Grad /= Mag;
+        int dx = end.x - start.x;
+        int dz = end.z - start.z;
+        b = dx;
+        a = -dz;
+        c = dz * start.x - dx * start.z;
+
     }
 
-
-   
+    /// <summary>
+    /// returns the shortest distance from the specified point
+    /// to this line
+    /// </summary>
+    /// <param name="point"></param>
+    /// <returns></returns>
+   public float Distance(Vec2i point)
+    {
+        return Mathf.Abs(a * point.x + b * point.z + c) / Mathf.Sqrt(a * a + b * b);
+    }
 
     public bool Intersects(LineI l2)
     {

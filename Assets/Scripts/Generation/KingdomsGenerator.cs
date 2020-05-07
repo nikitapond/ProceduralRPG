@@ -37,19 +37,23 @@ public class KingdomsGenerator
     /// <returns></returns>
     public Dictionary<Vec2i, ChunkData2> GenerateSettlements()
     {
+        
         SettlementGenerators = new List<SettlementGenerator>();
 
         ThreadComplete = new List<Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>>>();
         List<Thread> threads = new List<Thread>();
-        Dictionary<Vec2i, ChunkData2> setChunks = new Dictionary<Vec2i, ChunkData2>(2000);
 
+
+        Dictionary<Vec2i, ChunkData2> setChunks = new Dictionary<Vec2i, ChunkData2>(2000);
+        
         foreach (KeyValuePair<Kingdom, List<SettlementBase>> kpv in KingdomSettlements)
         {
+            
             SettlementGenerator sg = new SettlementGenerator(GameGenerator, World, kpv.Key, kpv.Value);
-
+            
             threads.Add(InitSettlementGeneratorThread(kpv.Key, sg));
-
         }
+        
         bool threadsComplete = false;
         while (!threadsComplete)
         {
@@ -86,6 +90,8 @@ public class KingdomsGenerator
     }
     private void InnerSettlementGenThread(Kingdom k, SettlementGenerator g)
     {
+        Debug.Log("gets here fine");
+       
         Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> dc = g.GenerateAllSettlements();
         lock (ThreadComplete)
         {

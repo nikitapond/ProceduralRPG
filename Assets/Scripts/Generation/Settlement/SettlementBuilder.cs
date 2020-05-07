@@ -172,10 +172,7 @@ public class SettlementBuilder : BuilderBase
         PlaceBuildings(mustAdd);
         CreatePathNodes();
 
-        foreach(Building b in Buildings)
-        {
-            
-        }
+       
 
     }
     public SettlementPathNode ENTR_NODE;
@@ -556,21 +553,28 @@ public class SettlementBuilder : BuilderBase
 
         foreach (BuildingPlan bp in buildings)
         {
-            
-            Building b = BuildingGenerator.CreateBuilding(GenerationRandom, out BuildingVoxels vox, bp);
-            
-            Recti r = null;
-            int i = 0;
-            while (r == null && i < 5)
+
+            try
             {
-                r = AddBuilding(b, vox);
-                i++;
+                Building b = BuildingGenerator.CreateBuilding(GenerationRandom, out BuildingVoxels vox, bp);
+
+                Recti r = null;
+                int i = 0;
+                while (r == null && i < 5)
+                {
+                    r = AddBuilding(b, vox);
+                    i++;
+                }
+                if (r == null)
+                    continue;
+                this.Buildings.Add(b);
+                //SurroundByPath(r.X, r.Y, r.Width, r.Height, 2);
+                SettlementPathNode[] nodes = AddPlot(r);
+            }catch(System.Exception e)
+            {
+                Debug.Log(e);
             }
-            if (r == null)
-                continue;
-            this.Buildings.Add(b);
-            //SurroundByPath(r.X, r.Y, r.Width, r.Height, 2);
-            SettlementPathNode[] nodes = AddPlot(r);
+            
 
 
         }
@@ -936,36 +940,48 @@ public class SettlementBuilder : BuilderBase
                 return null;
         }
 
-        float minHeight = GetHighestChunkHeight(pos.x, pos.z, b.Width, b.Height);
+        //We find the lowest position in this 
+        float minHeight = GetLowestChunkHeight(pos.x, pos.z, b.Width, b.Height);
+
+        float maxHeight = GetHighestChunkHeight(pos.x-1, pos.z-1, b.Width+2, b.Height+2);
         //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);
         for (int x = 0; x < b.Width; x++)
         {
             for (int z = 0; z < b.Height; z++)
             {
 
-                int cx = WorldToChunk(x);
-                int cz = WorldToChunk(z);
+                int cx = WorldToChunk(x+pos.x);
+                int cz = WorldToChunk(z+pos.z);
 
-                int deltaHeight = ChunkBases != null ? (int)(minHeight - ChunkBases[cx, cz].BaseHeight) : 0;
+                //We find the base height of this chunk
+                float cHeight = ChunkBaseHeights[cx, cz];
+                float heightDelta = maxHeight - cHeight;
+
 
                 SetTile(x + pos.x, z + pos.z, b.BuildingTiles[x, z]);
-                SetHeight(x + pos.x, z + pos.z, minHeight);
 
+
+                SetHeight(x + pos.x, z + pos.z, maxHeight);
                 for(int y=0; y < vox.Height; y++)
                 {
-                    SetVoxel(x + pos.x, y, z + pos.z, vox.GetVoxel(x, y, z));
+                    SetVoxelNode(x + pos.x, (int)heightDelta + y, z + pos.z, vox.GetVoxelNode(x, y, z));
                 }
             }
         }
         foreach (WorldObjectData obj in b.GetBuildingObjects())
         {
-            Debug.Log(obj.Position + " pre trans pos");
+
+            //We must set the object to have coordinates based on the settlement,
+            //such that the object is added to the correct chunk.
             obj.SetPosition(obj.Position + pos.AsVector3());
             //We (should) already have checked for object validity when creating the building
             AddObject(obj, true);
         }
 
-        b.SetWorldPosition(pos + BaseTile);
+        Vec2i wPos = pos + BaseTile;
+        Vec2i cPos = World.GetChunkPosition(wPos);
+
+        b.SetPositions(BaseTile, pos);
 
         Buildings.Add(b);
         //PathNodes.Add(b.Entrance);
@@ -1031,11 +1047,20 @@ public class SettlementBuilder : BuilderBase
                 {
                     return false;
                 }
+
+                int cx = WorldToChunk(x_);
+                int cz = WorldToChunk(z_);
+                int baseIgnore = Tile.NULL.ID;
+                if(ChunkBases!= null && ChunkBases[cx,cz] != null)
+                {
+                    baseIgnore = Tile.GetFromBiome(ChunkBases[cx, cz].Biome).ID;
+                }
+
                 if(ignoreTile != null)
                 {
-                    if (GetTile(x_, z_) != 0 && GetTile(x_, z_) != ignoreTile.ID)
+                    if (GetTile(x_, z_) != 0 && GetTile(x_, z_) != ignoreTile.ID && GetTile(x_,z_) != baseIgnore)
                         return false;
-                }else if (GetTile(x_, z_) != 0)
+                }else if (GetTile(x_, z_) != 0 && GetTile(x_, z_) != baseIgnore)
                     return false;
             }
         }
@@ -1043,23 +1068,43 @@ public class SettlementBuilder : BuilderBase
         return true;
     }
 
-
-    private float GetHighestChunkHeight(int tx, int tz, int width, int height)
+    private float GetLowestChunkHeight(int tx, int tz, int width, int height)
     {
-        int lx = (int)(((float)tx+this.BaseTile.x) / World.ChunkSize);
+        int lx = (int)(((float)tx + this.BaseTile.x) / World.ChunkSize);
         int lz = (int)(((float)tz + this.BaseTile.z) / World.ChunkSize);
-        int hx = (int)(((float)(tx+width + this.BaseTile.x)) / World.ChunkSize);
+        int hx = (int)(((float)(tx + width + this.BaseTile.x)) / World.ChunkSize);
         int hz = (int)(((float)(tz + height + this.BaseTile.z)) / World.ChunkSize);
-        float curHeight = -1;
-        for(int x=lx; x<=hx; x++)
+        float curHeight = float.MaxValue;
+        for (int x = lx; x <= hx; x++)
         {
-            for(int z=lz; z<=hz; z++)
+            for (int z = lz; z <= hz; z++)
             {
                 float cHeight = GameGenerator.TerrainGenerator.ChunkBases[x, z].BaseHeight;
+                if (cHeight < curHeight)
+                    curHeight = cHeight;
+            }
+        }
+        return curHeight;
+
+    }
+    private float GetHighestChunkHeight(int lx, int lz, int width, int height)
+    {
+        float curHeight = -1;
+
+        for (int x=lx; x<lx+width; x++)
+        {
+            for (int z = lz; z < lz + height; z++)
+            {
+                int cx = WorldToChunk(x);
+                int cz = WorldToChunk(z);
+                if (cx < 0 || cz < 0 || cx >= ChunkSize.x || cz >= ChunkSize.z)
+                    continue;
+                float cHeight = ChunkBaseHeights[cx, cz];
                 if (cHeight > curHeight)
                     curHeight = cHeight;
             }
         }
+
         return curHeight;
 
     }

@@ -6,5 +6,6 @@ public enum Voxel
     none,
     stone,
     wood,
-    glass
+    glass,
+    thatch,
 }
