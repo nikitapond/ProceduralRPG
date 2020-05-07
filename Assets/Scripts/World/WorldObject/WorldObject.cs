@@ -32,26 +32,38 @@ public class WorldObject : MonoBehaviour
         gameObject.transform.localPosition = data.Position.Mod(World.ChunkSize);
         gameObject.transform.localScale = data.Scale;
         obj.Data = data;
+        obj.AdjustHeight();
         data.OnObjectLoad(obj);
         return obj;
     }
+
 
 
     public void AdjustHeight()
     {
         Vector3 basePos = new Vector3(transform.position.x, World.ChunkHeight, transform.position.z);
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, World.ChunkHeight, layerMask: ~GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, World.ChunkHeight, layerMask: GROUND_LAYER_MASK))
         {
-            basePos.y = hit.point.y;
+            Debug.Log("Height raycast succesful: " + hit.point.y);
+            basePos.y = hit.point.y + Data.Position.y;
             transform.position = basePos;
         }
         else
         {
+            StartCoroutine("WaitAndAdjust");
             Debug.Log("no hit" + "_" + basePos);
         }
 
     }
+
+    private IEnumerator WaitAndAdjust()
+    {
+        yield return new WaitForSeconds(0.2f);
+        Debug.Log("Attempting to adjust again");
+        AdjustHeight();
+    }
+
 
     public static GameObject InstansiatePrefab(GameObject source, Transform parent = null)
     {
@@ -92,6 +104,8 @@ public enum WorldObjects
     BRIDGE, BRIDGE_BASE, BRIDGE_RAMP,
     WATER,
     ANVIL,
+    WEAPON_STAND,
+    ARMOUR_STAND, 
     GRASS,
     ROCK,
     WOOD_SPIKE,
@@ -101,9 +115,11 @@ public enum WorldObjects
     DUNGEON_ENTRANCE,
     MARKET_STALL,
     BED,
+    DOUBLE_BED,
     PRACTISE_DUMMY,
     BANDIT_GAURD_TOWER,
     CHEST,
+    WALL_TORCH
 
 
 

@@ -54,12 +54,15 @@ public abstract class WorldObjectData
         Position = position;
         Rotation = rotation;
         Scale = Vector3.one;
+        OnConstructor();
     }
     public WorldObjectData(float rotation = 0)
     {
         Position = Vector3.zero;
         Rotation = rotation;
         Scale = Vector3.one;
+        OnConstructor();
+
     }
 
     public WorldObjectData SetPosition(Vector3 nPos)
@@ -73,6 +76,11 @@ public abstract class WorldObjectData
         return this;
     }
 
+    public WorldObjectData SetRotation(float rot)
+    {
+        Rotation = rot;
+        return this;
+    }
 
     /// <summary>
     /// Called when this object is created.
@@ -87,6 +95,13 @@ public abstract class WorldObjectData
     /// <returns></returns>
     public bool Intersects(WorldObjectData obj)
     {
+        if (IsCollision == false)
+            return false;
+        else if (obj.IsCollision == false)
+            return false;
+        return Vector3.Distance(obj.Position, Position) <=
+            Mathf.Max(obj.Size.x, obj.Size.y, obj.Size.z, Size.x, Size.y, Size.z);
+
         Vector3 aMin = Position;
         Vector3 bMin = obj.Position;
         Vector3 aMax = aMin + Size;
@@ -94,6 +109,11 @@ public abstract class WorldObjectData
         return aMin.x < bMax.x && aMin.x > bMin.x && aMin.y < bMax.y && aMin.y > bMin.y && aMin.z < bMax.z && aMin.z > bMin.z ||
             aMax.x < bMax.x && aMax.x > bMin.x && aMax.y < bMax.y && aMax.y > bMin.y && aMax.z < bMax.z && aMax.z > bMin.z;
 
+    }
+
+    public bool IntersectsPoint(Vec2i point)
+    {
+        return Vector3.Distance(point.AsVector3(), Position) <= Mathf.Max(Size.x, Size.y, Size.z);
     }
 
     public Recti CalculateIntegerBounds()

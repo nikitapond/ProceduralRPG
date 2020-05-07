@@ -11,9 +11,5 @@ public class Bed : WorldObjectData
 
     public override bool IsCollision => true;
     public override bool AutoHeight => true;
-    public Bed(Vector3 pos, float rotation=0):base (pos, rotation)
-    {
 
-    }
-    public Bed(float rotation) : base(rotation) { }
 }

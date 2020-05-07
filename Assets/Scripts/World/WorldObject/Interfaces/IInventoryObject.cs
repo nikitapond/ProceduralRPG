@@ -4,6 +4,8 @@ using UnityEditor;
 public interface IInventoryObject
 {
     Inventory GetInventory();
-    void OnRemoveItem();
-    void OnAddItem();
+    void OnRemoveItem(Item item);
+    void OnAddItem(Item item);
+
+    bool CanAddItem(Item item);
 }

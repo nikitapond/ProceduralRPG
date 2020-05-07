@@ -36,15 +36,20 @@ public class LootSack : WorldObjectData, IInventoryObject
         return Inventory;
     }
 
-    public void OnAddItem()
+    public void OnAddItem(Item item)
     {
     }
 
-    public void OnRemoveItem()
+    public void OnRemoveItem(Item item)
     {
         if (Inventory.IsEmpty)
         {
             WorldManager.Destroy(this.LoadedObject.gameObject);
         }
+    }
+
+    public bool CanAddItem(Item item)
+    {
+        return true;
     }
 }
