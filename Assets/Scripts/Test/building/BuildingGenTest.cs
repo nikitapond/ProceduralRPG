@@ -6,8 +6,7 @@ using MarchingCubesProject;
 public class BuildingGenTest : MonoBehaviour
 {
 
-    public NavMeshSurface Surface;
-
+    AstarPath path;
     public GameObject ChunkPrefab;
     public GameObject ChunkVoxelPrefab;
 
@@ -29,6 +28,7 @@ public class BuildingGenTest : MonoBehaviour
         MarchingCubes = new MarchingCubes(-0.5f);
 
         ResourceManager.LoadAllResources();
+        path = GetComponent<AstarPath>();
 
     }
 
@@ -39,16 +39,35 @@ public class BuildingGenTest : MonoBehaviour
         int seed = System.DateTime.Now.Millisecond;
         Debug.Log(seed);
         GenerationRandom genRan = new GenerationRandom(seed);
+   
+
         TestBuildingBuilder tbb = new TestBuildingBuilder(new Vec2i(0, 0), new Vec2i(Size, Size));
+
+
+        for(int x=0; x<Size/2; x++)
+        {
+            for (int z = 0; z < Size / 2; z++)
+            {
+              //  if (x != 0 || z != 0)
+                //    continue;
+                int xP = x * World.ChunkSize*2;
+                int zP = z * World.ChunkSize*2;
+                Building b = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox, Building.HOUSE);
+                tbb.AddBuilding(b, vox, new Vec2i(xP+1,zP+1));
+            }
+        }
+
+      
+/*
         Building b = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox, Building.HOUSE);
-        /*Building b1 = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox1, Building.BLACKSMITH);
+        Building b1 = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox1, Building.BLACKSMITH);
 
         Building b2 = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox2, Building.HOUSE);
         Building b3 = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox3, Building.HOUSE);
         Building b4 = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox4, Building.HOUSE);
-        */
-        tbb.AddBuilding(b, vox, new Vec2i(10, 10));
-        /*tbb.AddBuilding(b1, vox1, new Vec2i(40, 40));
+        
+        //tbb.AddBuilding(b, vox, new Vec2i(10, 10));
+        tbb.AddBuilding(b1, vox1, new Vec2i(40, 40));
         tbb.AddBuilding(b2, vox2, new Vec2i(60, 60));
         tbb.AddBuilding(b3, vox3, new Vec2i(60, 40));
         tbb.AddBuilding(b4, vox4, new Vec2i(40, 60));
@@ -68,8 +87,15 @@ public class BuildingGenTest : MonoBehaviour
 
             CreateChunk(plc, cd);
         }
-       
-        Surface.BuildNavMesh();
+
+        for(int x=0; x<20; x++)
+        {
+            //Debug.Log(tbb.GetVoxelNode(x,1,15);
+        }
+
+
+
+
 
 
     }
@@ -153,12 +179,12 @@ public class BuildingGenTest : MonoBehaviour
                 MeshFilter voxelMf = voxelObj.GetComponent<MeshFilter>();
                 voxelMf.mesh = PreLoadedChunk.CreateMesh(pmesh);
                 Material voxMat = ResourceManager.GetVoxelMaterial(v);
-                Debug.Log(voxMat + " vox mat");
+                //Debug.Log(voxMat + " vox mat");
                 voxelObj.GetComponent<MeshRenderer>().material = voxMat;
                 MeshCollider voxelMc = voxelObj.GetComponent<MeshCollider>();
                 voxelMc.sharedMesh = voxelMf.mesh;
                 voxelObj.transform.parent = cObj.transform;
-                voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.8f);
+                voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.75f);
 
                 voxelMf.mesh.RecalculateNormals();
             }
@@ -168,8 +194,8 @@ public class BuildingGenTest : MonoBehaviour
             foreach (WorldObjectData objDat in cd.WorldObjects)
             {
                 WorldObject obj = WorldObject.CreateWorldObject(objDat, cObj.transform, 0.7f);
-                if(objDat.AutoHeight)
-                    obj.AdjustHeight();
+                //if(objDat.AutoHeight)
+                //    obj.AdjustHeight();
                 //obj.transform.position = objDat.Position;
                 //obj.transform.localPosition = objDat.Position.Mod(World.ChunkSize);
             }
@@ -275,13 +301,29 @@ public class BuildingGenTest : MonoBehaviour
         //March the terrain map
         MarchingCubes.Generate(cube, World.ChunkSize + 1, World.ChunkHeight + 1, World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
 
+        for (int i = 0; i < CurrentTriangles.Count; i += 3)
+        {
+            int tri1 = CurrentTriangles[i];
+            int tri2 = CurrentTriangles[i + 1];
+            int tri3 = CurrentTriangles[i + 2];
+
+            //We find the average/mid point of this triangle
+            Vector3 mid = (CurrentVerticies[tri1] + CurrentVerticies[tri2] + CurrentVerticies[tri3]) / 3;
+            Vec2i tMid = Vec2i.FromVector3(mid);
+            Color c = colourMap[tMid.x, tMid.z];
+
+            CurrentColours.Add(c);
+            CurrentColours.Add(c);
+            CurrentColours.Add(c);
+        }
+        /*
         for (int i = 0; i < CurrentVerticies.Count; i++)
         {
             int x = (int)CurrentVerticies[i].x;
             int z = (int)CurrentVerticies[i].z;
             CurrentColours.Add(colourMap[x, z]);
 
-        }
+        }*/
 
         //We create a thread safe mesh for the terrain
         PreMesh terrainMesh = new PreMesh();
@@ -291,9 +333,16 @@ public class BuildingGenTest : MonoBehaviour
         //Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies");
         //Create the base pre-loaded chunk
         PreLoadedChunk preChunk = new PreLoadedChunk(new Vec2i(chunk.X, chunk.Z), terrainMesh, chunk);
+
+        Debug.Log("Pre loaded chunk started, now for voxels");
+
         //if we have no voxel data, return just the terrain map
         if (chunk.VoxelData == null)
+        {
+            Debug.Log("Chunk has no voxels");
             return preChunk;
+
+        }
 
 
 
@@ -301,6 +350,28 @@ public class BuildingGenTest : MonoBehaviour
         {
             if (v == Voxel.none)
                 continue;
+
+            if(!chunk.VoxelData.HasVoxel(v))
+            {
+               // Debug.Log("Chunk " + chunk + " does not have the voxel " + v);
+                continue;
+            }
+
+            CurrentVerticies.Clear();
+            CurrentTriangles.Clear();
+            CurrentColours.Clear();
+            CurrentUVs.Clear();
+           // Debug.Log("starting march");
+
+            //Generate the voxel mesh
+            MarchingCubes.Generate(chunk.VoxelData.Voxels, null, v, World.ChunkSize + 1, World.ChunkHeight + 1, World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
+            PreMesh voxelMesh = new PreMesh();
+            voxelMesh.Verticies = CurrentVerticies.ToArray();
+            voxelMesh.Triangles = CurrentTriangles.ToArray();
+            voxelMesh.UV = CreateUV(voxelMesh);
+            //Add it the the pre loaded chunk
+            preChunk.VoxelMesh.Add(v, voxelMesh);
+            /*
             //If the chunk has this type of voxel in it
             if (chunk.VoxelData.VoxelTypeBounds.TryGetValue(v, out VoxelBounds vb))
             {
@@ -309,6 +380,8 @@ public class BuildingGenTest : MonoBehaviour
                 CurrentTriangles.Clear();
                 CurrentColours.Clear();
                 CurrentUVs.Clear();
+                Debug.Log("starting march");
+
                 //Generate the voxel mesh
                 MarchingCubes.Generate(chunk.VoxelData.Voxels, vb, v, World.ChunkSize+1, World.ChunkHeight+1, World.ChunkSize+1, CurrentVerticies, CurrentTriangles);
                 PreMesh voxelMesh = new PreMesh();
@@ -317,7 +390,7 @@ public class BuildingGenTest : MonoBehaviour
                 voxelMesh.UV = CreateUV(voxelMesh);
                 //Add it the the pre loaded chunk
                 preChunk.VoxelMesh.Add(v, voxelMesh);
-            }
+            }*/
 
         }
 

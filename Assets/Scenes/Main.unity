@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.43693697, g: 0.48460656, b: 0.56486344, a: 1}
+  m_IndirectSpecularColor: {r: 0.16024221, g: 0.20006886, b: 0.2790645, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -4325,6 +4325,7 @@ GameObject:
   m_Component:
   - component: {fileID: 710950291}
   - component: {fileID: 710950292}
+  - component: {fileID: 710950293}
   m_Layer: 0
   m_Name: PlayerManager
   m_TagString: Untagged
@@ -4360,6 +4361,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TEST: {fileID: 0}
+--- !u!114 &710950293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710950290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a634230476dc478b88eceac73b1c8a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1
+  updateDistance: 10
+  target: {fileID: 0}
 --- !u!1 &712912896
 GameObject:
   m_ObjectHideFlags: 0
@@ -5021,6 +5037,7 @@ GameObject:
   - component: {fileID: 815515710}
   - component: {fileID: 815515712}
   - component: {fileID: 815515714}
+  - component: {fileID: 815515713}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -5079,6 +5096,61 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00eef6b1d62293b4c94662e1aa45ae9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &815515713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 815515709}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78396926cbbfc4ac3b48fc5fc34a87d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1
+  data:
+    dataString: UEsDBBQAAAgIAAAAIewngtDSSQIAAPYEAAALACQAZ3JhcGgwLmpzb24KACAAAAAAAAEAGAAAgD7V3rGdAQCAPtXesZ0BAIA+1d6xnQGFVE1z2jAQ/SuMzm0HQ4DQW2sI6YGQCe3k4ouw1liDLHn0Eb6G/96VLLBLDj1Z3n27+/btSmfCpakht0ovNGdLxYB87xF/Jl96rfMZDnSr5Jqf4Ip558yWHkQD5o1artCe+DCjKrCa5z/kVnhwH41O8kLpas62kCpjDZoLKgygSyvroyWazj1yiAHH+D35b++CpxykBf0/lJO5oFUNzLNtwcngMcLxFIASO4mY/reRz6+E4CYSIfZYh0ZTWhuHbSCAcYqNBQpNRAl8W1r8HXTDV0VhwEZimh5nXKNCTV7yUzWyVdTsGnYfVDhfKRkNx4FYk3X5CTAYNf5Cq+r5Wjnp+yq25PnujR5zamxH2a551pJPgkx7KnZ0I+C9BPmiFlo5ydBptfOhzsBg1kl16y4tId+1uIbsndHVn6eUtFO6hP4PqeDVJmj50BjWQgXNpz4GNM7nFxIOu2FiJrR6En8M/Kbb7hJFxxPXxqIrFpSe3UY57aFkHjTzzTibKi0hmCPnGiQV9viKaez9EO98nbJ3nifqr0ssHn3XW3AXEswtvt+/c72q/W1YplT7JZhy5azgElrS3vGCOqVKymbHuppcw9ZOFzTvctg6zv5dLjKcTmjCYAiPm2L4kLCv+WRcMLaZJBRG02L8SMLycYmNUvHaMI364NhkS0riol2fkd5C0zosPNN0v+CnSnU057JQ61wDyFWT4cYcNBbBy8nmjKNCa7CWyzBwcs6IUPkOWHZLlIVW5weradZmyUjNP5T1loyk4fHIyIVc/gJQSwMEFAAACAgAAAAh7JLlK41tAAAAeAAAAAkAJABtZXRhLmpzb24KACAAAAAAAAEAGAAAgD7V3rGdAQCAPtXesZ0BAIA+1d6xnQGrVipLLSrOzM9TslIw0TPSMzTVUVBKL0osyCgGihiCOKWZKSB2tJKxpXmiYUqqcapFUpqxiWGKbrK5WVpKSpK5YWKqqWWamYVSLFB9SWVBql9ibipET0BiSUZaZl5KZl66nntRZoo7yGil2FoAUEsBAi0AFAAACAgAAAAh7CeC0NJJAgAA9gQAAAsAJAAAAAAAAAAAAAAAAAAAAGdyYXBoMC5qc29uCgAgAAAAAAABABgAAIA+1d6xnQEAgD7V3rGdAQCAPtXesZ0BUEsBAi0AFAAACAgAAAAh7JLlK41tAAAAeAAAAAkAJAAAAAAAAAAAAAAAlgIAAG1ldGEuanNvbgoAIAAAAAAAAQAYAACAPtXesZ0BAIA+1d6xnQEAgD7V3rGdAVBLBQYAAAAAAgACALgAAABOAwAAAAA=
+    upgradeData: 
+    file_cachedStartup: {fileID: 0}
+    data_cachedStartup: 
+    cacheStartup: 0
+  showNavGraphs: 1
+  showUnwalkableNodes: 1
+  debugMode: 0
+  debugFloor: 0
+  debugRoof: 1
+  manualDebugFloorRoof: 0
+  showSearchTree: 0
+  unwalkableNodeDebugSize: 0.3
+  logPathResults: 1
+  maxNearestNodeDistance: 100
+  scanOnStartup: 1
+  fullGetNearestSearch: 0
+  prioritizeGraphs: 0
+  prioritizeGraphsLimit: 1
+  colorSettings:
+    _SolidColor: {r: 0.11764706, g: 0.4, b: 0.7882353, a: 0.9}
+    _UnwalkableNode: {r: 1, g: 0, b: 0, a: 0.5}
+    _BoundsHandles: {r: 0.29, g: 0.454, b: 0.741, a: 0.9}
+    _ConnectionLowLerp: {r: 0, g: 1, b: 0, a: 0.5}
+    _ConnectionHighLerp: {r: 1, g: 0, b: 0, a: 0.5}
+    _MeshEdgeColor: {r: 0, g: 0, b: 0, a: 0.5}
+    _AreaColors:
+    - {r: 0, g: 0, b: 0, a: 0}
+  tagNames: []
+  heuristic: 2
+  heuristicScale: 1
+  threadCount: 1
+  maxFrameTime: 10
+  batchGraphUpdates: 0
+  graphUpdateBatchingInterval: 0.2
+  euclideanEmbedding:
+    mode: 0
+    seed: 0
+    pivotPointRoot: {fileID: 0}
+    spreadOutCount: 1
+  showGraphs: 1
 --- !u!114 &815515714
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5811,7 +5883,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_RenderShadows: 0
+  m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
   m_CameraType: 0

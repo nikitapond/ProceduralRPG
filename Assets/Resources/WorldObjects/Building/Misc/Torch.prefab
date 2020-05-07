@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2181893212441580335}
+  - component: {fileID: 7696029497188342667}
   m_Layer: 0
   m_Name: Torch
   m_TagString: Untagged
@@ -31,6 +32,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7696029497188342667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2181893212441580328}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84748a38a43d9894d9d3b3ec4781be61, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2181893213600215819
 GameObject:
   m_ObjectHideFlags: 0
@@ -42,7 +55,7 @@ GameObject:
   - component: {fileID: 2181893213600215818}
   - component: {fileID: 2181893213600215816}
   - component: {fileID: 2181893213600215817}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Particle System
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -57,7 +70,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2181893213600215819}
   m_LocalRotation: {x: -0.70710677, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0.078, z: 0.003}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 2181893213630010559}
@@ -896,7 +909,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 9.18
+      scalar: 10
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -3528,7 +3541,7 @@ ParticleSystem:
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
-        key1: {r: 1, g: 1, b: 1, a: 1}
+        key1: {r: 0.3962264, g: 0.3962264, b: 0.3962264, a: 1}
         key2: {r: 0, g: 0, b: 0, a: 0}
         key3: {r: 0, g: 0, b: 0, a: 0}
         key4: {r: 0, g: 0, b: 0, a: 0}
@@ -4777,10 +4790,10 @@ ParticleSystemRenderer:
   m_Flip: {x: 0, y: 0, z: 0}
   m_UseCustomVertexStreams: 0
   m_EnableGPUInstancing: 1
-  m_ApplyActiveColorSpace: 1
+  m_ApplyActiveColorSpace: 0
   m_AllowRoll: 1
   m_VertexStreams: 00010304
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   m_Mesh1: {fileID: 0}
   m_Mesh2: {fileID: 0}
   m_Mesh3: {fileID: 0}
@@ -4811,14 +4824,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2181893213624526877}
-  m_LocalRotation: {x: 0.55128187, y: 0, z: 0, w: 0.8343191}
-  m_LocalPosition: {x: 0, y: 0.056, z: -0.024}
-  m_LocalScale: {x: 0.05, y: 0.05, z: 0.22}
+  m_LocalRotation: {x: 0, y: 0.8191521, z: -0.5735764, w: 0}
+  m_LocalPosition: {x: 0, y: 0.056, z: -0.5}
+  m_LocalScale: {x: 0.05, y: 0.05, z: 0.3}
   m_Children:
   - {fileID: 2181893213630010559}
   m_Father: {fileID: 2181893212441580335}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 66.91, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 70, y: 180, z: 0}
 --- !u!33 &2181893213624526865
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -4889,7 +4902,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2181893213630010559}
   - component: {fileID: 2181893213630010558}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Point Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4904,7 +4917,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2181893213630010552}
   m_LocalRotation: {x: -0.55128187, y: -0, z: -0, w: 0.8343191}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.01, z: -0.515}
   m_LocalScale: {x: 20, y: 5.158532, z: 13.132591}
   m_Children:
   - {fileID: 2181893213600215818}
@@ -4924,7 +4937,7 @@ Light:
   m_Shape: 0
   m_Color: {r: 1, g: 0.98503476, b: 0.4481132, a: 1}
   m_Intensity: 1
-  m_Range: 10
+  m_Range: 29.74
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
@@ -4962,7 +4975,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 1
-  m_Lightmapping: 4
+  m_Lightmapping: 1
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1

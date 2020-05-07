@@ -7,6 +7,7 @@ public class TestBuildingBuilder : BuilderBase
     {
     }
 
+    
 
     public void AddBuilding(Building b, BuildingVoxels vox, Vec2i pos)
     {
@@ -26,16 +27,25 @@ public class TestBuildingBuilder : BuilderBase
                 SetTile(x + pos.x, z + pos.z, b.BuildingTiles[x, z]);
                 SetHeight(x + pos.x, z + pos.z, minHeight);
 
+
+                
+
                 for (int y = 0; y < vox.Height; y++)
                 {
-                    SetVoxel(x + pos.x, y, z + pos.z, vox.GetVoxel(x, y, z));
+                    VoxelNode voxNode = vox.GetVoxelNode(x, y, z);
+                    if (voxNode.IsNode)
+                    {
+                        //Debug.Log("Adding vox node: " + voxNode);
+                        SetVoxelNode(x + pos.x, y, z + pos.z, vox.GetVoxelNode(x, y, z));
+                    }
+                   
                 }
                 
             }
         }
         foreach(WorldObjectData obj in b.GetBuildingObjects())
         {
-            Debug.Log(obj.Position + " pre trans pos");
+
             obj.SetPosition(obj.Position + pos.AsVector3());
             //We (should) already have checked for object validity when creating the building
             AddObject(obj, true);

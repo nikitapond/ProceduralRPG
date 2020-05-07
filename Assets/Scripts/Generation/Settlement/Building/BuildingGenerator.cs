@@ -88,6 +88,123 @@ public class BuildingGenerator
     }
 
 
+    public static Vec2i GetWallPointDirection(Building build, Vec2i wallPoint)
+    {
+        int x = build.Width / 2 - wallPoint.x;
+        int z = build.Height / 2 - wallPoint.z;
+        if(Mathf.Abs(x) > Mathf.Abs(z))
+        {
+            //Debug.Log("x dir");
+            return new Vec2i((int)Mathf.Sign(x), 0);
+        }
+        //Debug.Log("z dir");
+        return new Vec2i(0, (int)Mathf.Sign(z));
+    }
+
+    public static Vec2i[] FindInsideWallBoundryPoints(BuildingVoxels vox, Building build, Tile groundTile = null)
+    {
+        Vec2i[] dirs = new Vec2i[] { new Vec2i(-1, 0), new Vec2i(1, 0), new Vec2i(0, 1), new Vec2i(0, -1) };
+        List<Vec2i> wallPoints = new List<Vec2i>();
+        for(int x=1; x<build.Width-1; x++)
+        {
+            for(int z=1; z<build.Height-1; z++)
+            {
+                //If the current tile is not defined as a ground tile, we do not include this point
+                if (groundTile != null && build.BuildingTiles[x, z] != groundTile)
+                    continue;
+
+                for(int i=0; i<4; i++)
+                {
+                    int x_ = dirs[i].x + x;
+                    int z_ = dirs[i].z + z;
+                    Vec2i v_ = new Vec2i(x, z);
+                    if (vox.GetVoxel(x_,0, z_) != Voxel.none && !wallPoints.Contains(v_))
+                        wallPoints.Add(v_);
+                }
+                
+                    
+            }
+        }
+        return wallPoints.ToArray();
+
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="genRan">The RNG used for this building</param>
+    /// <param name="obj">The object to place in the building</param>
+    /// <param name="height">The height above the ground the object should sit</param>
+    /// <param name="vox">The voxel data of this building. Only required if 'requireWallBacking' is true</param>
+    /// <param name="build">The building to place the object in</param>
+    /// <param name="distFromWall">The distance from a wall the object should be placed</param>
+    /// <param name="wallIndex">Defines the wall we should attempt to place this object on. The 'i'th wall defines the wall 
+    /// connecting build.BoundingWall[i] -> build.BoundingWall[i+1]. If left as default value (-1), an index will be randomly generated</param>
+    /// <param name="requireWallBacking">If true, then we will search for a point on the wall that is backed against a wall. 
+    /// Used to stop certain objects being placed in front of windows</param>
+    /// <param name="forcePlace">If true, then we do not check for intersection with other objects in the building</param>
+    /// <param name="attemptsCount">The number of attempts made to place the object on this wall</param>
+    /// <returns>True if object is placed sucesfully, false otherwise</returns>
+    public static bool PlaceObjectAgainstWall(GenerationRandom genRan, WorldObjectData obj, float height, 
+        BuildingVoxels vox, Building build, float distFromWall=0, bool requireWallBacking=false, int distToEntr = 2,
+        bool forcePlace = false, int attemptsCount=5)
+    {
+
+        if (build.InsideWallPoints == null)
+            build.InsideWallPoints = FindInsideWallBoundryPoints(vox, build);
+
+        //Check attempts count
+        attemptsCount--;
+        if (attemptsCount == 0)
+            return false;
+        
+        float wallDisp = genRan.Random();
+        //Define the position as the start pos + lambda*dir
+        //Select a random position from all wall points
+        Vec2i pos = genRan.RandomFromArray(build.InsideWallPoints);
+        
+        //If too close to entrance, try another placement
+        if (build.Entrance != null && pos.QuickDistance(build.Entrance) < distToEntr* distToEntr)
+            return PlaceObjectAgainstWall(genRan, obj, height, vox, build, distFromWall, requireWallBacking, distToEntr, forcePlace, attemptsCount);
+        //If the object is too close to any of the corners, try again
+        foreach(Vec2i v in build.BoundingWall)
+            if(v.QuickDistance(pos) < 2)
+                return PlaceObjectAgainstWall(genRan, obj, height, vox, build, distFromWall, requireWallBacking, distToEntr, forcePlace, attemptsCount);
+        
+        Vec2i faceDirection = GetWallPointDirection(build, pos);
+
+        //If we require a backing wall, we check the position 
+        if (requireWallBacking)
+        {
+            Vec2i wPos = pos - faceDirection;
+            for (int y = 0; y < 4; y++)
+            {
+                VoxelNode vn = vox.GetVoxelNode(wPos.x, y, wPos.z);
+                //If there is no node (nothing set) then this position is not valid
+                if (!vn.IsNode)
+                    return PlaceObjectAgainstWall(genRan, obj, height, vox, build, distFromWall, requireWallBacking, distToEntr, forcePlace, attemptsCount);
+                if(vn.Voxel == Voxel.glass || vn.Voxel == Voxel.none)
+                    return PlaceObjectAgainstWall(genRan, obj, height, vox, build, distFromWall, requireWallBacking, distToEntr, forcePlace, attemptsCount);
+            }
+        }
+        Vector3 finPos = pos.AsVector3() + faceDirection.AsVector3() * distFromWall + Vector3.up*height;
+        float rotation = Vec2i.Angle(Vec2i.Forward, faceDirection);
+        obj.SetPosition(finPos).SetRotation(rotation);
+        if (!forcePlace)
+        {
+            foreach (WorldObjectData obj_ in build.GetBuildingObjects())
+            {
+                if (obj.Intersects(obj_))
+                    return PlaceObjectAgainstWall(genRan, obj, height, vox, build, distFromWall, requireWallBacking, distToEntr, forcePlace, attemptsCount);
+            }
+        }
+
+
+        //obj.SetPosition(finPos);
+        build.AddObjectReference(obj);
+        return true;
+    }
+
     /// <summary>
     /// Places a roof over the specified building.
     /// The roof will only cover the tile specified by 'roofTileID'. If this is null, 
@@ -96,22 +213,46 @@ public class BuildingGenerator
     /// <param name="vox"></param>
     /// <param name="build"></param>
     /// <param name="roofTileID"></param>
-    public static void AddRoof(BuildingVoxels vox, Building build, Voxel roofVox, int roofStartY=4, Tile roofTileReplace=null)
+    public static void AddRoof(GenerationRandom genRan, BuildingVoxels vox, Building build, Voxel roofVox, int roofStartY=5, Tile roofTileReplace=null)
     {
         if(roofTileReplace == null)
         {
-            for(int x=0; x<build.Width; x++)
+            Vec2i dir = genRan.RandomQuadDirection();
+            dir.x = Mathf.Abs(dir.x);
+            dir.z = Mathf.Abs(dir.z);
+
+            Vec2i start = new Vec2i(build.Width / 2 * dir.x, build.Height / 2 * dir.z);
+            Vec2i end = start + new Vec2i(dir.z*build.Width, dir.x*build.Height);
+            LineI t = new LineI(start, end);
+            float maxDist = Mathf.Max(t.Distance(new Vec2i(0, 0)), t.Distance(new Vec2i(build.Width - 1, 0)),
+                                      t.Distance(new Vec2i(0, build.Height - 1)), t.Distance(new Vec2i(build.Width - 1, build.Height - 1)));
+
+            int maxHeight = genRan.RandomInt(4, 6);
+            float scale = maxHeight / (maxDist + 1);
+            //float scale = 0.7f;
+
+            for (int x=0; x<build.Width; x++)
             {
                 for(int z=0; z<build.Height; z++)
                 {
-                    vox.SetVoxel(x, roofStartY, z, roofVox);
+       
+                    int height = (int)Mathf.Clamp((maxDist - t.Distance(new Vec2i(x, z)) + 1)*scale, 1, World.ChunkHeight - 1);
+                    for(int y=0; y<height; y++)
+                    {
+                        vox.AddVoxel(x, Mathf.Clamp(roofStartY+y, 0, World.ChunkHeight-1), z, roofVox);
+                    }
+                    
+                  
                 }
             }
         }
     }
 
-    public static bool AddWindow(GenerationRandom genRan, BuildingVoxels vox, Building build, int wallIndex = -1, int size = 2, int height=1,bool autoReattempt = true)
+    public static bool AddWindow(GenerationRandom genRan, BuildingVoxels vox, Building build, int wallIndex = -1, int size = 2, int height=1,bool autoReattempt = true, int reattemptCount=3)
     {
+        reattemptCount--;
+        if (reattemptCount == 0)
+            return false;
         //if default index, we choose one randomly
         if (wallIndex == -1)
             wallIndex = genRan.RandomInt(0, build.BoundingWall.Length);
@@ -136,7 +277,7 @@ public class BuildingGenerator
         if (len < size + 4)
         {
             if (autoReattempt)
-                return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+                return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt, reattemptCount);
             //Then we do not build a window
             return false;
         }
@@ -157,7 +298,7 @@ public class BuildingGenerator
             //If we are too close to the door
             if(cur.QuickDistance(build.Entrance) < (size+1) * (size+1)){
                 if (autoReattempt)
-                    return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+                    return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt, reattemptCount);
                 return false;
             }
             else
@@ -170,14 +311,14 @@ public class BuildingGenerator
                         if (vox.GetVoxel(cur.x, 2, cur.z) == Voxel.glass)
                         {
                             if (autoReattempt)
-                                return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+                                return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt, reattemptCount);
                             return false;
                         }
                     }
                     else
                     {
                         if (autoReattempt)
-                            return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt);
+                            return AddWindow(genRan, vox, build, wp1, size, height, autoReattempt, reattemptCount);
                         return false;
                     }
                     
@@ -189,21 +330,31 @@ public class BuildingGenerator
         }
         cur = start + dPos;
 
-        Vector3 position = (cur - dir).AsVector3() + Vector3.up*1.75f;
-        Vector3 scale = new Vector3(0.5f, 2, -(dir.x + dir.z)*size);
+        Vector3 position = (cur - dir).AsVector3() + Vector3.up;
+        Vector3 scale = new Vector3(0.5f, 2, (dir.x + dir.z)*size);
         float rotation = Mathf.Acos(dir.z)*Mathf.Rad2Deg;
-        GlassWindow window = new GlassWindow(position, scale, rotation);
-        build.AddObjectReference(window);
+        //GlassWindow window = new GlassWindow(position, scale, rotation);
+        //build.AddObjectReference(window);
         
-        for (int i = 0; i < size; i++)
+        for (int i = -1; i <= size; i++)
         {
-            
-            for (int y=2; y<2+height; y++)
-            {
 
-                vox.SetVoxel(cur.x, y, cur.z, Voxel.none);
-            }
-            
+            cur = start + dPos + dir * i;
+
+            for (int y=1; y<=2+height; y++)
+            {
+                if(i<0 || i>=size || y==1 || y == 2 + height)
+                {
+                    vox.AddVoxel(cur.x, y, cur.z, Voxel.glass);
+                }
+                else
+                {
+                    vox.ClearVoxel(cur.x, y, cur.z);
+                    vox.SetVoxel(cur.x, y, cur.z, Voxel.glass);
+                }
+                
+                //vox.Add(cur.x, y, cur.z, Voxel.none);
+            }            
         }
 
        
@@ -221,16 +372,21 @@ public class BuildingGenerator
 
         Vec2i dif = build.BoundingWall[dp1] - build.BoundingWall[doorIndex];
         Vec2i entr = build.BoundingWall[doorIndex] + dif / 2;
+        Vec2i delta = new Vec2i(dif.x == 0 ? 0 : (int)Mathf.Sign(dif.x), dif.z == 0 ? 0 : (int)Mathf.Sign(dif.z));
         build.SetEntrancePoint(entr);
-
-        for(int y=0; y<3; y++)
+        //Debug.Log("entr delta " + delta);
+        for(int y=0; y<4; y++)
         {
-            vox.SetVoxel(entr.x, y, entr.z, Voxel.none);
+            vox.ClearVoxel(entr.x, y, entr.z);
+
         }
 
     }
 
-    public static void ConnectBoundingWall(BuildingVoxels vox, Vec2i[] bounds, Voxel voxel, int wallHeight=5)
+
+
+
+    public static void ConnectBoundingWall(BuildingVoxels vox, Vec2i[] bounds, Voxel voxel, int wallHeight=6)
     {
 
 
@@ -292,7 +448,7 @@ public class BuildingGenerator
             for(int z=0; z<depth; z++)
             {
                 vox.SetVoxel(0, y, z, wallVox);
-                vox.SetVoxel(width - 1, y, z, wallVox);
+                vox.SetVoxel(width-1, y, z, wallVox);
             }
 
 

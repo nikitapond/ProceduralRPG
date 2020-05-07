@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: WoodVoxelMat
+  m_Name: ThatchVoxelMat
   m_Shader: {fileID: -6465566751694194690, guid: baa2df3a1a2a04a4380a6e4df9448559,
     type: 3}
   m_ShaderKeywords: 
@@ -21,9 +21,9 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - Texture2D_51243E8E:
-        m_Texture: {fileID: 2800000, guid: f62f4311af82ea840b74e59b8e2b851e, type: 3}
+        m_Texture: {fileID: 2800000, guid: 6bdd389e1869505428b37a425f05992e, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - Vector1_39310EAF: 0.85
+    - Vector1_39310EAF: 7.12
     m_Colors: []
