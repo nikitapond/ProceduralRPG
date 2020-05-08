@@ -210,4 +210,39 @@ public class GenerationRandom
         return GaussianFloat() * std + mean;
     }
 
+    public Item RandomItemFromInventory(Inventory inv)
+    {
+        ItemStack itst = RandomFromList(inv.GetItems());
+        return itst.Item;
+    }
+
+    public T RandomItemFromInventoryOfType<T>(Inventory inv) where T : Item
+    {
+        
+        List<T> valid = new List<T>();
+        foreach(ItemStack itst in inv.GetItems())
+        {
+            if (itst.Item is T item)
+                valid.Add(item);
+        }
+        if (valid.Count == 0)
+            return null;
+        return RandomFromList(valid);
+    }
+
+
+    public EquiptableItem RandomEquiptmentForSlot(Inventory inv, EquiptmentSlot slot)
+    {
+        List<EquiptableItem> valid = new List<EquiptableItem>();
+        foreach(ItemStack itst in inv.GetItems())
+        {
+            Item it = itst.Item;
+            if(it is EquiptableItem equipt)
+            {
+                if (equipt.EquiptableSlot == slot)
+                    valid.Add(equipt);
+            }
+        }
+        return RandomFromList(valid);
+    }
 }

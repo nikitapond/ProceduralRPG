@@ -213,7 +213,7 @@ public class EntityRelationshipManager
                 //We take product of all, then multiply by this entities personality.
                 float totalRelation = weightedKingdom * subjugetMult * agresDifMult * wealthDifMult * greedDifMult * Personality.Kindness;
                 //Clamp relationship [0,1]
-                totalRelation = Mathf.Clamp(totalRelation, 0, 1);
+                totalRelation = Mathf.Clamp(totalRelation, .2f, 1);
                 return totalRelation;
             }
 

@@ -143,7 +143,7 @@ public abstract class Entity
         Position_ = new float[] { position.x, 0.5f, position.z };
         if (LoadedEntity != null)
         {
-            LoadedEntity.transform.localPosition = Position;
+            LoadedEntity.transform.position = Position;
         }
 
     }

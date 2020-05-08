@@ -87,3 +87,10 @@ public struct SerializableVector3
         return new SerializableVector3(rValue.x, rValue.y, rValue.z);
     }
 }
+public static class Vector3Helper
+{
+    public static bool WithinDistance(this Vector3 a, Vector3 b, float dist)
+    {
+        return (a - b).sqrMagnitude < dist * dist;
+    }
+}

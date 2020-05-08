@@ -6,7 +6,7 @@ public class Player : HumanoidEntity
     private NPC CurrentDialog;
 
 
-    public Player(): base(null, null, new EntityMovementData(5,25,5), name:"Player")
+    public Player(): base(null, null, new EntityMovementData(20,25,5), name:"Player")
     {
         Debug.Log("RUN!!!: " + this.MovementData.RunSpeed);
     }

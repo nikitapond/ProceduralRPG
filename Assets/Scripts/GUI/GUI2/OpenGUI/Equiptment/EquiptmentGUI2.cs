@@ -11,7 +11,7 @@ public class EquiptmentGUI2 : MonoBehaviour
     private Player Player;
     private void OnEnable()
     {
-        Player = GameManager.PlayerManager.Player;
+        Player = PlayerManager.Instance.Player;
 
 
         for(int i=0; i<7; i++)

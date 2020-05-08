@@ -15,11 +15,11 @@ public class NPCKingdomData
 
     public Kingdom GetKingdom()
     {
-        return GameManager.WorldManager.World.GetKingdom(KingdomID);
+        return WorldManager.Instance.World.GetKingdom(KingdomID);
     }
     public Settlement GetSettlement()
     {
-        return GameManager.WorldManager.World.GetSettlement(SettlementID);
+        return WorldManager.Instance.World.GetSettlement(SettlementID);
     }
 }
 

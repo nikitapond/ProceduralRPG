@@ -24,5 +24,15 @@ public abstract class NPCJob
     }
 
 
+    /// <summary>
+    /// Called via <see cref="EntityTask.Tick"/> for <see cref="NPCTaskDoJob"/>
+    /// </summary>
+    public abstract void JobTick(NPC npc);
+    /// <summary>
+    /// Called via <see cref="EntityTask.Update"/> for <see cref="NPCTaskDoJob"/>
+    /// </summary>
+    public abstract void JobUpdate(NPC npc);
+
+    public virtual void OnTaskEnd(NPC npc) { }
 
 }

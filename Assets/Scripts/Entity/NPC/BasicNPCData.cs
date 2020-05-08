@@ -16,6 +16,7 @@ public class BasicNPCData
     public void SetJob(NPCJob job)
     {
         NPCJob = job;
+        
     }
 
     public Building House { get; private set; }

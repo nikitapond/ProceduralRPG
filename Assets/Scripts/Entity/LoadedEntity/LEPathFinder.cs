@@ -21,8 +21,8 @@ public class LEPathFinder : MonoBehaviour
         AIPathFinder = gameObject.AddComponent<AIPath>();
         DestinationSetter = gameObject.AddComponent<AIDestinationSetter>();
         TargetObject = new GameObject();
-        TargetObject.transform.parent = transform;
-        TargetObject.transform.localPosition = Vector3.zero;
+        TargetObject.transform.parent = PathFinderTargetHolder.Holder;
+        TargetObject.transform.localPosition = new Vector3(float.MaxValue, float.MaxValue);
         DestinationSetter.target = TargetObject.transform;
         AIPathFinder.radius = 0.4f;
         LoadedEntity = GetComponent<LoadedEntity>();
@@ -48,9 +48,9 @@ public class LEPathFinder : MonoBehaviour
 
         Vector2 dif = (targetPos - ourPos).normalized;
         Vector2 finalTarget = targetPos - dif * range;
-        SetTarget(finalTarget);
+        SetTarget(finalTarget, 0.1f);
     }
-    public void SetTarget(Vector2 target2)
+    public void SetTarget(Vector2 target2, float repath=20)
     {
         //  Debug.Log("Setting target to " + target2);
         //DestinationSetter.target = PlayerManager.Instance.Player.GetLoadedEntity().transform;
@@ -58,7 +58,8 @@ public class LEPathFinder : MonoBehaviour
         Vector3 targetLocal = targetGlobal - transform.position;
         TargetObject.transform.position = targetGlobal;
 
-
+        AIPathFinder.repathRate = repath;
+        Target = targetGlobal;
         //AIPathFinder.SearchPath();
 
     }
@@ -66,6 +67,8 @@ public class LEPathFinder : MonoBehaviour
     {
         Debug.Log("Setting target to " + target);
         TargetObject.transform.position = target;
+        Target = target;
+
     }
 
     /// <summary>

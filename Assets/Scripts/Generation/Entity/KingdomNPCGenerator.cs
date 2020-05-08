@@ -11,8 +11,13 @@ public class KingdomNPCGenerator
     public KingdomNPCGenerator(GameGenerator gameGen, Kingdom kingdom, EntityManager entityManager)
     {
         GameGen = gameGen;
-        //Create a RNG based on this seed and kingdomID
-        GenerationRan = new GenerationRandom(GameGen.Seed*13 + kingdom.KingdomID*27);
+
+
+        if (gameGen == null)
+            GenerationRan = new GenerationRandom(0);
+        else
+            //Create a RNG based on this seed and kingdomID
+            GenerationRan = new GenerationRandom(GameGen.Seed*13 + kingdom.KingdomID*27);
         Kingdom = kingdom;
         EntityManager = entityManager;
     }
@@ -55,6 +60,7 @@ public class KingdomNPCGenerator
     {
         
         List<NPC> npcs = GenerateNPCShells(set);
+        Debug.Log("Total NPCs " + npcs.Count);
         GenerateSettlementNPCKingdomData(npcs, set);
         GenerateNPCPersonalities(npcs);
         GenerateNPCJobs(npcs, set);
@@ -84,7 +90,7 @@ public class KingdomNPCGenerator
                 //Define the house and get the possible tiles we can spawn the this houses' NPCs on
                 House h = b as House;
                 List<Vec2i> spawnableTiles = h.GetSpawnableTiles();
-                
+                Debug.Log("spawn count: " + spawnableTiles.Count);
                 for(int i=0; i<h.capacity; i++)
                 {
                     //Attempt to find a valid spawn point
@@ -238,8 +244,8 @@ public class KingdomNPCGenerator
                 wealth = Mathf.Clamp(GenerationRan.GaussianFloat(0.3f, 0.3f), 0, 1);
             }
 
-            float kindness = Mathf.Clamp(GenerationRan.GaussianFloat(0.6f, 0.4f), 0, 1);
-            float agression = Mathf.Clamp(GenerationRan.GaussianFloat(0.3f, 0.5f), 0, 1);
+            float kindness = Mathf.Clamp(GenerationRan.GaussianFloat(0.7f, 0.3f), 0, 1);
+            float agression = Mathf.Clamp(GenerationRan.GaussianFloat(0.3f, 0.2f), 0, 1);
             float greed = Mathf.Clamp(GenerationRan.GaussianFloat(0.6f, 0.4f), 0, 1);
 
             EntityPersonality pers = new EntityPersonality(agression, kindness, loyalty, greed, wealth);
@@ -255,6 +261,7 @@ public class KingdomNPCGenerator
         {
             if (b is IWorkBuilding)
             {
+
                 //Get the jobs for each building
                 NPCJob[] js = (b as IWorkBuilding).GetWorkData.BuildingJobs;
                 if (js == null)
@@ -274,6 +281,7 @@ public class KingdomNPCGenerator
         foreach (NPC npc in npcs)
         {
             KingdomHierarchy rank = npc.NPCKingdomData.Rank;
+
             if (!rankedJobs.ContainsKey(rank))
                 continue;
             if (rankedJobs[rank].Count == 0)
@@ -295,7 +303,48 @@ public class KingdomNPCGenerator
 
         foreach(NPC npc in npcs)
         {
-
+            JobRankItems(npc);
         }
+    }
+
+
+    private void JobRankItems(NPC npc)
+    {
+        if (npc.NPCData.HasJob)
+        {
+            if(npc.NPCData.NPCJob is NPCJobBlackSmith)
+            {
+                npc.EquiptmentManager.AddDefaultItem(new Shirt(new ItemMetaData().SetColor(Color.red)));
+            }else if(npc.NPCData.NPCJob is NPCJobSoldier)
+            {
+                npc.EquiptmentManager.AddDefaultItem(new Shirt(new ItemMetaData().SetColor(Color.green)));
+            }else if(npc.NPCData.NPCJob is NPCJobKing)
+            {
+                npc.EquiptmentManager.AddDefaultItem(new Shirt(new ItemMetaData().SetColor(Color.yellow)));
+            }
+        }
+        Color rankColor = Color.black;
+        switch (npc.NPCKingdomData.Rank)
+        {
+            case KingdomHierarchy.Monarch:
+                rankColor = Color.yellow;
+                break;
+            case KingdomHierarchy.Noble:
+                rankColor = Color.blue;
+                break;
+            case KingdomHierarchy.LordLady:
+                rankColor = Color.red;
+                break;
+            case KingdomHierarchy.Mayor:
+                rankColor = Color.white;
+                break;
+            case KingdomHierarchy.Citizen:
+                rankColor = Color.cyan;
+                break;
+            case KingdomHierarchy.Peasant:
+                rankColor = Color.green;
+                break;
+        }
+        npc.EquiptmentManager.AddDefaultItem(new Trousers(new ItemMetaData().SetColor(rankColor)));
     }
 }

@@ -34,20 +34,20 @@ public class GameManager : MonoBehaviour
     public static QuestManager QuestManager { get; private set; }
     public static EventManager EventManager { get; private set; }
     public static DebugGUI DebugGUI { get; private set; }
-    public static GUIManager2 GUIManager { get; private set; }
+    public static GUIManager GUIManager { get; private set; }
     public static PathFinder PathFinder { get; private set; }
     public static LoadSave LoadSave { get; private set; }
     public static bool Paused { get; private set; }
 
     public static Console Console { get; private set; }
 
-    public static GenerationRandom RNG { get; private set; }
+    public static GenerationRandom RNG { get; set; }
 
     public static ChunkRegionGenerator ChunkRegionGenerator { get; private set; }
     public static void SetPause(bool pause)
     {
         Paused = pause;
-        EventManager.InvokeNewEvent(new GamePause(pause));
+        EventManager.Instance.InvokeNewEvent(new GamePause(pause));
     }
 
 
@@ -71,7 +71,7 @@ public class GameManager : MonoBehaviour
         EntityManager = transform.Find("EntityManager").GetComponent<EntityManager>();
         PlayerManager = transform.Find("PlayerManager").GetComponent<PlayerManager>();
         QuestManager = GetComponent<QuestManager>();
-        GUIManager = GetComponentInChildren<GUIManager2>();
+        GUIManager = GetComponentInChildren<GUIManager>();
         EventManager = new EventManager();
 
         Console = GetComponentInChildren<Console>();

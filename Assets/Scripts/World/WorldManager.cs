@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class WorldManager : MonoBehaviour
 {
+    public static WorldManager Instance;
+
+
 
     public static bool ISDAY = true;
     public static bool TEST = false;
@@ -120,7 +123,7 @@ public class WorldManager : MonoBehaviour
     void Awake()
     {
         LoadedRegions = new ChunkRegion[World.RegionCount, World.RegionCount];
-
+        Instance = this;
         LoadedProjectiles = new List<LoadedProjectile>();
         CRManager = GetComponent<ChunkRegionManager>();
     }

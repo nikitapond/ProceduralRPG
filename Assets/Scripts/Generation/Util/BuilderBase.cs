@@ -49,7 +49,7 @@ public abstract class BuilderBase
                 if (ChunkBases != null) 
                     ChunkBases[x, z] = GameGenerator.Instance.TerrainGenerator.ChunkBases[x + BaseChunk.x, z + BaseChunk.z];
                 float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
-                int baseTile = (ChunkBases==null || ChunkBases[x, z] == null) ? Tile.GRASS.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
+                int baseTile = (ChunkBases==null || ChunkBases[x, z] == null) ? Tile.NULL.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
                 ChunkBaseHeights[x, z] = baseHeight;
                 TileMaps[x, z] = new int[World.ChunkSize, World.ChunkSize];
                 for (int x_=0; x_<World.ChunkSize; x_++)

@@ -21,7 +21,7 @@ public class EntitySpeechBubble : MonoBehaviour
     public Canvas SpeechCanvas;
     public TextMeshProUGUI Text;
 
-    public float MessageTimeout = 5;
+    private float MessageTimeout = 15;
 
     private void Awake()
     {
@@ -49,6 +49,7 @@ public class EntitySpeechBubble : MonoBehaviour
         AddedMessages.Add(nBubble);
         nBubble.GetComponentInChildren<TextMeshProUGUI>().text = text;
         ScrollRect.verticalNormalizedPosition = 0;
+        StartCoroutine(TextFadeOut(nBubble, MessageTimeout));
     }
 
     public void SetText(string text, float timeout = -1)
@@ -66,7 +67,9 @@ public class EntitySpeechBubble : MonoBehaviour
 
     private IEnumerator TextFadeOut(GameObject text, float time)
     {
+        Debug.Log("waiting for " + time);
         yield return new WaitForSeconds(time);
+        Debug.Log("Removing");
         AddedMessages.Remove(text);
         Destroy(text.gameObject);
 

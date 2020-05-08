@@ -57,9 +57,9 @@ public class Recti
 
     public bool Intersects(Recti r)
     {
-        if (r.X > X + Width || r.X + Width > X)
+        if (r.X > X + Width || r.X + r.Width < X)
             return false;
-        if (r.Y > Y + Height || r.Y + Height > Y)
+        if (r.Y > Y + Height || r.Y + r.Height < Y)
             return false;
         return true;
     }

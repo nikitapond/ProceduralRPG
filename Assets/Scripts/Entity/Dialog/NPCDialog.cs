@@ -26,6 +26,10 @@ public class NPCDialog
         Nodes = new List<NPCDialogNode>();
     }
 
+    public void RemoveNode(NPCDialogNode node)
+    {
+        Nodes.Remove(node);
+    }
 
     public void StartDialog()
     {

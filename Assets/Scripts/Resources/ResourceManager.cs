@@ -110,6 +110,7 @@ public class ResourceManager
         AllWorldObjects.Add((int)WorldObjects.WALL_TORCH, Resources.Load<GameObject>(root + "Building/Misc/Torch"));
 
 
+        AllWorldObjects.Add((int)WorldObjects.TRAINING_DUMMY, placeholder);
 
         AllWorldObjects.Add((int)WorldObjects.BANDIT_GAURD_TOWER, placeholder);
         AllWorldObjects.Add((int)WorldObjects.CHEST, placeholder);

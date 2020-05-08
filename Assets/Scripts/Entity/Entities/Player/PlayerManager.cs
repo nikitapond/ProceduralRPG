@@ -231,7 +231,7 @@ public class PlayerManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Return))
         {
-            GUIManager2.Instance.SetVisible(!GUIManager2.Instance.OpenGUIVisible);
+            GUIManager.Instance.SetVisible(!GUIManager.Instance.OpenGUIVisible);
 
         }
 
@@ -252,25 +252,11 @@ public class PlayerManager : MonoBehaviour
         Player.Update();
 
         MovementUpdate();
-        return;
         PlayerSelectUpdate();
-        /*
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
 
 
-        float ud = x * Mathf.Cos(-PlayerCameraScript.Theta * Mathf.Deg2Rad) + z * Mathf.Sin(-PlayerCameraScript.Theta * Mathf.Deg2Rad);
-        float lr = x * Mathf.Sin(-PlayerCameraScript.Theta * Mathf.Deg2Rad) - z * Mathf.Cos(-PlayerCameraScript.Theta * Mathf.Deg2Rad);
 
-        x *= Mathf.Cos(PlayerCameraScript.Theta * Mathf.Deg2Rad) + Mathf.Sin(PlayerCameraScript.Theta * Mathf.Deg2Rad);
-        z *= Mathf.Sin(PlayerCameraScript.Theta * Mathf.Deg2Rad);
-
-        LoadedPlayer.MoveInDirection(new Vector2(lr, ud));
-
-    */
-
-
-        GameManager.DebugGUI.SetData("world_mouse_pos", worldMousePos.ToString());
+        DebugGUI.Instance.SetData("world_mouse_pos", worldMousePos.ToString());
         LoadedPlayer.LookTowardsPoint(worldMousePos);
 
         if (Input.GetKey(KeyCode.Alpha1))
@@ -334,7 +320,7 @@ public class PlayerManager : MonoBehaviour
         if(LookObject == null)
         {
             DebugGUI.Instance.ClearData("player_view");
-            GameManager.GUIManager.IngameGUI.SetNPC(null);
+            GUIManager.Instance.IngameGUI.SetNPC(null);
         }
         else
         {
@@ -344,16 +330,16 @@ public class PlayerManager : MonoBehaviour
             {
                 if(LookObject.GetComponent<LoadedEntity>().Entity is NPC)
                 {
-                    GameManager.GUIManager.IngameGUI.SetNPC(LookObject.GetComponent<LoadedEntity>().Entity as NPC);
+                    GUIManager.Instance.IngameGUI.SetNPC(LookObject.GetComponent<LoadedEntity>().Entity as NPC);
                 }
                 else
                 {
-                    GameManager.GUIManager.IngameGUI.SetNPC(null);
+                    GUIManager.Instance.IngameGUI.SetNPC(null);
                 }
             }
             else
             {
-                GameManager.GUIManager.IngameGUI.SetNPC(null);
+                GUIManager.Instance.IngameGUI.SetNPC(null);
 
             }
         }
@@ -497,9 +483,9 @@ public class PlayerManager : MonoBehaviour
     private void StartDialog(NPC npc)
     {
         npc.Dialog.StartDialog();
-        GameManager.GUIManager.StartDialog(npc);
-        GameManager.EventManager.InvokeNewEvent(new PlayerTalkToNPC(npc));
-        GameManager.EventManager.InvokeNewEvent(new GamePause(true));
+        GUIManager.Instance.StartDialog(npc);
+        EventManager.Instance.InvokeNewEvent(new PlayerTalkToNPC(npc));
+        EventManager.Instance.InvokeNewEvent(new GamePause(true));
     }
 
     public void EndDialog()

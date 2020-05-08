@@ -18,7 +18,7 @@ public class InventoryGUI2 : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        Player = GameManager.PlayerManager.Player;
+        Player = PlayerManager.Instance.Player;
         CurrentInventoryItemTag = ItemTag.WEAPON;
 
         MainInventory.gameObject.SetActive(true);

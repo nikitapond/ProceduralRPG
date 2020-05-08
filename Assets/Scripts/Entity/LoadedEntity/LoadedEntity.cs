@@ -22,7 +22,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     public Entity Entity { get; private set; }
     public LoadedEntityAnimationManager AnimationManager { get; private set; }
     public Rigidbody RigidBody { get; private set; }
-
+    public string DETAILS;
 
     public LEPathFinder LEPathFinder { get; private set; }
 
@@ -100,7 +100,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         entityhealthBar.transform.localPosition = new Vector3(0, 2, 0);
         EntityHealthBar = entityhealthBar.GetComponentInChildren<EntityHealthBar>();
 
-
+        DETAILS = (entity is NPC) ? (entity as NPC).EntityRelationshipManager.Personality.ToString() : "";
 
         GROUND_LAYER_MASK = LayerMask.GetMask("Ground");
 
@@ -115,13 +115,18 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             speechBubble.transform.SetParent(transform);
             speechBubble.transform.localPosition = Vector3.zero;
             SpeechBubble = speechBubble.GetComponent<EntitySpeechBubble>();
-            SpeechBubble.SetText("this is a test", 5);
+            //SpeechBubble.SetText("this is a test", 5);
 
         }
         else
         {
             IsPlayer = true;
         }
+
+
+        float speed = IsRunning ? Entity.MovementData.RunSpeed : Entity.MovementData.WalkSpeed;
+
+        LEPathFinder?.SetSpeed(speed);
 
     }
 

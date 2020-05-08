@@ -119,7 +119,8 @@ public enum WorldObjects
     PRACTISE_DUMMY,
     BANDIT_GAURD_TOWER,
     CHEST,
-    WALL_TORCH
+    WALL_TORCH,
+    TRAINING_DUMMY
 
 
 
