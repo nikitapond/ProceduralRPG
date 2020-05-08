@@ -48,7 +48,7 @@ public class SettlementBuilder : BuilderBase
     public SettlementPathFinder SettlementPathFinder;
     public Tile PathTile { get; private set; }
 
-    public float AverageHeight = 5;
+    //public float AverageHeight = 5;
 
     public SettlementBuilder(GameGenerator gameGen, SettlementBase set) : base (set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize))
     {
@@ -79,7 +79,7 @@ public class SettlementBuilder : BuilderBase
         PathNodes = new float[TileSize / NODE_RES, TileSize / NODE_RES];
         PNSize = TileSize / PathNodeRes;
 
-        AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
+        //AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
 
 
        // Voxels = new Voxel[(TileSize) * TileSize * World.ChunkHeight];
@@ -98,9 +98,8 @@ public class SettlementBuilder : BuilderBase
             case SettlementType.CAPITAL:
 
                 //AddMainBuilding(BuildingGenerator.GenerateCastle(48));
-                mustAdd.Add(Building.BLACKSMITH);
-                mustAdd.Add(Building.MARKET);
                 mustAdd.Add(Building.BARACKS);
+                mustAdd.Add(Building.MARKET);
                 mustAdd.Add(Building.BLACKSMITH);
                 mustAdd.Add(Building.BLACKSMITH);
                 mustAdd.Add(Building.BLACKSMITH);
@@ -120,7 +119,7 @@ public class SettlementBuilder : BuilderBase
                 mustAdd.Add(Building.ARCHERYSTORE);
                 mustAdd.Add(Building.SWORDSELLER);
                 */
-                for (int i=0; i<20; i++)
+                for (int i=0; i<10; i++)
                 {
                     mustAdd.Add(Building.HOUSE);
                 }
@@ -554,10 +553,10 @@ public class SettlementBuilder : BuilderBase
         foreach (BuildingPlan bp in buildings)
         {
 
-            try
-            {
+            //try
+            //{
                 Building b = BuildingGenerator.CreateBuilding(GenerationRandom, out BuildingVoxels vox, bp);
-
+                Debug.Log("Added building " + b);
                 Recti r = null;
                 int i = 0;
                 while (r == null && i < 5)
@@ -570,10 +569,10 @@ public class SettlementBuilder : BuilderBase
                 this.Buildings.Add(b);
                 //SurroundByPath(r.X, r.Y, r.Width, r.Height, 2);
                 SettlementPathNode[] nodes = AddPlot(r);
-            }catch(System.Exception e)
+          /*  }catch(System.Exception e)
             {
                 Debug.Log(e);
-            }
+            }*/
             
 
 
@@ -929,7 +928,6 @@ public class SettlementBuilder : BuilderBase
         }
         //We choose a random allowed position.
         //Vec2i pos = ChoosePlot(b.Width, b.Height);
-
         //If no possible position is found, we return null
         if (pos == null)
             return null;
@@ -944,6 +942,7 @@ public class SettlementBuilder : BuilderBase
         float minHeight = GetLowestChunkHeight(pos.x, pos.z, b.Width, b.Height);
 
         float maxHeight = GetHighestChunkHeight(pos.x-1, pos.z-1, b.Width+2, b.Height+2);
+        Debug.Log("Adding building " + b);
         //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);
         for (int x = 0; x < b.Width; x++)
         {
@@ -980,12 +979,12 @@ public class SettlementBuilder : BuilderBase
 
         Vec2i wPos = pos + BaseTile;
         Vec2i cPos = World.GetChunkPosition(wPos);
-
+        Debug.Log("Calculating tiles!!!");
         b.SetPositions(BaseTile, pos);
-
+        b.CalculateSpawnableTiles(vox);
         Buildings.Add(b);
         //PathNodes.Add(b.Entrance);
-        return new Recti(pos.x, pos.z, b.Width, b.Height);
+        return new Recti(pos.x-1, pos.z-1, b.Width+2, b.Height+2);
     }
 
 
@@ -1039,6 +1038,14 @@ public class SettlementBuilder : BuilderBase
             }
         }
 
+
+        Recti rect = new Recti(x, z, width, height);
+        foreach(Recti r in BuildingPlots)
+        {
+            if (rect.Intersects(r))
+                return false;
+        }
+
         for (int x_ = x; x_ < x + width; x_++)
         {
             for (int z_ = z; z_ < z + height; z_++)
@@ -1070,11 +1077,14 @@ public class SettlementBuilder : BuilderBase
 
     private float GetLowestChunkHeight(int tx, int tz, int width, int height)
     {
+        if (GameGenerator == null)
+            return 0;
         int lx = (int)(((float)tx + this.BaseTile.x) / World.ChunkSize);
         int lz = (int)(((float)tz + this.BaseTile.z) / World.ChunkSize);
         int hx = (int)(((float)(tx + width + this.BaseTile.x)) / World.ChunkSize);
         int hz = (int)(((float)(tz + height + this.BaseTile.z)) / World.ChunkSize);
         float curHeight = float.MaxValue;
+        
         for (int x = lx; x <= hx; x++)
         {
             for (int z = lz; z <= hz; z++)
@@ -1089,6 +1099,8 @@ public class SettlementBuilder : BuilderBase
     }
     private float GetHighestChunkHeight(int lx, int lz, int width, int height)
     {
+        if (GameGenerator == null)
+            return 0;
         float curHeight = -1;
 
         for (int x=lx; x<lx+width; x++)

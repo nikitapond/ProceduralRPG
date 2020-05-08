@@ -36,9 +36,14 @@ public class BuildingGenerator
 
         if(plan == Building.BLACKSMITH)
         {
-            return BlacksmithGenerator.GenerateBlacksmith(genRan, new Blacksmith(width, height), out vox);
+            Blacksmith smith = BlacksmithGenerator.GenerateBlacksmith(genRan, new Blacksmith(width, height), out vox);
+            return smith;
         }
-
+        if(plan == Building.BARACKS)
+        {
+            Barracks barr = BarracksGenerator.GenerateBarracks(genRan, new Barracks(width, height), out vox);
+            return barr;
+        }
         /*
         if(plan == Building.HOUSE)
         {
@@ -81,8 +86,8 @@ public class BuildingGenerator
         {
             
         }*/
-
-        return HouseGenerator.GenerateHouse(genRan, new House(width, height), out vox);
+        House house = HouseGenerator.GenerateHouse(genRan, new House(width, height), out vox);
+        return house;
         //return GenerateHouse(out vox, width, height);
         
     }

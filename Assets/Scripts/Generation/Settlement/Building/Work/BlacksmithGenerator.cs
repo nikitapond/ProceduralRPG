@@ -54,6 +54,9 @@ public class BlacksmithGenerator
         BuildingGenerator.PlaceObjectAgainstWall(genRan, new WeaponStand(), 0, vox, smith, 0.1f, distToEntr:4);
         BuildingGenerator.PlaceObjectAgainstWall(genRan, new ArmourStand(), 0, vox, smith, .1f, distToEntr: 4);
 
+        WorkBuildingData wbd = new WorkBuildingData(new NPCJob[] { new NPCJobMerchant(smith), new NPCJobBlackSmith(smith) , new NPCJobBlackSmith(smith) });
+        smith.SetWorkBuildingData(wbd);
+
         return smith;
     }
     
