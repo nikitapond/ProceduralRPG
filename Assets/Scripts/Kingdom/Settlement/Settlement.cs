@@ -101,4 +101,16 @@ public class Settlement
     {
         SettlementLeaderNPCIDs.Add(npc.ID);
     }
+
+    public Vec2i RandomPathPoint()
+    {
+        bool isvalid = false;
+        Vec2i pos = GameManager.RNG.RandomVec2i(0, PathNodes.GetLength(0)-1);
+        while (!isvalid)
+        {
+            if (PathNodes[pos.x, pos.z] != 0)
+                isvalid = true;
+        }
+        return BaseCoord + pos * World.ChunkSize;
+    }
 }

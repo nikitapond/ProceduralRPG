@@ -25,6 +25,14 @@ public interface IWorkBuilding
 
 }
 
+public static class WorkBuildingHelper
+{
+    public static Building AsBuilding(this IWorkBuilding b)
+    {
+        return b as Building;
+    }
+}
+
 /// <summary>
 /// Contains details related to a workbuilding
 /// </summary>

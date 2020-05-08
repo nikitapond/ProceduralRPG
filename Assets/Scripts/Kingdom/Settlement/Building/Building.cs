@@ -26,8 +26,10 @@ public abstract class Building
     public static BuildingPlan BLACKSMITH = Blacksmith.BuildingPlan;
     public static BuildingPlan MARKET = MarketPlace.BuildingPlan;
     public static BuildingPlan HOUSE = House.BuildingPlan;
-    public static BuildingPlan BARACKS = Baracks.BuildingPlanCity;
+    public static BuildingPlan BARACKS = Barracks.BuildingPlanCity;
     public int SettlementID { get; private set; }
+
+    public Inventory Inventory { get; private set; }
 
     public Tile[,] BuildingTiles { get; private set; }
     private List<WorldObjectData> BuildingObjects; 
@@ -36,6 +38,8 @@ public abstract class Building
     public float BaseValue { get { return Width * Height; } }
     public float ValueModifier { get; private set; }
     public float Value { get { return BaseValue * ValueModifier; } }
+
+
 
     public Vec2i[] BoundingWall;
 
@@ -54,7 +58,7 @@ public abstract class Building
     {
         Width = width;
         Height = height;
-
+        Inventory = new Inventory();
         BuildingTiles = new Tile[width, height];
         BuildingObjects = new List<WorldObjectData>();
         if(boundingWall == null)
@@ -157,8 +161,36 @@ public abstract class Building
         return WorldBounds;
     }
 
+    public void CalculateSpawnableTiles(BuildingVoxels vox)
+    {
+        Debug.Log("Getting spawable tiles for building " + this);
+        SpawnableTiles = new List<Vec2i>();
+
+        for (int x = 0; x < Width; x++)
+        {
+            for (int z = 0; z < Height; z++)
+            {
+
+                if (vox.GetVoxelNode(x, 0, z).Voxel != Voxel.none)
+                    continue;
+                bool canPlace = true;
+                foreach(WorldObjectData obj in BuildingObjects)
+                {
+                    if (obj.IntersectsPoint(new Vec2i(x, z))){
+                        canPlace = false;
+                        break;
+                    }
+                        
+                }
+                if (canPlace)
+                    SpawnableTiles.Add(WorldPosition + new Vec2i(x, z));
+            }
+        }
+    }
+
     public List<Vec2i> GetSpawnableTiles(bool force=false)
     {
+        return SpawnableTiles;
         if (SpawnableTiles == null || force)
         {
 
@@ -168,6 +200,7 @@ public abstract class Building
             {
                 for(int z=0; z<Height; z++)
                 {
+                    
                     //if(BuildingObjects[x,z] == null)
                     //{
                         SpawnableTiles.Add(new Vec2i(worldPos.x + x, worldPos.z + z));
