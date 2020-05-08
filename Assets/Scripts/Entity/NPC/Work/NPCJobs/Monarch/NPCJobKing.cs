@@ -8,4 +8,12 @@ public class NPCJobKing : NPCJob
     }
 
     public override Color GetShirtColor => new Color(1, 1, 0);
+
+    public override void JobTick(NPC npc)
+    {
+    }
+
+    public override void JobUpdate(NPC npc)
+    {
+    }
 }

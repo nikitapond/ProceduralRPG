@@ -3,13 +3,17 @@ using UnityEditor;
 [System.Serializable]
 public abstract class EntityTask
 {
+
+    public string TaskDescription;
+
     public Entity Entity { get; private set; }
     public float Priority { get; private set; }
     public float TaskTime { get; private set; }
 
     private float StartTime=-1;
-    public EntityTask(Entity entity, float priority, float taskTime=-1)
+    public EntityTask(Entity entity, float priority, float taskTime=-1, string taskDesc = null)
     {
+        TaskDescription = taskDesc;
         Entity = entity;
         Priority = priority;
         IsComplete = false;
@@ -44,10 +48,16 @@ public abstract class EntityTask
 
     public static int QuickDistanceToPlayer(Entity entity)
     {
-        return Vec2i.QuickDistance(entity.TilePos, GameManager.PlayerManager.Player.TilePos);
+        return Vec2i.QuickDistance(entity.TilePos, PlayerManager.Instance.Player.TilePos);
     }
     public static int QuickDistance(Entity entity, Vec2i v)
     {
         return v.QuickDistance(entity.TilePos);
+    }
+
+    public override string ToString()
+    {
+    
+        return TaskDescription;
     }
 }

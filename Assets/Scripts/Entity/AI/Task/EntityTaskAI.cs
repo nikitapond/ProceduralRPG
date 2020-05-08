@@ -28,12 +28,28 @@ public abstract class EntityTaskAI
         //Check if we need a new task
         if(CurrentTask == null || CurrentTask.IsComplete)
         {
+            
             //if so, choose our idle task
-            CurrentTask = ChooseIdleTask();
+            EntityTask task = ChooseIdleTask();
+            if(task != null)
+                SetTask(task);
         }
         if(CurrentTask != null)
         {
-            CurrentTask.Tick();
+            if (CurrentTask.IsComplete)
+            {
+                Entity.GetLoadedEntity().SpeechBubble.PushMessage("Task " + CurrentTask + " complete");
+                CurrentTask = null;
+                EntityTask task = ChooseIdleTask();
+                if (task != null)
+                    SetTask(task);
+            }
+            else
+            {
+                CurrentTask.Tick();
+            }
+
+            
         }
         Debug.EndDeepProfile("internal_ai_tick");
     }
@@ -50,6 +66,7 @@ public abstract class EntityTaskAI
                 {
                     CurrentTask.OnTaskEnd();
                     CurrentTask = task;
+                    Entity.GetLoadedEntity().SpeechBubble.PushMessage("New task has higher priority : " + CurrentTask);
 
                 }
             }
@@ -57,6 +74,7 @@ public abstract class EntityTaskAI
             {
                 CurrentTask.OnTaskEnd();
                 CurrentTask = task;
+                Entity.GetLoadedEntity().SpeechBubble.PushMessage("New task, skip priority check : " + CurrentTask);
 
             }
 
@@ -64,9 +82,10 @@ public abstract class EntityTaskAI
         else
         {
             CurrentTask = task;
+            Entity.GetLoadedEntity().SpeechBubble.PushMessage("No task, new task : " + CurrentTask);
 
         }
- 
+
 
 
     }

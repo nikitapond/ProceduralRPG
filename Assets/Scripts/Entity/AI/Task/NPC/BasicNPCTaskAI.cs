@@ -60,13 +60,13 @@ public class BasicNPCTaskAI : EntityTaskAI
             if (!IsAtWork())
             {
                 Debug.Log("Entity " + Entity + " task: GoToWork");
-                return new EntityTaskGoto(Entity, NPC.NPCData.NPCJob.WorkLocation.WorkBuilding);
+                return new EntityTaskGoto(Entity, NPC.NPCData.NPCJob.WorkLocation.WorkBuilding, taskDesc:"Going to work at " + NPC.NPCData.NPCJob.WorkLocation);
             }
             else {
                 //If we are at work, choose idle task
                 Debug.Log("Entity " + Entity + " task: Job");
 
-                return new NPCTaskDoJob(Entity, NPC.NPCData.NPCJob.WorkLocation, 10, 60);
+                return new NPCTaskDoJob(Entity, NPC.NPCData.NPCJob.WorkLocation, NPC.NPCData.NPCJob, 10, 60);
             }
         }
         return null;

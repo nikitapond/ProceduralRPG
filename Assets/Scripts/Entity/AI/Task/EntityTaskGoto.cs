@@ -8,14 +8,15 @@ using UnityEditor;
 public class EntityTaskGoto : EntityTask
 {
 
+
     private Vec2i TargetTile;
     private bool Running;
-    public EntityTaskGoto(Entity entity, Building building, bool running=false) : base(entity, 5, -1)
+    public EntityTaskGoto(Entity entity, Building building, bool running=false, string taskDesc=null) : base(entity, 5, -1, taskDesc)
     {
         TargetTile = GameManager.RNG.RandomFromList(building.GetSpawnableTiles());
         Running = running;
     }
-    public EntityTaskGoto(Entity entity, Vec2i targetTile, float priority=5, bool running=false) : base (entity, priority, -1)
+    public EntityTaskGoto(Entity entity, Vec2i targetTile, float priority=5, bool running=false, string taskDesc = null) : base (entity, priority, -1, taskDesc)
     {
         TargetTile = targetTile;
         Running = running;
@@ -28,7 +29,7 @@ public class EntityTaskGoto : EntityTask
             return;
         if (Running)
             Entity.GetLoadedEntity().SetRunning(true);
-        Entity.EntityAI.FollowPath();
+        //Entity.EntityAI.FollowPath();
         
     }
 
@@ -51,7 +52,7 @@ public class EntityTaskGoto : EntityTask
         if(quickDist > (World.ChunkSize * 3) * (World.ChunkSize * 3))
         {
             //And the target position is far from the player
-            if(Vec2i.QuickDistance(TargetTile, GameManager.PlayerManager.Player.TilePos) > (World.ChunkSize * 3) * (World.ChunkSize * 3))
+            if(Vec2i.QuickDistance(TargetTile, PlayerManager.Instance.Player.TilePos) > (World.ChunkSize * 3) * (World.ChunkSize * 3))
             {
                 //Then we teleport to our target position.
                 Entity.SetPosition(TargetTile);
@@ -59,8 +60,18 @@ public class EntityTaskGoto : EntityTask
                 return;
             }
         }
-
-        Entity.EntityAI.GeneratePath(TargetTile);
+        Entity.GetLoadedEntity().LEPathFinder.SetTarget(TargetTile.AsVector2());
+        //Entity.EntityAI.GeneratePath(TargetTile);
         
     }
+
+    public override string ToString()
+    {
+        string baseStr = base.ToString();
+        if (baseStr == null)
+            return "Task Goto: " + TargetTile;
+        return baseStr;
+    }
+
+
 }

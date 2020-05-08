@@ -35,7 +35,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         if (InCombat)
         {
 
-            Entity.GetLoadedEntity().SpeechBubble.SetText(Entity.EntityAI.ToString());
+            //Entity.GetLoadedEntity().SpeechBubble.SetText(Entity.EntityAI.ToString());
 
             return;
         }
