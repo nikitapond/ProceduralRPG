@@ -90,7 +90,7 @@ public class KingdomNPCGenerator
                 //Define the house and get the possible tiles we can spawn the this houses' NPCs on
                 House h = b as House;
                 List<Vec2i> spawnableTiles = h.GetSpawnableTiles();
-                Debug.Log("spawn count: " + spawnableTiles.Count);
+
                 for(int i=0; i<h.capacity; i++)
                 {
                     //Attempt to find a valid spawn point

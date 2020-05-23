@@ -15,6 +15,8 @@ public class LoadedMeleeWeapon : MonoBehaviour
     private float WeaponAttackTime;
     private DamageType DamageType;
 
+    private List<Collider> AlreadyHit;
+
     private float SwingDamage;
     /// <summary>
     /// Called when the melee weapon is loaded in.
@@ -36,6 +38,7 @@ public class LoadedMeleeWeapon : MonoBehaviour
             if(mc.sharedMesh == null)
                 mc.sharedMesh = GetComponentInChildren<MeshFilter>().mesh;
         }
+        AlreadyHit = new List<Collider>(5);
     }
 
     /// <summary>
@@ -80,7 +83,6 @@ public class LoadedMeleeWeapon : MonoBehaviour
     public void SwingWeapon(float damage=-1)
     {
         Debug.Log("swing!");
-        IsSwinging = true;
         if (damage == -1)
         {
             SwingDamage = WeaponBaseDamage;
@@ -95,8 +97,12 @@ public class LoadedMeleeWeapon : MonoBehaviour
     /// <returns></returns>
     private IEnumerator InternalSwing()
     {
+        yield return new WaitForSeconds(WeaponAttackTime * 0.25f);
+        IsSwinging = true;
+
         yield return new WaitForSeconds(WeaponAttackTime);
         IsSwinging = false;
+        AlreadyHit.Clear();
     }
 
     /// <summary>
@@ -112,6 +118,10 @@ public class LoadedMeleeWeapon : MonoBehaviour
         //We only check for damage collision if we are currently swining this weapon
         if (!IsSwinging)
             return;
+        //if we have already run a collision call on this swing then we do not register again
+        if (AlreadyHit.Contains(other))
+            return;
+        AlreadyHit.Add(other);
         //Check if the object we collide with is an entity
         LoadedEntity le = other.gameObject.GetComponent<LoadedEntity>();
         if (le == null)

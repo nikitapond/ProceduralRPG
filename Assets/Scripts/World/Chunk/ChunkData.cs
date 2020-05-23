@@ -1,91 +1,55 @@
 ﻿using UnityEngine;
-using System.Collections.Generic;
 using UnityEditor;
-public enum ChunkBiome
-{
-    ocean, grassland, forrest, dessert
-}
+using System.Collections.Generic;
 [System.Serializable]
 public class ChunkData
 {
-
-
     public int X { get; private set; }
     public int Z { get; private set; }
     public int[,] TileIDs { get; private set; }
     public float[,] Heights { get; private set; }
     public float BaseHeight { get; private set; }
-    //public Tile[,] Tiles { get; private set; }
-    public Dictionary<int, WorldObjectData> Objects { get; private set; }
 
-    public string DEBUG = "";
     public bool IsLand { get; private set; }
-    [SerializeField]
-    private int SettlementID;
-    [SerializeField]
-    private int KingdomID;
-    public ChunkData(int x, int z, int[,] tiles, bool isLand, float baseHeight = 5, float[,] heights=null, Dictionary<int, WorldObjectData> objects=null)
+
+    private int SettlementID=-1;
+    private int KingdomID=-1;
+
+
+    public ChunkVoxelData VoxelData { get; private set; }
+
+    public List<WorldObjectData> WorldObjects;
+
+    public ChunkData(int x, int z, int[,] tiles, bool isLand, 
+        float baseHeight = 5, float[,] heightMap=null, List<WorldObjectData> objects=null)
     {
-        KingdomID = -1;
-        SettlementID = -1;
-        Heights = heights;
         X = x;
         Z = z;
         TileIDs = tiles;
         IsLand = isLand;
-
-        Objects = objects;
         BaseHeight = baseHeight;
+        Heights = heightMap;
+        WorldObjects = objects;
     }
-    public ChunkData(int x, int z, Tile[,] tiles, bool isLand, Dictionary<int, WorldObjectData> objects=null)
+
+    public float GetHeight(Vec2i v)
     {
-        KingdomID = -1;
-        SettlementID = -1;
-
-        X = x;
-        Z = z;
-
-        if (tiles == null)
-            TileIDs = null;
-        else
-        {
-            TileIDs = new int[World.ChunkSize, World.ChunkSize];
-            for(int x_=0; x_<World.ChunkSize; x_++)
-            {
-                for(int z_=0; z_<World.ChunkSize; z_++)
-                {
-                    if (tiles[x_, z_] == null)
-                    {
-                        TileIDs[x_, z_] = 1; //Set to grass as default
-                    }
-                    else
-                    {
-                        TileIDs[x_, z_] = tiles[x_, z_].ID;
-                    }
-                }
-            }
-        }
-
-        IsLand = isLand;
-
-        Objects = objects;
+        if (Heights == null)
+            return BaseHeight;
+        return Heights[v.x, v.z];
     }
-    public void SetTile(int x, int z, Tile tile)
+
+    public void SetVoxelData(ChunkVoxelData cvd)
     {
-        TileIDs[x, z] = tile.ID;
-        //if (tile == Tile.WATER)
-         //   Heights[x, z] = ;
+        VoxelData = cvd;
     }
+
     public Tile GetTile(int x, int z)
     {
         return Tile.FromID(TileIDs[x, z]);
     }
 
-    public void SetControllingKingdom(Kingdom king)
-    {
-        KingdomID = king.KingdomID;
-       
-    }
+
     public Kingdom GetKingdom()
     {
         return GameManager.WorldManager.World.GetKingdom(KingdomID);
@@ -99,27 +63,9 @@ public class ChunkData
         return GameManager.WorldManager.World.GetSettlement(SettlementID);
     }
 
-    
-    public WorldObjectData GetObject(int x, int z)
+
+    public override string ToString()
     {
-        if (Objects == null)
-            return null;
-        int hash = WorldObject.ObjectPositionHash(x, z);
-        if (Objects.ContainsKey(hash))
-            return Objects[hash];
-        return null;
+        return "Chunk_" + X + "_" + Z; 
     }
-
-    public void SetObject(int x, int z, WorldObjectData obj)
-    {
-        if (Objects == null)
-            Objects = new Dictionary<int, WorldObjectData>();
-        int hash = WorldObject.ObjectPositionHash(x, z);
-        if (!Objects.ContainsKey(hash))
-            Objects.Add(hash, obj);
-        else
-            Objects[hash] = obj;
-    }
-
-
 }

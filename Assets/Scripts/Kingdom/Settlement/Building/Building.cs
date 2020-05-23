@@ -27,6 +27,7 @@ public abstract class Building
     public static BuildingPlan MARKET = MarketPlace.BuildingPlan;
     public static BuildingPlan HOUSE = House.BuildingPlan;
     public static BuildingPlan BARACKS = Barracks.BuildingPlanCity;
+    public static BuildingPlan TAVERN = Tavern.BuildingPlan;
     public int SettlementID { get; private set; }
 
     public Inventory Inventory { get; private set; }
@@ -92,7 +93,7 @@ public abstract class Building
         WorldPosition = settlementBaseCoord + buildingSettlementCoord;
         foreach (WorldObjectData obj in BuildingObjects)
         {
-            obj.SetPosition(obj.Position + settlementBaseCoord.AsVector3());
+            //obj.SetPosition(obj.Position + settlementBaseCoord.AsVector3());
         }
     }
 
@@ -163,7 +164,6 @@ public abstract class Building
 
     public void CalculateSpawnableTiles(BuildingVoxels vox)
     {
-        Debug.Log("Getting spawable tiles for building " + this);
         SpawnableTiles = new List<Vec2i>();
 
         for (int x = 0; x < Width; x++)

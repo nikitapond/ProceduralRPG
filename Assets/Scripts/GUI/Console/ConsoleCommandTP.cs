@@ -68,7 +68,7 @@ public class ConsoleCommandTP : ConsoleCommand
             Subworld subw = GameManager.WorldManager.World.GetSubworld(dunID);
             if (subw == null)
                 return "Dungeon with ID " + dunID + " not found";
-            GameManager.PlayerManager.Player.SetPosition(subw.WorldEntrance);
+            GameManager.PlayerManager.Player.SetPosition(subw.InternalEntrancePos);
             return "Teleporting to dungeon " + dunID;
         }
         else

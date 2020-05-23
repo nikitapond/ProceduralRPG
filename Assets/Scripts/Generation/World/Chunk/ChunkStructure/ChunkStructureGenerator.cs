@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 public class ChunkStructureGenerator
 {
-
+    public Object LOCK = new Object();
     public GameGenerator GameGenerator { get; private set; }
 
     public Dictionary<Vec2i, ChunkStructure> ChunkStructureShells { get; private set; }
@@ -12,7 +12,7 @@ public class ChunkStructureGenerator
     public ChunkStructureGenerator(GameGenerator gameGen)
     {
         GameGenerator = gameGen;
-        //GenerationRandom = new GenerationRandom(gameGen.Seed * 13 + 29535);
+        GenerationRandom = new GenerationRandom(gameGen.Seed * 13 + 29535);
     }
 
     ///Shell creation - where we generate the empty shells for all structures
@@ -24,7 +24,6 @@ public class ChunkStructureGenerator
     /// </summary>
     public void GenerateStructureShells()
     {
-        return;
         //Create dictionary to store shells
         ChunkStructureShells = new Dictionary<Vec2i, ChunkStructure>();
         //Generate all bandit camps, iterate and add to lists
@@ -42,37 +41,6 @@ public class ChunkStructureGenerator
     }
 
 
-    private Dictionary<Vec2i, ChunkStructure> GenerateElementalDungeonEntranceStructures()
-    {
-        Dictionary<Vec2i, ChunkStructure> elDunShells = new Dictionary<Vec2i, ChunkStructure>();
-        //iterate all counts
-        for (int i = 0; i < 4; i++)
-        {
-            //We make5 attempts to find a valid place for each bandit camp
-            for (int a = 0; a < 5; a++)
-            {
-                //Generate random position and size
-                Vec2i position = GenerationRandom.RandomFromList(GameGenerator.TerrainGenerator.LandChunks);
-                Vec2i size = GenerationRandom.RandomVec2i(1, 3);
-                //Check if position is valid,
-                if (IsPositionValid(position))
-                {
-                    //if valid, we add the structure to ChunkBases and to the dictionary of shells
-                    ChunkStructure banditCampShell = new BanditCamp(position, size);
-                    for (int x = 0; x < size.x; x++)
-                    {
-                        for (int z = 0; z < size.z; z++)
-                        {
-                            GameGenerator.TerrainGenerator.ChunkBases[position.x + x, position.z + z].AddChunkStructure(banditCampShell);
-                        }
-                    }
-                    elDunShells.Add(position, banditCampShell);
-                }
-            }
-        }
-        return elDunShells;
-
-    }
 
     private Dictionary<Vec2i, ChunkStructure> GenerateBanditCampShells(int count = 25)
     {
@@ -120,21 +88,13 @@ public class ChunkStructureGenerator
                 //Check if position is valid,
                 if (IsPositionValid(position))
                 {
-                    //if valid, we add the structure to ChunkBases and to the dictionary of shells
-                    ChunkStructure banditCampShell = new AbandonedCastle(position, size);
-                    for (int x = 0; x < size.x; x++)
-                    {
-                        for (int z = 0; z < size.z; z++)
-                        {
-                            GameGenerator.TerrainGenerator.ChunkBases[position.x + x, position.z + z].AddChunkStructure(banditCampShell);
-                        }
-                    }
-                    banditShells.Add(position, banditCampShell);
+
                 }
             }
         }
         return banditShells;
     }
+
     private Dictionary<Vec2i, ChunkStructure> GenerateMineShells(int count = 20)
     {
         return null;
@@ -146,13 +106,13 @@ public class ChunkStructureGenerator
     ///Where we generate the chunk data for all the structure.
     #region thread_gen
 
-    private Dictionary<Vec2i, ChunkData2> GeneratedChunks;
+    private Dictionary<Vec2i, ChunkData> GeneratedChunks;
     private Object GeneratedChunksAddLock;
 
-    public Dictionary<Vec2i, ChunkData2> GenerateAllStructures()
+    public Dictionary<Vec2i, ChunkData> GenerateAllStructures()
     {
 
-        GeneratedChunks = new Dictionary<Vec2i, ChunkData2>();
+        GeneratedChunks = new Dictionary<Vec2i, ChunkData>();
         GeneratedChunksAddLock = new Object();
 
         //Create array to hold data we send to the thread
@@ -214,8 +174,11 @@ public class ChunkStructureGenerator
             return;
 
         //Create list to hold generated chunks. Create random (thread safe)
-        List<ChunkData2> generatedChunks = new List<ChunkData2>(40);
+        List<ChunkData> generatedChunks = new List<ChunkData>(40);
         GenerationRandom genRan = new GenerationRandom(toGen[0].Position.x * 13 + toGen[0].Position.z * 3064);
+
+
+        ChunkStructureBuilder builder = null;
         //iterate all structures to generate, ignore if null
         foreach (ChunkStructure str in toGen)
         {
@@ -224,22 +187,38 @@ public class ChunkStructureGenerator
             //If a bandit camp, create a bandit camp builder then generate structure.
             if(str is BanditCamp)
             {
-                BanditCampBuilder bcb = new BanditCampBuilder(str as BanditCamp);
-                generatedChunks.AddRange(bcb.Generate(genRan));
-                str.SetLootChest(bcb.FinalLootChest);
-            }else if(str is AbandonedCastle)
-            {
-                AbandonedCastleBuilder acb = new AbandonedCastleBuilder(str as AbandonedCastle, genRan);
-                acb.Generate();
-                generatedChunks.AddRange(acb.ToChunkData());
-                str.SetLootChest(acb.GetMainLootChest());
+                builder = new BanditCampBuilder(str);
             }
+
+            builder.Generate(genRan);
+
+
+            //If the chunk structure has sub worlds we iterate them all, and add them to the world
+            //we then set the subworld of the entrance to its correct form
+            if (builder.HasSubworlds)
+            {
+                lock (LOCK)
+                {
+                    foreach (KeyValuePair<Subworld, ISubworldEntranceObject> kvp in builder.Subworlds)
+                    {
+                        GameGenerator.World.AddSubworld(kvp.Key);
+                        kvp.Value.SetSubworld(kvp.Key);
+
+                    }
+                }
+                
+            }
+
+            generatedChunks.AddRange(builder.ToChunkData());
+            
+            
+
         }
         //Lock for thread safe adding
         lock (GeneratedChunksAddLock)
         {
             //iterate generated threads, add to dictionary
-            foreach (ChunkData2 cd in generatedChunks)
+            foreach (ChunkData cd in generatedChunks)
             {
                 GeneratedChunks.Add(new Vec2i(cd.X, cd.Z), cd);
             }

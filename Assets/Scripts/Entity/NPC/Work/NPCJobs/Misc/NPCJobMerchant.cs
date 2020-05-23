@@ -12,7 +12,7 @@ public class NPCJobMerchant : NPCJob
 
     private bool Init;
 
-    public NPCJobMerchant(IWorkBuilding workLocation) : base("Merchent", workLocation, KingdomHierarchy.Citizen)
+    public NPCJobMerchant(IWorkBuilding workLocation, string title=null) : base(title ?? "Merchant", workLocation, KingdomHierarchy.Citizen)
     {
         Init = false;
     }
@@ -26,7 +26,7 @@ public class NPCJobMerchant : NPCJob
             Init = true;
             ShopNode = new NPCDialogNode("What do you have for sale?", "Take a look");
             ShopNode.SetOnSelectFunction(() => {
-                Debug.Log("test?");
+                //Debug.Log("test?");
                 GUIManager.Instance.StartShop(npc, WorkLocation.WorkBuilding.Inventory);
             });
             if(npc.Dialog == null)
@@ -34,6 +34,10 @@ public class NPCJobMerchant : NPCJob
                 NPCDialog dialog = new NPCDialog(npc, "Hello, how can I help you today?");
                 dialog.AddNode(ShopNode);
                 npc.SetDialog(dialog);
+                NPCDialogNode exitNode = new NPCDialogNode("I'll be on my way", "");
+                exitNode.IsExitNode = true;
+                dialog.AddNode(exitNode);
+
             }
             else
             {
@@ -69,8 +73,8 @@ public class NPCJobMerchant : NPCJob
 
     private void ChooseNewPosition()
     {
-        Debug.Log(WorkLocation);
-        Debug.Log(WorkLocation.AsBuilding().GetSpawnableTiles());
+        //Debug.Log(WorkLocation);
+        //Debug.Log(WorkLocation.AsBuilding().GetSpawnableTiles());
         //Choose random point
         CurrentTargetPosition = GameManager.RNG.RandomFromList(WorkLocation.AsBuilding().GetSpawnableTiles()).AsVector3();
         CurrentPositionTime = Time.deltaTime;

@@ -28,7 +28,6 @@ public class WorldManager : MonoBehaviour
 
     public Dictionary<Vec2i, ChunkRegion> LoadedChunkRegions { get; private set; }
 
-    public List<LoadedProjectile> LoadedProjectiles { get; private set; }
 
     public Player Player { get; private set; }
 
@@ -59,7 +58,7 @@ public class WorldManager : MonoBehaviour
             return;
         }
         //If the subworld doesn't have an entrance, set its entrance as the current player position.
-        if (sub.WorldEntrance == null)
+        if (sub.InternalEntrancePos == null)
         {
             Debug.Error("Subworld " + sub.ToString() + " has no WorldEntrance, Player position " + Player.Position + " has been set");
             sub.SetWorldEntrance(Vec2i.FromVector3(Player.Position));
@@ -80,7 +79,7 @@ public class WorldManager : MonoBehaviour
             GameManager.PathFinder.LoadSubworld(sub);
             //Inform entity manager we are entering the sub world, then teleport player to correct position.
             GameManager.EntityManager.EnterSubworld(sub);
-            Player.SetPosition(sub.SubworldEntrance);
+            Player.SetPosition(sub.InternalEntrancePos);
         }
 
 
@@ -113,8 +112,8 @@ public class WorldManager : MonoBehaviour
         {
         
             CRManager.LeaveSubworld();
-            Player.SetPosition(CurrentSubworld.WorldEntrance);
-            CurrentSubworld = null;
+            Player.SetPosition(CurrentSubworld.ExternalEntrancePos);
+            //CurrentSubworld = null;
             LoadedChunksCentre = null;
             GameManager.EntityManager.LeaveSubworld();
         }
@@ -124,7 +123,6 @@ public class WorldManager : MonoBehaviour
     {
         LoadedRegions = new ChunkRegion[World.RegionCount, World.RegionCount];
         Instance = this;
-        LoadedProjectiles = new List<LoadedProjectile>();
         CRManager = GetComponent<ChunkRegionManager>();
     }
 
@@ -142,24 +140,8 @@ public class WorldManager : MonoBehaviour
             return;
         }
 
-        SlowWorldTick();
         Debug.EndDeepProfile("world_update");
 
-    }
-
-    void SlowWorldTick()
-    {
-        List<LoadedProjectile> toRem = new List<LoadedProjectile>();
-        foreach(LoadedProjectile p in LoadedProjectiles)
-        {
-            if (!MiscMaths.WithinDistance(p.transform.position, Player.Position, 40))
-                toRem.Add(p);
-        }
-        foreach(LoadedProjectile proj in toRem)
-        {
-            LoadedProjectiles.Remove(proj);
-            Destroy(proj.gameObject);
-        }
     }
 
 
@@ -192,53 +174,9 @@ public class WorldManager : MonoBehaviour
         }*/
     }
 
-    /// <summary>
-    /// Spawns a new projectile in the current world/subworld at the given
-    /// position and direction
-    /// </summary>
-    /// <param name="position"></param>
-    /// <param name="direction"></param>
-    /// <param name="projectile"></param>
-    public void AddNewProjectile(Vector3 position, Vector2 direction, Projectile projectile, Entity source = null, float yAxisRotate=0)
-    {
-        Debug.Log("Projectile added");
-        GameObject pro = Instantiate(projectile.GenerateProjectileObject());
-        pro.transform.Rotate(new Vector3(0, yAxisRotate, 0));
-        pro.transform.parent = transform;
-        LoadedProjectile l = pro.AddComponent<LoadedProjectile>();
-        l.CreateProjectile(position, direction, projectile, source);
-        if(source != null)
-        {
-        }
-
-        LoadedProjectiles.Add(l);
-    }
 
 
-    public void DestroyProjectile(LoadedProjectile proj)
-    {
-        LoadedProjectiles.Remove(proj);
-        Destroy(proj.gameObject);
-    }
 
-
-    public LoadedBeam CreateNewBeam(Entity entity, Beam beam, Vector3 target)
-    {
-        GameObject beamObj = Instantiate(beam.GenerateBeamObject());
-        LoadedBeam loadedBeam = beamObj.GetComponent<LoadedBeam>();
-
-        loadedBeam.transform.parent = entity.GetLoadedEntity().transform;
-        loadedBeam.transform.localPosition = Vector3.up * 1.5f;
-        loadedBeam.CreateBeam(entity, target, beam);
-        return loadedBeam;
-    }
-
-
-    public void DestroyBeam(LoadedBeam beam)
-    {
-        if(beam != null && beam.gameObject != null)
-            Destroy(beam.gameObject);
-    }
 
 
 

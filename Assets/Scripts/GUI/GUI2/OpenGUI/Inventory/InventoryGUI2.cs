@@ -26,20 +26,31 @@ public class InventoryGUI2 : MonoBehaviour
         MainInventory.SetItemTag(CurrentInventoryItemTag);
         MainInventory.SetMain(true);
 
-        //Check if there are any inventories near the player to display
-        WorldObjectData invObj = GameManager.WorldManager.World.InventoryObjectNearPoint(Vec2i.FromVector3(Player.Position));
-        if(invObj == null || !(invObj is IInventoryObject))
+        if(WorldManager.Instance != null)
+        {
+            //Check if there are any inventories near the player to display
+            WorldObjectData invObj = WorldManager.Instance.World.InventoryObjectNearPoint(Vec2i.FromVector3(Player.Position));
+            if (invObj == null || !(invObj is IInventoryObject))
+            {
+                //If no object is found, turn secondary inventory off
+                SecondInventory.gameObject.SetActive(false);
+            }
+            else
+            {
+                Inventory inv = (invObj as IInventoryObject).GetInventory();
+                SecondInventory.SetInventory(inv);
+                SecondInventory.SetItemTag(CurrentInventoryItemTag);
+                SecondInventory.SetMain(false);
+                SecondInventory.gameObject.SetActive(true);
+            }
+        }
+        else
         {
             //If no object is found, turn secondary inventory off
             SecondInventory.gameObject.SetActive(false);
         }
-        else {
-            Inventory inv = (invObj as IInventoryObject).GetInventory();
-            SecondInventory.SetInventory(inv);
-            SecondInventory.SetItemTag(CurrentInventoryItemTag);
-            SecondInventory.SetMain(false);
-            SecondInventory.gameObject.SetActive(true);
-        }
+
+       
     }
   
 

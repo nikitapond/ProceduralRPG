@@ -75,7 +75,7 @@ public class World
 
     public int AddSubworld(Subworld subworld)
     {
-        int id = WorldSubWorlds.Count;
+        int id = WorldSubWorlds.Count+1;
         WorldSubWorlds.Add(id, subworld);
         subworld.SetSubworldID(id);
         return id;

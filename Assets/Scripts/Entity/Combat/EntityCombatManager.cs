@@ -27,7 +27,7 @@ public class EntityCombatManager : IGamePauseEvent
     /// </summary>
     public float MaxHealth { get; private set; }
     public float CurrentHealth { get; private set; }
-    public float HeathRegenerationRate { get; private set; }
+    public float HealthRegenerationRate { get; private set; }
 
 
     public float MaxStamina { get; private set; }
@@ -52,7 +52,7 @@ public class EntityCombatManager : IGamePauseEvent
     [System.NonSerialized]
     private LoadedMeleeWeapon LoadedMeleeWeapon;
 
-    public EntitySpellManager SpellManager { get; private set; }
+    public EntitySpellManager EntitySpellManager { get; private set; }
 
     public EntityCombatManager(Entity entity)
     {
@@ -60,10 +60,10 @@ public class EntityCombatManager : IGamePauseEvent
 
 
         MaxHealth = CurrentHealth = 100;
-        HeathRegenerationRate = 5;
+        HealthRegenerationRate = 5;
 
         MaxStamina = CurrentStamina = 100;
-        StaminaRegenerationRate = 5;
+        StaminaRegenerationRate = 20;
         UnarmedAttackRange = 3;
         UnarmedAttackDamage = 5;
         UnarmedAttackCooldown=2;
@@ -74,7 +74,7 @@ public class EntityCombatManager : IGamePauseEvent
 
         EventManager.Instance.AddListener(this);
 
-        SpellManager = new EntitySpellManager(entity);
+        EntitySpellManager = new EntitySpellManager(entity);
         
 
     }
@@ -130,9 +130,12 @@ public class EntityCombatManager : IGamePauseEvent
         if (GameManager.Paused)
             return;
         //Apply regen rate for health, mana, and stamina.
-        CurrentHealth = Mathf.Clamp(CurrentHealth + HeathRegenerationRate * dt, 0, MaxHealth);
+        CurrentHealth = Mathf.Clamp(CurrentHealth + HealthRegenerationRate * dt, 0, MaxHealth);
+        //Debug.Log(CurrentHealth + "_" + HealthRegenerationRate * dt);
         CurrentStamina = Mathf.Clamp(CurrentStamina + StaminaRegenerationRate * dt, 0, MaxStamina);
-        SpellManager.Tick(dt);
+        //Debug.Log(CurrentStamina + "_" + StaminaRegenerationRate * dt);
+
+        EntitySpellManager.Tick(dt);
     }
 
     public void SetEquiptWeapon(Weapon weapon)
@@ -239,7 +242,8 @@ public class EntityCombatManager : IGamePauseEvent
         if (EquiptWeapon is RangeWeapon)
         {
             RangeWeapon rw = EquiptWeapon as RangeWeapon;
-            GameManager.WorldManager.AddNewProjectile(Entity.Position, EntityLookAngleToEulerLook2D(Entity.LookAngle), rw.GenerateProjectile(), Entity, Entity.LookAngle);
+            SpellManager.Instance.AddNewProjectile(Entity.Position, EntityLookAngleToEulerLook2D(Entity.LookAngle), rw.GenerateProjectile(), Entity, Entity.LookAngle);
+            //GameManager.WorldManager.AddNewProjectile(Entity.Position, EntityLookAngleToEulerLook2D(Entity.LookAngle), rw.GenerateProjectile(), Entity, Entity.LookAngle);
         }
         else
         {

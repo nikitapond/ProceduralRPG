@@ -10,7 +10,7 @@ public class LoadedProjectile : MonoBehaviour
     /// Sets the projectile to this loaded projectile
     /// </summary>
     /// <param name="proj"></param>
-    public void CreateProjectile(Vector3 position, Vector2 direction, Projectile proj, Entity source=null)
+    public void CreateProjectile(Vector3 position, Vector3 direction, Projectile proj, Entity source=null)
     {
         Projectile = proj;
         transform.position = position;
@@ -18,8 +18,8 @@ public class LoadedProjectile : MonoBehaviour
         if (RBody == null)
             RBody = gameObject.AddComponent<Rigidbody>();
         RBody.useGravity = false;
-        RBody.velocity = new Vector3(direction.x, 0, direction.y).normalized * proj.ProjectileSpeed;
-        transform.rotation = Quaternion.AngleAxis(Mathf.Atan2(direction.y, direction.x) * Mathf.Deg2Rad, Vector3.forward);
+        RBody.velocity = new Vector3(direction.x, direction.y, direction.z).normalized * proj.ProjectileSpeed;
+        transform.rotation = Quaternion.AngleAxis(Mathf.Atan2(direction.z, direction.x) * Mathf.Deg2Rad, Vector3.forward);
         Source = source;
     }
 
@@ -46,7 +46,7 @@ public class LoadedProjectile : MonoBehaviour
         Projectile.InternalOnCollision(other);
 
         if (Projectile.DestroyOnCollision)
-            GameManager.WorldManager.DestroyProjectile(this);
+            SpellManager.Instance.DestroyProjectile(this);
     }
 
 }

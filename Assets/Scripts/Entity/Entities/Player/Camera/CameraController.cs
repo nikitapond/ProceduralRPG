@@ -40,7 +40,8 @@ public class FirstPersonCC : CameraController, IGamePauseEvent
 
     private void Start()
     {
-        Theta = PlayerManager.Player.LookAngle;
+
+        //Theta = PlayerManager.Player.LookAngle;
         Phi = 0;
         EventManager.Instance.AddListener(this);
         Cursor.lockState = CursorLockMode.Locked;

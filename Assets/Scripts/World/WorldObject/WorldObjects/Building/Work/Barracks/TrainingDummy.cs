@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
-
+[System.Serializable]
 public class TrainingDummy : WorldObjectData, IWorkEquiptmentObject
 {
     public override WorldObjects ID => WorldObjects.TRAINING_DUMMY;

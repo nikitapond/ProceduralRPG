@@ -120,7 +120,9 @@ public enum WorldObjects
     BANDIT_GAURD_TOWER,
     CHEST,
     WALL_TORCH,
-    TRAINING_DUMMY
+    FIRE_PLACE,
+    TRAINING_DUMMY,
+    TRAP_DOOR
 
 
 

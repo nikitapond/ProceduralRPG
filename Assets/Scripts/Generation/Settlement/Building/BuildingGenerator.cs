@@ -44,6 +44,10 @@ public class BuildingGenerator
             Barracks barr = BarracksGenerator.GenerateBarracks(genRan, new Barracks(width, height), out vox);
             return barr;
         }
+        if(plan == Building.TAVERN)
+        {
+            return TavernGenerator.GenerateTavern(genRan, new Tavern(width, height), out vox);
+        }
         /*
         if(plan == Building.HOUSE)
         {

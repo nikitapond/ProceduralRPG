@@ -29,7 +29,7 @@ public class GameGenerator
     ChunkStructureGenerator StructureGenerator;
 
     //All chunks that are generated outside of the main chunk generator
-    private Dictionary<Vec2i, ChunkData2> PreGeneratedChunks;
+    private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
 
     /// <summary>
     /// Initiates the GameGenerator with the specified seed
@@ -105,10 +105,10 @@ public class GameGenerator
         
 
         //Iterate all chunks generated for chunk structures, add them to the PreGeneratedChunks
-       /* foreach (KeyValuePair<Vec2i, ChunkData2> kvp in StructureGenerator.GenerateAllStructures())
+        foreach (KeyValuePair<Vec2i, ChunkData> kvp in StructureGenerator.GenerateAllStructures())
         {
             PreGeneratedChunks.Add(kvp.Key, kvp.Value);
-        }*/
+        }
         Debug.EndDeepProfile("chunk_struct_gen");
 
 

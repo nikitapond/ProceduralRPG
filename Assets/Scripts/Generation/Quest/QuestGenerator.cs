@@ -30,11 +30,7 @@ public class QuestGenerator
         {
             foreach(ChunkStructure chunkStruct in kvp.Value)
             {
-                if (chunkStruct.HasDungeonEntrance)
-                {
-                    questCount++;
-                    allQuests.Add(GenerateDungeonQuest(kvp.Key, chunkStruct));
-                }
+               
 
                 if (questCount > 10)
                     return allQuests;
@@ -55,6 +51,8 @@ public class QuestGenerator
     /// <returns></returns>
     private Quest GenerateDungeonQuest(Vec2i dungeonPos, ChunkStructure chunkStructure)
     {
+        return null;
+        /*
         questCount++;
         //Get the dungeon this quest is based on
         Dungeon dun = (Dungeon)chunkStructure.DungeonEntrance.GetSubworld();
@@ -81,7 +79,8 @@ public class QuestGenerator
 
 
         return GenerateDungeonKeyQuest_RandomStructure(dungeonPos, dun, revTasks);
-
+        */
+        return null;
     }
 
     /// <summary>
@@ -94,6 +93,8 @@ public class QuestGenerator
     /// <returns></returns>
     private Quest GenerateDungeonKeyQuest_RandomStructure(Vec2i dungeonPos, Dungeon dungeon, List<QuestTask> endTasks)
     {
+        return null;
+        /*
         //Find a random chunk structure
         ChunkStructure ranStruct = GetRandomFreeStructure(dungeonPos, 3);
         if (ranStruct == null)
@@ -166,7 +167,7 @@ public class QuestGenerator
         npc.Dialog.AddNode(questRewardNode);
 
         return quest;
-
+        */
     }
 
     private void AddNPCInitDialoge(NPC npc, QuestInitiator init, Quest quest)
@@ -270,7 +271,7 @@ public class QuestGenerator
             {
                 ChunkStructure ranStruct = GenRan.RandomFromList(OrderedStructures[chosenReg]);
                 //We require a structure with no dungeon
-                if (!ranStruct.HasDungeonEntrance)
+                if (!ranStruct.HasSubworlds)
                 {                  
                     //If this chunk structure is valid, we remove it from the list of chunk structures and return it;
                     OrderedStructures[chosenReg].Remove(ranStruct);

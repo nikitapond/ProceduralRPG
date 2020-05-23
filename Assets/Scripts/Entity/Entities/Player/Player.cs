@@ -29,7 +29,7 @@ public class Player : HumanoidEntity
         SpellCastData data = new SpellCastData();
         data.Source = this;
         data.Target = PlayerManager.Instance.GetWorldMousePosition();
-        CombatManager.SpellManager.Update(data);
+        CombatManager.EntitySpellManager.Update(data);
 
     }
 

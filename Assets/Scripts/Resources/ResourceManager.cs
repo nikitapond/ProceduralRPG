@@ -43,7 +43,8 @@ public class ResourceManager
         VoxelMaterials.Add(Voxel.wood, Resources.Load<Material>("Shaders/Voxel/WoodVoxelMat"));
         VoxelMaterials.Add(Voxel.glass, Resources.Load<Material>("Shaders/Voxel/GlassVoxelMat"));
         VoxelMaterials.Add(Voxel.thatch, Resources.Load<Material>("Shaders/Voxel/ThatchVoxelMat"));
-
+        VoxelMaterials.Add(Voxel.grass, Resources.Load<Material>("Shaders/Voxel/GrassVoxelMat"));
+        VoxelMaterials.Add(Voxel.dirt_path, Resources.Load<Material>("Shaders/Voxel/DirtPathVoxelMat"));
 
     }
     private static void LoadShaders()
@@ -108,6 +109,9 @@ public class ResourceManager
 
         AllWorldObjects.Add((int)WorldObjects.MARKET_STALL, Resources.Load<GameObject>(root + "Building/Work/Market/MarketStall"));
         AllWorldObjects.Add((int)WorldObjects.WALL_TORCH, Resources.Load<GameObject>(root + "Building/Misc/Torch"));
+        AllWorldObjects.Add((int)WorldObjects.FIRE_PLACE, Resources.Load<GameObject>(root + "Building/Misc/FirePlace"));
+
+        AllWorldObjects.Add((int)WorldObjects.TRAP_DOOR, Resources.Load<GameObject>(root + "SubworldEntrance/TrapDoor"));
 
 
         AllWorldObjects.Add((int)WorldObjects.TRAINING_DUMMY, placeholder);

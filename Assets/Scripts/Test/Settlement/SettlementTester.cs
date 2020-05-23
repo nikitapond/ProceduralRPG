@@ -13,7 +13,7 @@ public class SettlementTester : MonoBehaviour
 
     private MarchingCubes MarchingCubes;
 
-    ChunkData2[,] Chunks;
+    ChunkData[,] Chunks;
 
 
     private void Awake()
@@ -38,7 +38,7 @@ public class SettlementTester : MonoBehaviour
 
         int seed = 0;
         SettlementBuilder setB = new SettlementBuilder(null, new SettlementBase(new Vec2i(9, 9), 8, SettlementType.CAPITAL));
-        setB.GenerateSettlement();
+        setB.Generate(GameManager.RNG);
 
         Kingdom k = new Kingdom("king", new Vec2i(9, 9));
         Settlement set = new Settlement(k, "set", setB);
@@ -48,14 +48,23 @@ public class SettlementTester : MonoBehaviour
 
 
 
-        List<ChunkData2> chunks = setB.ToChunkData();
-        Chunks = new ChunkData2[20, 20];
-        foreach(ChunkData2 c in chunks)
+        List<ChunkData> chunks = setB.ToChunkData();
+        Chunks = new ChunkData[20, 20];
+        foreach(ChunkData c in chunks)
         {
             Chunks[c.X, c.Z] = c;
 
+            Debug.BeginDeepProfile("compress");
+            c.VoxelData.Compress();
+            Debug.EndDeepProfile("compress");
+
+
+            Debug.BeginDeepProfile("de_compress");
+            c.VoxelData.UnCompress();
+
+            Debug.EndDeepProfile("de_compress");
         }
-        foreach (ChunkData2 cd in Chunks)
+        foreach (ChunkData cd in Chunks)
         {
             if (cd == null)
                 continue;
@@ -63,6 +72,8 @@ public class SettlementTester : MonoBehaviour
 
             CreateChunk(plc, cd);
             EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
+
+
         }
 
         Player player = new Player();
@@ -80,11 +91,9 @@ public class SettlementTester : MonoBehaviour
 
 
 
-
-    public Vector2[] CreateUV(PreMesh pmesh)
+    public Vector2[] CreateUV(PreMesh pmesh, Vector2 offset, float scaleFactor)
     {
         Vector2[] UV = new Vector2[pmesh.Verticies.Length];
-        float scaleFactor = .4f;
         for (int index = 0; index < pmesh.Triangles.Length; index += 3)
         {
             // Get the three vertices bounding this triangle.
@@ -100,12 +109,16 @@ public class SettlementTester : MonoBehaviour
             Quaternion rotation = Quaternion.Inverse(Quaternion.LookRotation(normal));
 
             // Assign the uvs, applying a scale factor to control the texture tiling.
-            UV[pmesh.Triangles[index]] = (Vector2)(rotation * v1) * scaleFactor;
-            UV[pmesh.Triangles[index + 1]] = (Vector2)(rotation * v2) * scaleFactor;
-            UV[pmesh.Triangles[index + 2]] = (Vector2)(rotation * v3) * scaleFactor;
+            UV[pmesh.Triangles[index]] = (Vector2)(rotation * v1) * scaleFactor + offset;
+            UV[pmesh.Triangles[index + 1]] = (Vector2)(rotation * v2) * scaleFactor + offset;
+            UV[pmesh.Triangles[index + 2]] = (Vector2)(rotation * v3) * scaleFactor + offset;
 
         }
         return UV;
+    }
+    public Vector2[] CreateUV(PreMesh pmesh)
+    {
+        return CreateUV(pmesh, Vector2.zero, 0.5f);
 
 
     }
@@ -115,15 +128,15 @@ public class SettlementTester : MonoBehaviour
     private List<int> CurrentTriangles;
     private List<Vector2> CurrentUVs;
     private List<Color> CurrentColours;
-    private ChunkData2 GetChunk(int x, int z)
+    private ChunkData GetChunk(int x, int z)
     {
         if (x > 0 && z > 0 && x < Chunks.GetLength(0) && z < Chunks.GetLength(1))
             return Chunks[x, z];
         return null;
     }
-    private ChunkData2[] GetNeighbors(Vec2i v)
+    private ChunkData[] GetNeighbors(Vec2i v)
     {
-        return new ChunkData2[] { GetChunk(v.x, v.z + 1), GetChunk(v.x + 1, v.z + 1), GetChunk(v.x + 1, v.z) };
+        return new ChunkData[] { GetChunk(v.x, v.z + 1), GetChunk(v.x + 1, v.z + 1), GetChunk(v.x + 1, v.z) };
     }
     /// <summary>
     /// Takes a 'preloadedchunk' and forms a loaded chunk 
@@ -131,7 +144,7 @@ public class SettlementTester : MonoBehaviour
     /// </summary>
     /// <param name="pChunk"></param>
     /// <returns></returns>
-    private LoadedChunk2 CreateChunk(PreLoadedChunk pChunk, ChunkData2 cd)
+    private LoadedChunk2 CreateChunk(PreLoadedChunk pChunk, ChunkData cd)
     {
         GameObject cObj = Instantiate(ChunkPrefab);
         cObj.transform.parent = ChunkHolder.transform;
@@ -183,15 +196,18 @@ public class SettlementTester : MonoBehaviour
         return loaded;
     }
 
-    private PreLoadedChunk GeneratePreLoadedChunk(ChunkData2 chunk)
+
+
+    private PreLoadedChunk GeneratePreLoadedChunk(ChunkData chunk)
     {
         //Null till we integrate fully
         //ChunkData2[] neighbors = null;
 
-        ChunkData2[] neighbors = GetNeighbors(new Vec2i(chunk.X, chunk.Z));
+        ChunkData[] neighbors = GetNeighbors(new Vec2i(chunk.X, chunk.Z));
 
 
         float[] cube = new float[(World.ChunkSize + 1) * (World.ChunkSize + 1) * (World.ChunkHeight + 1)];
+        float[,] heightmap = new float[World.ChunkSize, World.ChunkSize];
         Color[,] colourMap = new Color[World.ChunkSize + 1, World.ChunkSize + 1];
 
         //We iterate through the whole chunk, and create a cub map and colour map based on the
@@ -200,7 +216,7 @@ public class SettlementTester : MonoBehaviour
         {
             for (int z = 0; z < World.ChunkSize + 1; z++)
             {
-
+                
                 float height = chunk.BaseHeight;
                 if (x == World.ChunkSize && z == World.ChunkSize)
                 {
@@ -264,6 +280,12 @@ public class SettlementTester : MonoBehaviour
                     }
                     colourMap[x, z] = chunk.GetTile(x, z).GetColor();
                 }
+
+                if (x != World.ChunkSize && z != World.ChunkSize)
+                {
+                    heightmap[x, z] = height;
+                }
+
                 for (int y = 0; y < height + 1; y++)
                 {
                     int idx = x + y * (World.ChunkSize + 1) + z * (World.ChunkHeight + 1) * (World.ChunkSize + 1);
@@ -279,7 +301,14 @@ public class SettlementTester : MonoBehaviour
         //March the terrain map
         MarchingCubes.Generate(cube, World.ChunkSize + 1, World.ChunkHeight + 1, World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
 
-        for (int i = 0; i < CurrentTriangles.Count; i += 3)
+
+
+        for(int i=0; i<CurrentVerticies.Count; i++)
+        {
+            
+        }
+
+        /*for (int i = 0; i < CurrentTriangles.Count; i += 3)
         {
             int tri1 = CurrentTriangles[i];
             int tri2 = CurrentTriangles[i + 1];
@@ -293,25 +322,26 @@ public class SettlementTester : MonoBehaviour
             CurrentColours.Add(c);
             CurrentColours.Add(c);
             CurrentColours.Add(c);
-        }
-        /*
+        }*/
+        
         for (int i = 0; i < CurrentVerticies.Count; i++)
         {
             int x = (int)CurrentVerticies[i].x;
             int z = (int)CurrentVerticies[i].z;
             CurrentColours.Add(colourMap[x, z]);
 
-        }*/
+        }
 
         //We create a thread safe mesh for the terrain
         PreMesh terrainMesh = new PreMesh();
         terrainMesh.Verticies = CurrentVerticies.ToArray();
         terrainMesh.Triangles = CurrentTriangles.ToArray();
         terrainMesh.Colours = CurrentColours.ToArray();
+        terrainMesh.UV = CreateUV(terrainMesh, new Vector2(chunk.X*World.ChunkSize, chunk.Z*World.ChunkSize), 1);
         //Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies");
         //Create the base pre-loaded chunk
         PreLoadedChunk preChunk = new PreLoadedChunk(new Vec2i(chunk.X, chunk.Z), terrainMesh, chunk);
-
+        preChunk.heights = heightmap;
         Debug.Log("Pre loaded chunk started, now for voxels");
 
         //if we have no voxel data, return just the terrain map
@@ -321,6 +351,7 @@ public class SettlementTester : MonoBehaviour
             return preChunk;
 
         }
+
 
 
 
@@ -343,6 +374,7 @@ public class SettlementTester : MonoBehaviour
 
             //Generate the voxel mesh
             MarchingCubes.Generate(chunk.VoxelData.Voxels, null, v, World.ChunkSize + 1, World.ChunkHeight + 1, World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
+           // MarchingCubes.Generate(nodes, v, World.ChunkSize + 1, World.ChunkHeight + 1, World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
             PreMesh voxelMesh = new PreMesh();
             voxelMesh.Verticies = CurrentVerticies.ToArray();
             voxelMesh.Triangles = CurrentTriangles.ToArray();

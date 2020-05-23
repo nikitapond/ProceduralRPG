@@ -54,7 +54,7 @@ public class ConsoleCommandList : ConsoleCommand
         string result = "";
         foreach (KeyValuePair<int, Subworld> subs in GameManager.WorldManager.World.WorldSubWorlds)
         {
-            result += subs.Value.ToString() + "_"+subs.Value.SubworldID+ ":(" + World.GetChunkPosition(subs.Value.WorldEntrance) + "), ";
+            result += subs.Value.ToString() + "_"+subs.Value.SubworldID+ ":(" + World.GetChunkPosition(subs.Value.InternalEntrancePos) + "), ";
 
         }
         return result;

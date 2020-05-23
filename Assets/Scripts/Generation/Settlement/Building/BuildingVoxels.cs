@@ -30,11 +30,8 @@ public class BuildingVoxels
         }
         else
         {
-            //Debug.Log("Voxel adding " + voxel);
             Voxels[idx].AddVoxel(voxel);
-           // Debug.Log("Voxel Node is now:" + Voxels[idx]);
         }
-        //Voxels[idx].AddVoxel(voxel);
     }
     public void ClearVoxel(int x, int y, int z)
     {

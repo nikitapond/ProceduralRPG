@@ -60,6 +60,7 @@ public class Tile
     public static readonly Tile TEST_YELLOW = new Tile(9, Color.yellow, 2);
     public static readonly Tile TEST_GREY = new Tile(10, Color.gray, 2);
     public static readonly Tile TEST_PURPLE = new Tile(11, new Color(1, 0, 1), 2);
+    public static readonly Tile TEST_GREEN = new Tile(15, new Color(0, 1, 0), 2);
     public static readonly Tile STONE_PATH = new Tile(12, new Color(0.8f, 0.8f, 0.8f), 2f);
 
     public static readonly Tile SAND = new Tile(13, new Color(1, 1, 0), 0.8f);

@@ -17,7 +17,7 @@ public class BuildingGenTest : MonoBehaviour
 
     private MarchingCubes MarchingCubes;
 
-    ChunkData2[,] Chunks;
+    ChunkData[,] Chunks;
 
     void Awake()
     {
@@ -72,16 +72,16 @@ public class BuildingGenTest : MonoBehaviour
         tbb.AddBuilding(b3, vox3, new Vec2i(60, 40));
         tbb.AddBuilding(b4, vox4, new Vec2i(40, 60));
         */
-        List<ChunkData2> chunks = tbb.ToChunkData();
+        List<ChunkData> chunks = tbb.ToChunkData();
 
-        Chunks = new ChunkData2[Size, Size];
+        Chunks = new ChunkData[Size, Size];
 
-        foreach (ChunkData2 cd in chunks)
+        foreach (ChunkData cd in chunks)
         {
             Chunks[cd.X, cd.Z] = cd;
         }
 
-        foreach (ChunkData2 cd in Chunks)
+        foreach (ChunkData cd in Chunks)
         {
             PreLoadedChunk plc = GeneratePreLoadedChunk(cd);
 
@@ -137,15 +137,15 @@ public class BuildingGenTest : MonoBehaviour
     }
 
 
-    private ChunkData2 GetChunk(int x, int z)
+    private ChunkData GetChunk(int x, int z)
     {
         if (x > 0 && z > 0 && x < Chunks.GetLength(0) && z < Chunks.GetLength(1))
             return Chunks[x, z];
         return null;
     }
-    private ChunkData2[] GetNeighbors(Vec2i v)
+    private ChunkData[] GetNeighbors(Vec2i v)
     {
-        return new ChunkData2[] { GetChunk(v.x, v.z + 1), GetChunk(v.x + 1, v.z + 1), GetChunk(v.x + 1, v.z) };
+        return new ChunkData[] { GetChunk(v.x, v.z + 1), GetChunk(v.x + 1, v.z + 1), GetChunk(v.x + 1, v.z) };
     }
     /// <summary>
     /// Takes a 'preloadedchunk' and forms a loaded chunk 
@@ -153,7 +153,7 @@ public class BuildingGenTest : MonoBehaviour
     /// </summary>
     /// <param name="pChunk"></param>
     /// <returns></returns>
-    private LoadedChunk2 CreateChunk(PreLoadedChunk pChunk, ChunkData2 cd)
+    private LoadedChunk2 CreateChunk(PreLoadedChunk pChunk, ChunkData cd)
     {
         GameObject cObj = Instantiate(ChunkPrefab);
         cObj.transform.parent = transform;
@@ -205,12 +205,12 @@ public class BuildingGenTest : MonoBehaviour
         return loaded;
     }
 
-    private PreLoadedChunk GeneratePreLoadedChunk(ChunkData2 chunk)
+    private PreLoadedChunk GeneratePreLoadedChunk(ChunkData chunk)
     {
         //Null till we integrate fully
         //ChunkData2[] neighbors = null;
 
-        ChunkData2[] neighbors = GetNeighbors(new Vec2i(chunk.X, chunk.Z));
+        ChunkData[] neighbors = GetNeighbors(new Vec2i(chunk.X, chunk.Z));
 
 
         float[] cube = new float[(World.ChunkSize + 1) * (World.ChunkSize + 1) * (World.ChunkHeight + 1)];

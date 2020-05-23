@@ -8,4 +8,6 @@ public enum Voxel
     wood,
     glass,
     thatch,
+    grass,
+    dirt_path,
 }

@@ -102,6 +102,17 @@ public class BasicHumanoidCombatAI : EntityCombatAI
 
     public override void OnDealDamage(Entity source)
     {
+        //We check if we can see the entity.
+        if (!CanSeeEntity(source))
+        {
+            Entity.EntityAI.TaskAI.SetTask(new EntityTaskLookForDamageSource(Entity, source, 15), false);
+            return;
+        }
+        else
+        {
 
+        }
     }
+
+
 }

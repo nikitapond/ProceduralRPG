@@ -133,7 +133,7 @@ public class TerrainGenerator
 
     public float WorldHeightChunk(float x, float z)
     {
-        float c = 5+ (World.ChunkHeight-5) * (1 - Mathf.Pow(Mathf.PerlinNoise(x * 0.01f, z * 0.01f), 2));
+        float c = Mathf.Clamp(5 + (20) * (1 - Mathf.Pow(Mathf.PerlinNoise(x * 0.01f, z * 0.01f), 2)), 0, World.ChunkHeight-2);
         //float radialScale = ((x - World.WorldSize / 2) * (x - World.WorldSize / 2) + (z - World.WorldSize / 2) * (z - World.WorldSize / 2))/ WorldRad;
         //c *= (1-Mathf.Clamp(radialScale, 0, 1));
 

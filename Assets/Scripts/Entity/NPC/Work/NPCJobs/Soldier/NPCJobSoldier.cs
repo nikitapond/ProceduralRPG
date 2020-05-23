@@ -98,9 +98,12 @@ public class NPCJobSoldier : NPCJob
                     SetSubTask(npc, CurrentSubTask.Patrolling);
                 else
                 {
+
                     //if the equiptment is non null, we target and travel to it
                     CurrentTargetPosition = CurrentTargetEquiptment.WorkPosition();
                     npc.GetLoadedEntity().LEPathFinder.SetTarget(CurrentTargetPosition);
+                    npc.GetLoadedEntity().SpeechBubble.PushMessage("Training on object " + CurrentTargetPosition);
+
                 }
 
             }
@@ -136,6 +139,31 @@ public class NPCJobSoldier : NPCJob
         }
         else if(task == CurrentSubTask.Training)
         {
+
+            npc.GetLoadedEntity().SpeechBubble.PushMessage("Starting to train");
+            //Choose equiptment to work at
+            CurrentTargetEquiptment = GameManager.RNG.RandomFromList(WorkEquiptment);
+            for (int i = 0; i < 10; i++)
+                if (CurrentTargetEquiptment.CurrentUser != null)
+                    CurrentTargetEquiptment = GameManager.RNG.RandomFromList(WorkEquiptment);
+                else
+                {
+                    CurrentTargetEquiptment.CurrentUser = npc;
+                }
+            //If no valid equiptment is found, we patrol
+            if (CurrentTargetEquiptment == null) 
+                SetSubTask(npc, CurrentSubTask.Patrolling);
+            else
+            {
+
+                //if the equiptment is non null, we target and travel to it
+                CurrentTargetPosition = CurrentTargetEquiptment.WorkPosition();
+                npc.GetLoadedEntity().LEPathFinder.SetTarget(CurrentTargetPosition);
+                npc.GetLoadedEntity().SpeechBubble.PushMessage("Training on object " + CurrentTargetPosition);
+
+            }
+
+
             if (npc.Position.WithinDistance(CurrentTargetPosition, 0.5f))
             {
                 EquiptmentAssociatedTask(npc);
@@ -149,7 +177,7 @@ public class NPCJobSoldier : NPCJob
         if(SubTask == CurrentSubTask.GettingEquiptment)
         {
             //If we are close to building, we get equiptment
-            if(npc.Position.WithinDistance(CurrentTargetPosition, 1))
+            if(npc.Position.WithinDistance(CurrentTargetPosition, 1) && !HasEquiptment)
             {
                 npc.GetLoadedEntity().SpeechBubble.PushMessage("Equipting gear");
 
@@ -180,10 +208,37 @@ public class NPCJobSoldier : NPCJob
                 }
                 HasEquiptment = true;
             }
+        }else if (SubTask == CurrentSubTask.Training)
+        {//if we are currently training
+            if(CurrentTargetEquiptment == null)
+            {
+                //if equiptment is null, try and choose another
+                ChooseWorkEquiptment(npc);
+            }
+            else
+            {
+                if(npc.Position.WithinDistance(CurrentTargetEquiptment.WorkPosition(), 0.5f))
+                {
+                    EquiptmentAssociatedTask(npc);
+                }
+            }
         }
+
        
     }
 
+
+    private void ChooseWorkEquiptment(NPC npc)
+    {
+        CurrentTargetEquiptment = GameManager.RNG.RandomFromList(WorkEquiptment);
+        for (int i = 0; i < 10; i++)
+            if (CurrentTargetEquiptment.CurrentUser != null)
+                CurrentTargetEquiptment = GameManager.RNG.RandomFromList(WorkEquiptment);
+            else
+            {
+                CurrentTargetEquiptment.CurrentUser = npc;
+            }
+    }
 
     private void EquiptmentAssociatedTask(NPC npc)
     {

@@ -57,6 +57,9 @@ public class BlacksmithGenerator
         WorkBuildingData wbd = new WorkBuildingData(new NPCJob[] { new NPCJobMerchant(smith), new NPCJobBlackSmith(smith) , new NPCJobBlackSmith(smith) });
         smith.SetWorkBuildingData(wbd);
 
+        for(int i=0; i<10; i++)
+            smith.Inventory.AddItem(new Shirt(new ItemMetaData().SetColor(Color.blue)));
+
         return smith;
     }
     

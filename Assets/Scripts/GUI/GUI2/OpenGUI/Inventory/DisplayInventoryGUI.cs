@@ -45,7 +45,7 @@ public class DisplayInventoryGUI : MonoBehaviour
             
         //Remove it from out inventory, and equipt it
         Inventory.RemoveItem(itBut.Item);
-        Item toAdd = GameManager.PlayerManager.Player.EquiptmentManager.EquiptItem(itBut.Item);
+        Item toAdd = PlayerManager.Instance.Player.EquiptmentManager.EquiptItem(itBut.Item);
         Destroy(itBut.gameObject);
         //If the relevent slot had an item in before
         if(toAdd != null)

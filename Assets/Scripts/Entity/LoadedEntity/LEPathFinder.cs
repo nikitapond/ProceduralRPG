@@ -49,6 +49,7 @@ public class LEPathFinder : MonoBehaviour
         Vector2 dif = (targetPos - ourPos).normalized;
         Vector2 finalTarget = targetPos - dif * range;
         SetTarget(finalTarget, 0.1f);
+        
     }
     public void SetTarget(Vector2 target2, float repath=20)
     {
@@ -115,5 +116,11 @@ public class LEPathFinder : MonoBehaviour
     public void SetPause(bool pause)
     {
         AIPathFinder.canMove = !pause;
+    }
+
+
+    private void OnDestroy()
+    {
+        Destroy(TargetObject);
     }
 }

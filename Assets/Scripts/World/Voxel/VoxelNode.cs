@@ -13,6 +13,7 @@ public struct VoxelNode
     public List<Voxel> OtherVoxels;
     public bool IsNode { get { return Voxel != Voxel.none; } }
 
+
     public VoxelNode(Voxel v)
     {
         Voxel_ = v;
@@ -56,8 +57,12 @@ public static class VoxelNodeHelper
     {
         if (node.Voxel == add)
             return;
-
-        if (!node.OtherVoxels.Contains(add))
+        if(node.OtherVoxels == null)
+        {
+            node.OtherVoxels = new List<Voxel>();
+            node.OtherVoxels.Add(add);
+        }
+        else if (!node.OtherVoxels.Contains(add))
             node.OtherVoxels.Add(add);
         
     }

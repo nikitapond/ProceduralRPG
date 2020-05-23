@@ -5,11 +5,17 @@ using UnityEditor;
 public abstract class Spell
 {
     public abstract float ManaCost { get; }
- 
+    public abstract Spells ID { get; }
     public abstract float XPGain { get; }
+    public abstract string Name { get; }
     public abstract string Description { get; }
 
     public abstract SpellCombatType SpellCombatType { get; }
+}
+
+public enum Spells
+{
+    FireBall, FireBreath, StoneWall,
 }
 
 public enum SpellCombatType
@@ -37,5 +43,6 @@ public abstract class HoldSpell : Spell
 public struct SpellCastData
 {
     public Entity Source;
+    public Vector3 SpellSource;
     public Vector3 Target;
 }

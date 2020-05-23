@@ -92,3 +92,8 @@ public class ChunkBase
 
 
 }
+
+public enum ChunkBiome
+{
+    ocean, grassland, dessert, forrest
+}

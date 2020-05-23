@@ -18,21 +18,34 @@ public class EntitySpellManager
     public float CurrentMana { get; private set; }
     public float ManaRegenerationRate { get; private set; }
 
-
-    private List<Spell> AllSpells;
+    private Dictionary<Spells, Spell> AllSpells;
+    //private List<Spell> AllSpells;
     private Spell[] EquiptSpells;
     private bool[] SpellKeyDown;
     [System.NonSerialized]
-    private Stopwatch stopwatch;
+    private Stopwatch[] SpellTimers;
     public EntitySpellManager(Entity entity)
     {
         Entity = entity;
-        AllSpells = new List<Spell>();
+        AllSpells = new Dictionary<Spells, Spell>();
+        //AllSpells = new List<Spell>();
         EquiptSpells = new Spell[2];
         SpellKeyDown = new bool[2];
         MaxMana = CurrentMana = 100;
         ManaRegenerationRate = 5;
-        stopwatch = new Stopwatch();
+        SpellTimers = new Stopwatch[2];
+        for(int i=0; i<2; i++)
+        {
+            SpellTimers[i] = new Stopwatch();
+            SpellTimers[i].Start();
+        }
+            
+    }
+
+
+    public Dictionary<Spells, Spell> GetAllSpells()
+    {
+        return AllSpells;
     }
 
     /// <summary>
@@ -53,7 +66,7 @@ public class EntitySpellManager
     public void Update(SpellCastData data)
     {
         //Check lots 1 and 2
-        for(int i=0; i<2; i++)
+        for (int i = 0; i < 2; i++)
         {
             //get the spell, continue if spell is null
             Spell s = EquiptSpells[i];
@@ -71,7 +84,7 @@ public class EntitySpellManager
                     {
                         holdSpell.SpellEnd(data); //If not, then end the spell
                         Debug.Log("Ending");
-                    }                       
+                    }
                     else
                     {
                         //Set to false to be updated
@@ -109,23 +122,28 @@ public class EntitySpellManager
     public void CastSpell(int spell, SpellCastData data)
     {
         //Check if spell number is valid
-        if(spell <= 0 && spell < 2)
+        if (spell <= 0 && spell < 2)
         {
             SpellKeyDown[spell] = true; //Set the hold figure to tue
 
             Spell s = EquiptSpells[spell];
             if (s == null)
                 return;
-            if(s is SingleSpell)
+            if (s is SingleSpell)
             {
+                Debug.Log("single spell");
                 //If the spell is a single cast, ensure the cool down and mana costs are valid. 
                 SingleSpell singSpe = s as SingleSpell;
-                if(CurrentMana > s.ManaCost && stopwatch.ElapsedMilliseconds > singSpe.CoolDown * 1000)
+                if (CurrentMana > s.ManaCost && SpellTimers[spell].ElapsedMilliseconds > singSpe.CoolDown * 1000)
                 {
                     singSpe.CastSpell(data);
                     AddXp(s);
                     CurrentMana -= s.ManaCost;
-                    stopwatch.Restart();
+                    SpellTimers[spell].Restart();
+                }
+                else
+                {
+                    Debug.Log("Cur man/Cost: " + CurrentMana + "/" + s.ManaCost + " elapsed/cooldown: " + SpellTimers[spell].ElapsedMilliseconds + "/" + singSpe.CoolDown * 1000);
                 }
             }
             else
@@ -140,13 +158,21 @@ public class EntitySpellManager
                     CurrentMana -= s.ManaCost * Time.deltaTime;
                 }
                 //If we are casting, it is dealth with in the u[
-                    
+
             }
 
 
         }
     }
 
+    public bool HasEquiptSpell(LoadedEquiptmentPlacement slot)
+    {
+        if (slot == LoadedEquiptmentPlacement.weaponHand)
+            return EquiptSpells[0] != null;
+        if (slot == LoadedEquiptmentPlacement.offHand)
+            return EquiptSpells[1] != null;
+        return false;
+    }
 
     /// <summary>
     /// Checks the type of magic used for the spell (offensive, defencive, passive),
@@ -159,12 +185,12 @@ public class EntitySpellManager
         if (spell == null)
             return;
         //Calculate the xp based on whether it is a single shot spell, or constant cast spell
-        float xpGain = (spell is SingleSpell)?spell.XPGain:spell.XPGain* Time.deltaTime;
+        float xpGain = (spell is SingleSpell) ? spell.XPGain : spell.XPGain * Time.deltaTime;
 
 
         //Check the combat type, and add XP to relevent skill
         switch (spell.SpellCombatType)
-        {         
+        {
 
             case SpellCombatType.OFFENSIVE:
                 Entity.SkillTree.OffensiveMagic.AddXP(xpGain);
@@ -180,13 +206,33 @@ public class EntitySpellManager
 
     public void AddSpell(Spell spell, int spellSlot = -1)
     {
-        if (!AllSpells.Contains(spell))
-            AllSpells.Add(spell);
+        if (!AllSpells.ContainsKey(spell.ID))
+            AllSpells.Add(spell.ID, spell);
         if (spellSlot == 0)
             EquiptSpells[0] = spell;
         else if (spellSlot == 1)
             EquiptSpells[1] = spell;
     }
 
+
+    public bool EquiptSpell(Spells id, LoadedEquiptmentPlacement slot)
+    {
+        if(AllSpells.TryGetValue(id, out Spell spell))
+        {
+            Item item = (Entity as HumanoidEntity).EquiptmentManager.UnequiptItem(slot);
+            if (item != null)
+                Entity.Inventory.AddItem(item);
+
+            if (slot == LoadedEquiptmentPlacement.weaponHand)
+                EquiptSpells[0] = spell;
+            else if (slot == LoadedEquiptmentPlacement.offHand)
+                EquiptSpells[1] = spell;
+            
+
+
+            return true;
+        }
+        return false;
+    }
 
 }

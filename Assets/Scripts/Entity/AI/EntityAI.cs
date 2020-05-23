@@ -211,7 +211,7 @@ public class EntityAI
     /// </summary>
     public void OnEntityUnload()
     {
-        GameManager.EventManager.RemoveListener(CombatAI);
+        EventManager.Instance.RemoveListener(CombatAI);
 
     }
 

@@ -16,10 +16,10 @@ public class SettlementGenerator
         World = world;
     }
 
-    public Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> GenerateAllSettlements()
+    public Dictionary<Settlement, Dictionary<Vec2i, ChunkData>> GenerateAllSettlements()
     {
         
-        Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> setChunks = new Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>>(Settlements.Count);
+        Dictionary<Settlement, Dictionary<Vec2i, ChunkData>> setChunks = new Dictionary<Settlement, Dictionary<Vec2i, ChunkData>>(Settlements.Count);
 
         
         foreach (SettlementBase b in Settlements)
@@ -27,8 +27,8 @@ public class SettlementGenerator
 
             
             SettlementBuilder setBuild = new SettlementBuilder(GameGenerator, b);
-            
-            setBuild.GenerateSettlement();
+            GenerationRandom genRan = new GenerationRandom(GameGenerator.Seed * b.BaseChunk.GetHashCode());
+            setBuild.Generate(genRan);
             
             //Debug.EndProfile();
 
@@ -44,14 +44,14 @@ public class SettlementGenerator
         return setChunks;
     }
 
-    public Dictionary<Vec2i, ChunkData2> GenerateAllSettlementChunks(SettlementBuilder setBuild, Settlement set)
+    public Dictionary<Vec2i, ChunkData> GenerateAllSettlementChunks(SettlementBuilder setBuild, Settlement set)
     {
 
         Vec2i baseChunk = new Vec2i(setBuild.BaseTile.x / World.ChunkSize, setBuild.BaseTile.z / World.ChunkSize);
-        Dictionary<Vec2i, ChunkData2> setChunks = new Dictionary<Vec2i, ChunkData2>();
+        Dictionary<Vec2i, ChunkData> setChunks = new Dictionary<Vec2i, ChunkData>();
         int setSizeChunks = setBuild.TileSize / World.ChunkSize;
 
-        foreach(ChunkData2 cDat in setBuild.ToChunkData())
+        foreach(ChunkData cDat in setBuild.ToChunkData())
         {
             cDat.SetSettlement(set);
             setChunks.Add(new Vec2i(cDat.X, cDat.Z), cDat);

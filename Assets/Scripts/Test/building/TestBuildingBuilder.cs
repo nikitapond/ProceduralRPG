@@ -52,4 +52,8 @@ public class TestBuildingBuilder : BuilderBase
         }
     }
 
+    public override void Generate(GenerationRandom ran)
+    {
+        throw new System.NotImplementedException();
+    }
 }

@@ -86,12 +86,17 @@ public class SettlementBuilder : BuilderBase
     }
 
 
-    public void GenerateSettlement()
+    public override void Generate(GenerationRandom genRan)
     {
+        GenerationRandom = genRan;
         //ChooseRandomEntrancePoints();
         AddInitPaths();
         List<BuildingPlan> mustAdd = new List<BuildingPlan>();
-        
+
+
+
+       
+
         BuildingPlan defaultRemaining = Building.HOUSE;
         switch (SettlementType)
         {
@@ -100,9 +105,9 @@ public class SettlementBuilder : BuilderBase
                 //AddMainBuilding(BuildingGenerator.GenerateCastle(48));
                 mustAdd.Add(Building.BARACKS);
                 mustAdd.Add(Building.MARKET);
-                mustAdd.Add(Building.BLACKSMITH);
-                mustAdd.Add(Building.BLACKSMITH);
-                mustAdd.Add(Building.BLACKSMITH);
+                mustAdd.Add(Building.TAVERN);
+                mustAdd.Add(Building.TAVERN);
+                mustAdd.Add(Building.TAVERN);
                 mustAdd.Add(Building.BLACKSMITH);
                 mustAdd.Add(Building.BLACKSMITH);
 
@@ -171,7 +176,25 @@ public class SettlementBuilder : BuilderBase
         PlaceBuildings(mustAdd);
         CreatePathNodes();
 
-       
+        for (int x = 0; x < TileSize; x++)
+        {
+            for (int z = 0; z < TileSize; z++)
+            {
+                if (x < TileSize / 2 && z < TileSize / 2)
+                {
+                    SetTile(x, z, Tile.TEST_RED);
+                }
+                else if (x < TileSize / 2)
+                {
+                    SetTile(x, z, Tile.TEST_BLUE);
+                }
+                else
+                {
+                    SetTile(x, z, Tile.TEST_GREEN);
+                }
+                //SetVoxelNode(x, 0, z, new VoxelNode(Voxel.grass));
+            }
+        }
 
     }
     public SettlementPathNode ENTR_NODE;
@@ -268,7 +291,11 @@ public class SettlementBuilder : BuilderBase
             for (int z = minZ; z < maxZ; z++)
             {
                 SetTile(x, z, tile);
-                
+                if(tile == Tile.TEST_BLUE)
+                {
+                    
+                    AddVoxel(x, 0, z, Voxel.dirt_path);
+                }
             }
         }
     }
@@ -556,7 +583,7 @@ public class SettlementBuilder : BuilderBase
             //try
             //{
                 Building b = BuildingGenerator.CreateBuilding(GenerationRandom, out BuildingVoxels vox, bp);
-                Debug.Log("Added building " + b);
+               // Debug.Log("Added building " + b);
                 Recti r = null;
                 int i = 0;
                 while (r == null && i < 5)
@@ -942,7 +969,7 @@ public class SettlementBuilder : BuilderBase
         float minHeight = GetLowestChunkHeight(pos.x, pos.z, b.Width, b.Height);
 
         float maxHeight = GetHighestChunkHeight(pos.x-1, pos.z-1, b.Width+2, b.Height+2);
-        Debug.Log("Adding building " + b);
+        //Debug.Log("Adding building " + b);
         //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);
         for (int x = 0; x < b.Width; x++)
         {
@@ -979,7 +1006,7 @@ public class SettlementBuilder : BuilderBase
 
         Vec2i wPos = pos + BaseTile;
         Vec2i cPos = World.GetChunkPosition(wPos);
-        Debug.Log("Calculating tiles!!!");
+        //Debug.Log("Calculating tiles!!!");
         b.SetPositions(BaseTile, pos);
         b.CalculateSpawnableTiles(vox);
         Buildings.Add(b);

@@ -17,11 +17,10 @@ public class DialogGUI : MonoBehaviour
     public void SetNPC(NPC npc)
     {
 
-        Debug.Log(PlayerRepliesRegion.GetComponent<RectTransform>().rect.width);
-
         NPC = npc;
         npc.Dialog.StartDialog();
         DisplayCurrentNode();
+        InConversation = true;
     }
 
 
@@ -30,9 +29,12 @@ public class DialogGUI : MonoBehaviour
         //If the node is null (shouldn't be), or its an exit node, we clear the dialog GUI
         if(node == null || node.IsExitNode)
         {
+            Debug.Log("HEREHREHERE");
             Clear();
             gameObject.SetActive(false);
-            GameManager.PlayerManager.EndDialog();
+            PlayerManager.Instance.EndDialog();
+            InConversation = false;
+            Debug.Log("exit");
         }
         else
         {
@@ -46,7 +48,7 @@ public class DialogGUI : MonoBehaviour
     }
 
 
-    private void DisplayCurrentNode()
+    public void DisplayCurrentNode()
     {
         Clear();
         if(NPC.Dialog.CurrentNode == null)
@@ -94,9 +96,10 @@ public class DialogGUI : MonoBehaviour
     {
         Clear();
         InConversation = false;
+        //EventManager.Instance.InvokeNewEvent(new GamePause(false));
     }
     private void OnEnable()
     {
-        InConversation = true;
+        //InConversation = true;
     }
 }

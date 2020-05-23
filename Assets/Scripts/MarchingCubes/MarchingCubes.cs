@@ -16,7 +16,6 @@ namespace MarchingCubesProject
 			EdgeVertex = new Vector3[12];
 		}
 
-
 		
 		public void Generate(VoxelNode[] voxels, VoxelBounds b, Voxel current, int width, int height, int depth, IList<Vector3> verts, IList<int> indices)
 		{			
@@ -48,8 +47,21 @@ namespace MarchingCubesProject
 							ix = x + VertexOffset[i, 0];
 							iy = y + VertexOffset[i, 1];
 							iz = z + VertexOffset[i, 2];
+							//int index_ = x + y * width + z * width * height;
+							int index = ix + iy * width + iz * width * height;
+							/*if(voxels[index].Voxel == current)
+							{
+								Cube[i] = -1;
 
-							int index = ix + iy * width + iz * width * height;						
+							}else if(voxels[index_].Voxel == current && voxels[index].IsSharp)
+							{
+								Cube[i] = -1;
+							}
+							else
+							{
+								Cube[i] = 1;
+
+							}*/
 							
 							if (voxels[index].ContainsVoxel(current))
 							{

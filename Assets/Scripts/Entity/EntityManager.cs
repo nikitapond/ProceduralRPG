@@ -164,6 +164,22 @@ public class EntityManager : MonoBehaviour
 
     }
 
+    public bool EntityInWorldCombatEvent(Entity entity, out WorldCombat wce)
+    {
+        foreach(WorldCombat WC in CurrentWorldCombatEvents)
+        {
+            if (!WC.IsComplete)
+            {
+                if(WC.Team1.Contains(entity) || WC.Team2.Contains(entity))
+                {
+                    wce = WC;
+                    return true;
+                }
+            }
+        }
+        wce = null;
+        return false;
+    }
 
     private void WorldCombatEventTick()
     {
@@ -430,8 +446,8 @@ public class EntityManager : MonoBehaviour
 
 
 
-        GameManager.EventManager.RemoveListener(e.Entity.CombatManager);
-        GameManager.EventManager.RemoveListener(e.Entity.GetLoadedEntity());
+        EventManager.Instance.RemoveListener(e.Entity.CombatManager);
+        EventManager.Instance.RemoveListener(e.Entity.GetLoadedEntity());
         e.Entity.EntityAI.OnEntityUnload();
 
         if (e.Entity.IsFixed)
@@ -441,7 +457,7 @@ public class EntityManager : MonoBehaviour
             
 
         Destroy(e.gameObject);
-        GameManager.EventManager.RemoveListener(e);
+        EventManager.Instance.RemoveListener(e);
     }
 
     #endregion

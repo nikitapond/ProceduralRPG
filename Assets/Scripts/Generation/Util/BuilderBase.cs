@@ -8,7 +8,7 @@ using System.Collections.Generic;
 /// </summary>
 public abstract class BuilderBase
 {
-
+    protected bool DEBUG = false;
     public Vec2i BaseChunk { get; private set; } //Minimum point in chunk coords
     public Vec2i ChunkSize { get; private set; } //Size in chunks
     public Vec2i BaseTile { get; private set; } //Minimum point in world coords
@@ -44,7 +44,7 @@ public abstract class BuilderBase
         {
             for(int z=0; z<ChunkSize.z; z++)
             {
-                HeightMaps[x, z] = new float[World.ChunkSize, World.ChunkSize];
+                HeightMaps[x, z] = new float[World.ChunkSize+1, World.ChunkSize+1];
 
                 if (ChunkBases != null) 
                     ChunkBases[x, z] = GameGenerator.Instance.TerrainGenerator.ChunkBases[x + BaseChunk.x, z + BaseChunk.z];
@@ -70,7 +70,13 @@ public abstract class BuilderBase
 
     }
 
-    public bool AddObject(WorldObjectData data, bool force = false)
+
+    public abstract void Generate(GenerationRandom ran);
+    
+
+     
+
+    public bool AddObject(WorldObjectData data, bool force = false, bool debug=false)
     {
 
         //Find local chunk position of object
@@ -85,9 +91,13 @@ public abstract class BuilderBase
                 ObjectMaps[cPos.x, cPos.z] = new List<WorldObjectData>();
 
             }
+            
             ObjectMaps[cPos.x, cPos.z].Add(data);
 
-
+            if (debug)
+            {
+                Debug.Log("Object " + data + " added at local chunk " + cPos + " -> global chunk " + (cPos + BaseChunk) + " total objects now:" + ObjectMaps[cPos.x, cPos.z].Count);
+            }
             return true;
         }
 
@@ -130,8 +140,37 @@ public abstract class BuilderBase
         int tx = x % World.ChunkSize;
         int tz = z % World.ChunkSize;
         HeightMaps[cx, cz][tx, tz] = y;
-    
+        
+
+        if (tx == 0 && tz == 0 && cx > 0 && cz > 0)
+        {
+            HeightMaps[cx - 1, cz - 1][World.ChunkSize, World.ChunkSize] = y;
+
+            HeightMaps[cx - 1, cz][World.ChunkSize, tz] = y;
+
+            HeightMaps[cx, cz - 1][tx,World.ChunkSize] = y;
+
+
+        }
+        else if (tx == 0 && cx > 0)
+        {
+
+            HeightMaps[cx - 1, cz][World.ChunkSize, tz] = y;
+        }
+        else if (tz == 0 && cz > 0)
+        {
+
+            try
+            {
+                HeightMaps[cx, cz - 1][tx, World.ChunkSize] = y;
+            }catch(System.Exception e)
+            {
+                Debug.Log(e);
+                Debug.Log(cx + "," + cz + "," + tx);
+            }
             
+        }
+
     }
 
     public void SetTile(int x, int z, Tile tile)
@@ -176,6 +215,59 @@ public abstract class BuilderBase
             }
         }
     }
+
+    public void ClearVoxelNode(int x, int y, int z)
+    {
+        SetVoxelNode(x, y, z, new VoxelNode(Voxel.none));
+    }
+    public void AddVoxel(int x, int y, int z, Voxel vox)
+    {
+        int cx = WorldToChunk(x);
+        int cz = WorldToChunk(z);
+        int tx = x % World.ChunkSize;
+        int tz = z % World.ChunkSize;
+
+
+        ChunkVoxels[cx, cz].AddVoxel(tx, y, tz, vox);
+        //ChunkVoxels[cx, cz].GetVoxelNode(tx, y, tz).AddVoxel(vox);
+
+        if (tx == 0 && tz == 0 && cx > 0 && cz > 0)
+        {
+            int dChunkHeight = (int)Mathf.Clamp((ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz - 1]), 0, World.ChunkHeight - 1) ;
+            ChunkVoxels[cx - 1, cz - 1].AddVoxel(World.ChunkSize, y + dChunkHeight, World.ChunkSize,vox);
+
+            // dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]);
+            ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y + dChunkHeight, tz, vox);
+           /* try
+            {
+                ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y + dChunkHeight, tz, vox);
+            }catch(System.Exception e)
+            {
+                Debug.Log("Values- cx: " + cx + ", cz: " + cz + ", cHeight" + dChunkHeight + " tz: " + tz);
+                Debug.Log(e);
+
+            }*/
+            
+
+           // dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz - 1]);
+            ChunkVoxels[cx, cz - 1].AddVoxel(tx, y + dChunkHeight, World.ChunkSize,vox);
+
+
+        }
+        else if (tx == 0 && cx > 0)
+        {
+            int dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]);
+
+            ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y + dChunkHeight, tz,vox);
+        }
+        else if (tz == 0 && cz > 0)
+        {
+            int dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz - 1]);
+
+            ChunkVoxels[cx, cz - 1].AddVoxel(tx, y + dChunkHeight, World.ChunkSize,vox);
+        }
+
+    }
     public void SetVoxelNode(int x, int y, int z, VoxelNode vox)
     {
         int cx = WorldToChunk(x);
@@ -188,26 +280,26 @@ public abstract class BuilderBase
         
         if(tx == 0 && tz == 0 && cx>0 && cz>0)
         {
-            int dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz - 1]);
+            int dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz - 1]), 0, World.ChunkHeight);
             ChunkVoxels[cx - 1, cz - 1].SetVoxelNode(World.ChunkSize, y+ dChunkHeight, World.ChunkSize, vox);
 
-            dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]);
+            dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]), 0, World.ChunkHeight);
             ChunkVoxels[cx - 1, cz].SetVoxelNode(World.ChunkSize, y + dChunkHeight, tz, vox);
 
-            dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz - 1]);
+            dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz - 1]), 0, World.ChunkHeight);
             ChunkVoxels[cx, cz - 1].SetVoxelNode(tx, y + dChunkHeight, World.ChunkSize, vox);
 
 
         }
         else if (tx == 0 && cx > 0)
         {
-            int dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]);
+            int dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]), 0, World.ChunkHeight);
 
             ChunkVoxels[cx - 1, cz].SetVoxelNode(World.ChunkSize, y + dChunkHeight, tz, vox);
         }
         else if (tz == 0 && cz > 0)
         {
-            int dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz-1]);
+            int dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz-1]), 0, World.ChunkHeight);
 
             ChunkVoxels[cx, cz-1].SetVoxelNode(tx, y + dChunkHeight, World.ChunkSize, vox);
         }
@@ -282,18 +374,34 @@ public abstract class BuilderBase
     }
 
 
-    public List<ChunkData2> ToChunkData()
+    public List<ChunkData> ToChunkData()
     {
-        List<ChunkData2> chunks = new List<ChunkData2>(ChunkSize.x * ChunkSize.z);
-
+        List<ChunkData> chunks = new List<ChunkData>(ChunkSize.x * ChunkSize.z);
+        foreach(List<WorldObjectData> map in ObjectMaps)
+        {
+            if(map != null)
+            {
+                foreach(WorldObjectData obj in map)
+                {
+                    if (obj != null)
+                        obj.SetPosition(obj.Position + BaseTile.AsVector3());
+                }
+            }
+        }
         for(int x=0; x<ChunkSize.x; x++)
         {
             for (int z = 0; z < ChunkSize.z; z++)
             {
                 float height = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
-                ChunkData2 chunk_xz = new ChunkData2(BaseChunk.x + x, BaseChunk.z + z, TileMaps[x, z], true, height, HeightMaps[x, z], ObjectMaps[x,z]);
+                ChunkData chunk_xz = new ChunkData(BaseChunk.x + x, BaseChunk.z + z, TileMaps[x, z], true, height, HeightMaps[x, z], ObjectMaps[x,z]);
                 chunk_xz.SetVoxelData(ChunkVoxels[x, z]);
                 chunks.Add(chunk_xz);
+                if (DEBUG)
+                {
+                    int count = ObjectMaps[x, z] == null ? 0 : ObjectMaps[x, z].Count;
+                    if(count != 0)
+                        Debug.Log("Chunk " + (x+BaseChunk.x) + "," + (z + BaseChunk.z) + " generated, has " + count + " objects");
+                }
             }
         }
 
@@ -305,5 +413,20 @@ public abstract class BuilderBase
         return Mathf.FloorToInt((float)w / World.ChunkSize);
     }
 
+
+}
+
+public interface IChunkStructureEntities
+{
+    void GenerateEntities();
+    List<Entity> GetEntities();
+}
+public interface IChunkStructureLoot
+{
+    IInventoryObject GetMainLootChest();
+}
+public interface IChunkStructureSubworld
+{
+    Subworld GenerateSubworld(GenerationRandom genRan);
 
 }

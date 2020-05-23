@@ -27,7 +27,39 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         Entity = e;
     }
 
+    public void Attack(Entity entity)
+    {
+        WorldCombat wce = null;
+        if(EntityManager.Instance.EntityInWorldCombatEvent(entity, out wce))
+        {
+            if (wce.Team1.Contains(entity))
+            {
+                wce.Team2.Add(Entity);
+            }
+            else
+            {
+                wce.Team1.Add(Entity);
+            }
+        }else if(EntityManager.Instance.EntityInWorldCombatEvent(Entity, out wce))
+        {
+            if (wce.Team1.Contains(Entity))
+            {
+                wce.Team2.Add(entity);
+            }
+            else
+            {
+                wce.Team1.Add(entity);
+            }
+        }
+        else
+        {
+            wce = EntityManager.Instance.NewCombatEvent(entity, Entity);
+        }
+        CurrentCombatEvent = wce;
 
+        CurrentTarget = entity;
+
+    }
 
     public void Tick()
     {
@@ -315,8 +347,24 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         //Debug.Log(entityLookDirection + ", " + difPos + ", " + angle);
         if (angle > fov)
             return false;
-
+        Debug.Log("object in way");
         return LineOfSight(other);
+    }
+
+    public float AngleBetweenLookAndEntity(Entity other)
+    {
+        float LookAngle = Entity.LookAngle;
+        Vector3 Position = Entity.Position;
+        float fov = Entity.fov;
+
+
+        Vector3 entityLookDirection = new Vector3(Mathf.Sin(LookAngle * Mathf.Deg2Rad), 0, Mathf.Cos(LookAngle * Mathf.Deg2Rad));
+        Vector3 difPos = new Vector3(other.Position.x - Position.x, 0, other.Position.z - Position.z).normalized;
+        //float angle = Vector3.Angle(entityLookDirection, difPos);
+        float dot = Vector3.Dot(entityLookDirection, difPos);
+
+        float angle = Mathf.Abs(Mathf.Acos(dot) * Mathf.Rad2Deg);
+        return angle;
     }
 
     /// <summary>

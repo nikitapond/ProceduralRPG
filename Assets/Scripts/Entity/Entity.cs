@@ -113,14 +113,14 @@ public abstract class Entity
     public void Kill()
     {
         KillInternal();
-        GameManager.EntityManager.UnloadEntity(GetLoadedEntity());
+        EntityManager.Instance.UnloadEntity(GetLoadedEntity());
         if (!Inventory.IsEmpty)
         {
             LootSack loot = new LootSack(Vec2i.FromVector3(GetLoadedEntity().transform.position).AsVector3());
             loot.GetInventory().AddAll(Inventory);
-            GameManager.WorldManager.AddNewObject(loot);
+            GameManager.WorldManager?.AddNewObject(loot);
         }
-        GameManager.EventManager.InvokeNewEvent(new EntityDeath(this));
+        EventManager.Instance.InvokeNewEvent(new EntityDeath(this));
   
     }
     #region setters

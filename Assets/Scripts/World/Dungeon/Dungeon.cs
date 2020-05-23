@@ -14,14 +14,9 @@ public class Dungeon : Subworld
     {
         DungeonEntities = dungeonEntity;
         Boss = boss;
-        Vec2i entranceChunk = World.GetChunkPosition(SubworldEntrance);
-        int local = WorldObject.ObjectPositionHash(SubworldEntrance);
-        if (!(subChunks[entranceChunk.x, entranceChunk.z].GetObject(SubworldEntrance.x, SubworldEntrance.z) is DungeonEntrance))
-        {
-            //If the entrance isn't a dungeon entrance.
-          //  DungeonEntrance de = new CaveDungeonEntrance(subentra, this, new WorldObjectMetaData(direction:new Vec2i(0,-1)));
-            //SubworldChunks[entranceChunk.x, entranceChunk.z].SetObject(SubworldEntrance.x, SubworldEntrance.z, de);
-        }
+        Vec2i entranceChunk = World.GetChunkPosition(ExternalEntrancePos);
+        int local = WorldObject.ObjectPositionHash(ExternalEntrancePos);
+        
         Key = key;
         if (Key == null)
         {
@@ -59,7 +54,7 @@ public class Dungeon : Subworld
     public void EntityLeave(Entity entity)
     {
         EnteredEntities.Remove(entity);
-        entity.SetPosition(WorldEntrance);
+        entity.SetPosition(InternalEntrancePos);
     }
     public void EntityEnter(Entity entity)
     {
@@ -79,7 +74,7 @@ public class Dungeon : Subworld
 
 
         EnteredEntities.Add(entity);
-        entity.SetPosition(SubworldEntrance);
+        entity.SetPosition(ExternalEntrancePos);
     }
     public override string ToString()
     {

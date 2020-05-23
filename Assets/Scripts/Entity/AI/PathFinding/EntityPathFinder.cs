@@ -116,7 +116,7 @@ public class EntityPathFinder
         }
 
         //To include settlement path finding, we must check the start and end points to see if they are in settlements
-        ChunkData2 startChunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(start));
+        ChunkData startChunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(start));
 
         if (startChunk == null)
         {
@@ -131,7 +131,7 @@ public class EntityPathFinder
         Settlement startSet = startChunk.GetSettlement();
 
         //To include settlement path finding, we must check the start and end points to see if they are in settlements
-        ChunkData2 endChunk=null;
+        ChunkData endChunk=null;
         try
         {
             endChunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(end));
@@ -584,7 +584,7 @@ public class PathFinder
                 {
                     for (int z = 0; z < World.ChunkSize; z++)
                     {
-                        ChunkData2 c = chunkRegion.Chunks[cx, cz];
+                        ChunkData c = chunkRegion.Chunks[cx, cz];
                         if (c == null)
                         {
                             Debug.Error("Chunk Region " + chunkRegion.ToString() + " has null chunk with local: " + cx + "," + cz);
@@ -612,28 +612,7 @@ public class PathFinder
 
     public void LoadSubworld(Subworld subworld)
     {
-        Subworld = subworld;
-        SubworldSize = subworld.ChunkSize * World.ChunkSize;
-        CurrentSubworldTiles = new float[SubworldSize.x, SubworldSize.z];
-        for (int x = 0; x < subworld.ChunkSize.x; x++)
-        {
-            for (int z = 0; z < subworld.ChunkSize.z; z++)
-            {
-                for (int x_ = 0; x_ < World.ChunkSize; x_++)
-                {
-                    for (int z_ = 0; z_ < World.ChunkSize; z_++)
-                    {
-                        ChunkData cd = subworld.SubworldChunks[x, z];
-                        float val = cd.GetTile(x_, z_).SpeedMultiplier;
-                        if (cd.Objects != null && cd.GetObject(x_, z_) != null)
-                        {
-                            val = Mathf.Infinity;
-                        }
-                        CurrentSubworldTiles[x * World.ChunkSize + x_, z * World.ChunkSize + z_] = val;
-                    }
-                }
-            }
-        }
+  
     }
     public void LeaveSubworld()
     {

@@ -46,14 +46,19 @@ public class GUIManager : MonoBehaviour
     {
         GameManager.SetPause(true);
         ShopGUI.gameObject.SetActive(true);
+        ShopGUI.StartShop(npc, inventory);
         IngameGUI.gameObject.SetActive(false);
+        DialogGUI.gameObject.SetActive(false);
+
     }
 
     public void EndShop()
     {
-        GameManager.SetPause(false);
+        //GameManager.SetPause(false);
         ShopGUI.gameObject.SetActive(false);
         IngameGUI.gameObject.SetActive(true);
+        DialogGUI.gameObject.SetActive(true);
+
 
     }
 

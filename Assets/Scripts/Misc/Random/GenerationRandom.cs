@@ -23,7 +23,7 @@ public class GenerationRandom
     }
 
     /// <summary>
-    /// Returns a float between 0.0 (inclusive) and 1 (exclusive)
+    /// Returns a float between min (inclusive) and max (exclusive)
     /// </summary>
     /// <returns></returns>
     public float Random(float min, float max)
@@ -143,6 +143,16 @@ public class GenerationRandom
             ran[i] = RandomVector3(min, max);
         }
         return ran;
+    }
+
+    public Vec3i RandomVec3i(int mins, int maxs)
+    {
+        return new Vec3i(RandomInt(mins, maxs+1), RandomInt(mins, maxs+1), RandomInt(mins, maxs+1));
+
+    }
+    public Vec3i RandomVec3i(int minX, int maxX, int minY, int maxY, int minZ, int maxZ)
+    {
+        return new Vec3i(RandomInt(minX, maxX), RandomInt(minY, maxY), RandomInt(minZ, maxZ));
     }
 
     /// <summary>

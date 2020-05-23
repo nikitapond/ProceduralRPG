@@ -29,22 +29,22 @@ public class KingdomsGenerator
     }
 
     private List<SettlementGenerator> SettlementGenerators;
-    private List<Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>>> ThreadComplete;
+    private List<Dictionary<Settlement, Dictionary<Vec2i, ChunkData>>> ThreadComplete;
     /// <summary>
     /// Generates all settlements.
     /// Stores the chunks from said settlements with reference to their world positions
     /// </summary>
     /// <returns></returns>
-    public Dictionary<Vec2i, ChunkData2> GenerateSettlements()
+    public Dictionary<Vec2i, ChunkData> GenerateSettlements()
     {
         
         SettlementGenerators = new List<SettlementGenerator>();
 
-        ThreadComplete = new List<Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>>>();
+        ThreadComplete = new List<Dictionary<Settlement, Dictionary<Vec2i, ChunkData>>>();
         List<Thread> threads = new List<Thread>();
 
 
-        Dictionary<Vec2i, ChunkData2> setChunks = new Dictionary<Vec2i, ChunkData2>(2000);
+        Dictionary<Vec2i, ChunkData> setChunks = new Dictionary<Vec2i, ChunkData>(2000);
         
         foreach (KeyValuePair<Kingdom, List<SettlementBase>> kpv in KingdomSettlements)
         {
@@ -65,12 +65,12 @@ public class KingdomsGenerator
             }
         }
 
-        foreach(Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> dict in ThreadComplete)
+        foreach(Dictionary<Settlement, Dictionary<Vec2i, ChunkData>> dict in ThreadComplete)
         {
-            foreach (KeyValuePair<Settlement, Dictionary<Vec2i, ChunkData2>> kpv2 in dict)
+            foreach (KeyValuePair<Settlement, Dictionary<Vec2i, ChunkData>> kpv2 in dict)
             {
                 //Add the settlement to its relevent kingdom.
-                foreach (KeyValuePair<Vec2i, ChunkData2> kpv3 in kpv2.Value)
+                foreach (KeyValuePair<Vec2i, ChunkData> kpv3 in kpv2.Value)
                 {
                     setChunks.Add(kpv3.Key, kpv3.Value);
                 }
@@ -92,12 +92,12 @@ public class KingdomsGenerator
     {
         Debug.Log("gets here fine");
        
-        Dictionary<Settlement, Dictionary<Vec2i, ChunkData2>> dc = g.GenerateAllSettlements();
+        Dictionary<Settlement, Dictionary<Vec2i, ChunkData>> dc = g.GenerateAllSettlements();
         lock (ThreadComplete)
         {
             ThreadComplete.Add(dc);
         }
-        foreach(KeyValuePair<Settlement, Dictionary<Vec2i, ChunkData2>> kpv in dc)
+        foreach(KeyValuePair<Settlement, Dictionary<Vec2i, ChunkData>> kpv in dc)
         {
             k.AddSettlement(kpv.Key);
             //kpv.Key.SetKingdomID(k.KingdomID);

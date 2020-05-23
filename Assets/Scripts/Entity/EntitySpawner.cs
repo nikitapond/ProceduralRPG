@@ -56,25 +56,6 @@ public class EntitySpawner
         }
     }
 
-    public void SpawnChunkEntities(ChunkBase cb)
-    {
-        if(cb.ChunkStructure != null)
-        {
-
-            ChunkStructure cStruct = cb.ChunkStructure;
-            Vec2i localPos = cb.Position - cStruct.Position;
-            List<Entity> toSpawn = cStruct.StructureEntities[localPos.x, localPos.z];
-            if (toSpawn == null)
-                return;
-            foreach(Entity e in toSpawn)
-            {
-                e.CombatManager.Reset();
-                Manager.LoadEntity(e);
-            }
-
-        }
-    }
-
 
     /// <summary>
     /// Returns all chunks that we are able to spawn creatures onto.
@@ -94,7 +75,7 @@ public class EntitySpawner
                 continue;
             }
 
-            ChunkData2 c = GameManager.WorldManager.CRManager.GetLoadedChunk(v).Chunk;
+            ChunkData c = GameManager.WorldManager.CRManager.GetLoadedChunk(v).Chunk;
             if (c == null || !c.IsLand)
                 continue;
 

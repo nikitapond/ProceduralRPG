@@ -9,8 +9,11 @@ public class SpellStoneWall : HoldSpell
     public override string Description => "Builds a stone wall";
 
     public override float XPGain => 1;
+    public override Spells ID => Spells.StoneWall;
 
     public override SpellCombatType SpellCombatType => SpellCombatType.DEFENSIVE;
+
+    public override string Name => "Stone Wall";
 
     private MarchingCubesStoneWall mcw;
     public override void SpellEnd(SpellCastData data)

@@ -15,6 +15,13 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
 
     public override void OnDealDamage(Entity source)
     {
+        //We check if we can see the entity.
+        if (!CanSeeEntity(source))
+        {
+            Entity.EntityAI.TaskAI.SetTask(new EntityTaskLookForDamageSource(Entity, source, 15), false);
+            return;
+        }
+
         Debug.Log("Entity " + Entity + " delt damage by Entity " + source);
         float aggr = NPC.EntityRelationshipManager.Personality.Aggression;
         if(aggr > 0.8f)
@@ -22,14 +29,14 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
             Entity.GetLoadedEntity().SpeechBubble.PushMessage("Ouch! Aggressive -> attacking " + source);
             Debug.Log("Entity " + Entity + " has high aggression - Start Combat");
             //If our aggression is high, we fight
-            GameManager.EntityManager.NewCombatEvent(source, Entity);
+            EntityManager.Instance.NewCombatEvent(source, Entity);
         }
         if (GameManager.RNG.PercentageChance(60 * aggr))
         {
             Entity.GetLoadedEntity().SpeechBubble.PushMessage("Ouch! Med Aggr + RNG -> attacking " + source);
 
             Debug.Log("Entity " + Entity + " has medium aggression & RNG - Start Combat");
-            GameManager.EntityManager.NewCombatEvent(source, Entity);
+            EntityManager.Instance.NewCombatEvent(source, Entity);
         }
         if (aggr < 0.3f)
         {

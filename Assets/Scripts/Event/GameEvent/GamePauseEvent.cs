@@ -10,6 +10,7 @@ public class GamePause : IEvent
     public GamePause(bool pause)
     {
         Pause = pause;
+        Debug.Log("pause: " + pause);
     }
 }
 

@@ -181,7 +181,7 @@ public class PlayerManager : MonoBehaviour
         loadedEntity.SetLookBasedOnMovement(false);
         Player = player;
         //Player.CombatManager.AddSpell(new SpellFireball(), 0);
-        Player.CombatManager.SpellManager.AddSpell(new SpellStoneWall(), 0);
+        //Player.CombatManager.SpellManager.AddSpell(new SpellStoneWall(), 0);
 
 
         Player.Inventory.AddItem(new SteelLongSword());
@@ -189,7 +189,11 @@ public class PlayerManager : MonoBehaviour
         //Player.Inventory.AddItem(new SteelLegs());
         Player.EquiptmentManager.AddDefaultItem(new Trousers());
         Player.EquiptmentManager.AddDefaultItem(new Shirt());
-       // Player.EquiptmentManager.AddDefaultItem(new Trousers());
+
+        Player.CombatManager.EntitySpellManager.AddSpell(new SpellFireball());
+        Player.CombatManager.EntitySpellManager.AddSpell(new SpellFireBreath());
+
+        // Player.EquiptmentManager.AddDefaultItem(new Trousers());
         LoadedPlayer = loadedEntity;
 
         GetComponent<ProceduralGridMover>().target = Player.GetLoadedEntity().transform;
@@ -216,8 +220,14 @@ public class PlayerManager : MonoBehaviour
             return;
 
 
-        if (GameManager.GUIManager!=null && GameManager.GUIManager.DialogGUI.InConversation)
+        if (GUIManager.Instance!=null && GUIManager.Instance.DialogGUI.InConversation)
+        {
+            Debug.Log(GUIManager.Instance.DialogGUI.InConversation);
+            Debug.Log("Caused by GUI = true");
             return;
+        }
+            
+        
 
 
         if (Input.GetKeyDown(KeyCode.P))
@@ -236,9 +246,14 @@ public class PlayerManager : MonoBehaviour
         }
 
         if (GameManager.Paused)
+        {
+            Debug.Log("Caused by Pause = true");
             return;
 
-       // Debug.BeginDeepProfile("PlayerManagerUpdate");
+        }
+
+
+        // Debug.BeginDeepProfile("PlayerManagerUpdate");
 
         Vector3 worldMousePos = GetWorldMousePosition();
         
@@ -247,8 +262,9 @@ public class PlayerManager : MonoBehaviour
         if(currentChunk != LastChunk)
         {
             LastChunk = currentChunk;
-            Tick(Time.deltaTime);
+            
         }
+        Tick(Time.deltaTime);
         Player.Update();
 
         MovementUpdate();
@@ -264,11 +280,11 @@ public class PlayerManager : MonoBehaviour
             SpellCastData data = new SpellCastData();
             data.Source = Player;
             data.Target = GetWorldMousePosition();
-            Player.CombatManager.SpellManager.CastSpell(0, data);
+            Player.CombatManager.EntitySpellManager.CastSpell(0, data);
             
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButton(0))
         {
             LeftMouseButton();            
         }else if (Input.GetMouseButtonDown(1))
@@ -320,6 +336,8 @@ public class PlayerManager : MonoBehaviour
         if(LookObject == null)
         {
             DebugGUI.Instance.ClearData("player_view");
+            Debug.Log(GUIManager.Instance);
+            Debug.Log(GUIManager.Instance.IngameGUI);
             GUIManager.Instance.IngameGUI.SetNPC(null);
         }
         else
@@ -371,19 +389,32 @@ public class PlayerManager : MonoBehaviour
     public void LeftMouseButton()
     {
         
+
+
+
         //Weapon in sheath but not in hand, so we put in hand
         if(Player.EquiptmentManager.HasWeapon && !Player.EquiptmentManager.WeaponReady)
         {
+            Debug.Log("Unsheeth");
             Player.EquiptmentManager.UnsheathWeapon(LoadedEquiptmentPlacement.weaponSheath);
             return;
-        }
-
-
-        if (Player.CombatManager.CanAttack())
+        }else if (Player.EquiptmentManager.HasWeapon && Player.CombatManager.CanAttack())
         {
-            //LoadedPlayer.WeaponController.PlayWeaponAnimation();
+            Debug.Log("is ready");
             Player.CombatManager.UseEquiptWeapon();
+
         }
+        else if (Player.CombatManager.EntitySpellManager.HasEquiptSpell(LoadedEquiptmentPlacement.weaponHand))
+        {
+            Debug.Log("Using spell");
+            SpellCastData scd = new SpellCastData();
+            scd.Source = Player;
+            scd.SpellSource = Player.GetLoadedEntity().transform.position + Vector3.up * 1.5f;
+            scd.Target = GetWorldMousePosition();
+            Player.CombatManager.EntitySpellManager.CastSpell(0, scd);
+        }
+
+  
 
     }
 
@@ -409,7 +440,19 @@ public class PlayerManager : MonoBehaviour
 
                 }
             }
-
+            WorldObject obj = LookObject.GetComponent<WorldObject>();
+            if(obj != null)
+            {
+                WorldObjectData data = obj.Data;
+                if(data is IOnEntityInteract)
+                {
+                    (data as IOnEntityInteract).OnEntityInteract(Player);
+                }else if(data is ISubworldEntranceObject)
+                {
+                    Subworld sw = (data as ISubworldEntranceObject).GetSubworld();
+                    WorldManager.Instance.EnterSubworld(sw.SubworldID);
+                }
+            }
 
         }
         return;
@@ -490,7 +533,10 @@ public class PlayerManager : MonoBehaviour
 
     public void EndDialog()
     {
-        GameManager.EventManager.InvokeNewEvent(new GamePause(false));
+        Debug.Log("Should unpause now");
+        GameManager.SetPause(false);
+       // EventManager.Instance.InvokeNewEvent(new GamePause(false));
+        
     }
 
 

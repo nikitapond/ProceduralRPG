@@ -35,7 +35,7 @@ public class NewChunkTest : MonoBehaviour
                 }
             }
         }
-        ChunkData2 cData = new ChunkData2(0, 0, tiles, true, 5, heights);
+        ChunkData cData = new ChunkData(0, 0, tiles, true, 5, heights);
         cData.SetVoxelData(cvd);
         ChunkLoader.LoadChunk(cData);
 

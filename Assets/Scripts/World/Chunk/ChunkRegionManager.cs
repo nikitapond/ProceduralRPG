@@ -14,7 +14,10 @@ public class ChunkRegionManager : MonoBehaviour
     private Player Player { get { return GameManager.PlayerManager.Player; } }
     public Vec2i LoadedChunksCentre { get; private set; }
     public Dictionary<Vec2i, LoadedChunk2> SubworldChunks { get; private set; }
-    private bool InSubworld;
+
+    private Subworld CurrentSubworld;
+
+    private bool InSubworld { get { return CurrentSubworld != null; } }
 
 
     private ChunkLoader ChunkLoader;
@@ -26,7 +29,6 @@ public class ChunkRegionManager : MonoBehaviour
         LoadedRegions = new ChunkRegion[World.RegionCount, World.RegionCount];
 
         SubworldChunks = new Dictionary<Vec2i, LoadedChunk2>();
-        InSubworld = false;
         ThreadSafe = new Object();
 
         ChunkLoader = GetComponent<ChunkLoader>();
@@ -60,6 +62,16 @@ public class ChunkRegionManager : MonoBehaviour
 
     public void LoadSubworldChunks(Subworld sub)
     {
+
+        UnloadAllChunks();
+        CurrentSubworld = sub;
+
+        foreach(ChunkData cd in sub.SubworldChunks)
+        {
+            ChunkLoader.LoadChunk(cd);
+        }
+        ChunkLoader.ForceLoadAll();
+
         //TODO - fix this bad boy
         return;
         /*
@@ -83,6 +95,9 @@ public class ChunkRegionManager : MonoBehaviour
 
     public void LeaveSubworld()
     {
+        UnloadAllChunks();
+        CurrentSubworld = null;
+        LoadedChunksCentre = null;
         return;
         /*
         InSubworld = false;
@@ -111,11 +126,11 @@ public class ChunkRegionManager : MonoBehaviour
 
 
 
-    public ChunkData2 GetChunk(int x, int z, bool shouldLoad=true)
+    public ChunkData GetChunk(int x, int z, bool shouldLoad=true)
     {
         return GetChunk(new Vec2i(x, z), shouldLoad);
     }
-    public ChunkData2 GetChunk(Vec2i v, bool shouldLoad=true)
+    public ChunkData GetChunk(Vec2i v, bool shouldLoad=true)
     {
         //Debug.BeginDeepProfile("get_chunk");
         //Find region of chunk and check if valid within bounds
@@ -161,7 +176,7 @@ public class ChunkRegionManager : MonoBehaviour
         }
             
 
-        ChunkData2 cDat;
+        ChunkData cDat;
         lock (ThreadSafe)
         {
             int cx = v.x % World.RegionSize;
@@ -238,7 +253,7 @@ public class ChunkRegionManager : MonoBehaviour
                 Vec2i pos = new Vec2i(x + middle.x, z + middle.z);
                 //If this chunk isn't currently loaded/being loaded
                 if(!currentlyLoaded.Contains(pos)){
-                    ChunkData2 cd = GetChunk(pos);
+                    ChunkData cd = GetChunk(pos);
                     if (cd == null)
                     {
                         Debug.Log("Chunk at " + pos +  " was null");
@@ -272,7 +287,7 @@ public class ChunkRegionManager : MonoBehaviour
                     Destroy(lc.gameObject);
                     LoadedChunks.Remove(v);
                 }
-                
+                EntityManager.Instance.UnloadChunk(v);
                 //TODO - unload entity chunk
             }
         }
@@ -319,16 +334,27 @@ public class ChunkRegionManager : MonoBehaviour
         GameManager.EntityManager.UnloadChunks(chunkKeys);
     }
 
-    public ChunkData2[] GetNeighbors(Vec2i c)
+    public ChunkData[] GetNeighbors(Vec2i c)
     {
-        if(c.x>0 && c.x<World.WorldSize-2 && c.z > 0 && c.z < World.WorldSize - 2)
+
+        if (InSubworld)
+        {
+            if (c.x > 0 && c.z > 0 && c.x < CurrentSubworld.ChunkSize.x - 1 && c.z < CurrentSubworld.ChunkSize.z - 1)
+            {
+                return new ChunkData[] { CurrentSubworld.GetChunkSafe(c.x, c.z+1), CurrentSubworld.GetChunkSafe(c.x+1, c.z + 1),
+                                      CurrentSubworld.GetChunkSafe(c.x+1, c.z), };
+            }
+            return null;
+        }
+        else if(c.x > 0 && c.x < World.WorldSize - 2 && c.z > 0 && c.z < World.WorldSize - 2)
         {
             //TODO - get this data from the CR manager
-            return new ChunkData2[] { GetChunk(c.x, c.z+1, false), GetChunk(c.x+1, c.z + 1, false), 
+            return new ChunkData[] { GetChunk(c.x, c.z+1, false), GetChunk(c.x+1, c.z + 1, false),
                                       GetChunk(c.x+1, c.z, false),/* GetChunk(c.x+1, c.z - 1, false),
                                       GetChunk(c.x, c.z-1, false), GetChunk(c.x-1, c.z-1, false)  ,
                                       GetChunk(c.x-1,c.z, false), GetChunk(c.x-1, c.z+1 , false)*/};
         }
+
         else
         {
             return null;

@@ -6,6 +6,8 @@ using UnityEngine.AI;
 using System.Diagnostics;
 public class GameManager : MonoBehaviour
 {
+    public static bool SHOULD_SAVE = false;
+
 
     public static bool DEBUG = false;
 
@@ -54,7 +56,7 @@ public class GameManager : MonoBehaviour
 
     /// <summary>
     /// Initial awake function. 
-    /// Used to set all static fields.
+    /// Used to set all <see langword="static"/> fields.
     /// Also loads all required resources via the <see cref="ResourceManager"/>
     /// </summary>
     void Awake()
@@ -172,7 +174,7 @@ public class GameManager : MonoBehaviour
 
         Vec2i playerStartreg = World.GetRegionCoordFromChunkCoord(World.GetChunkPosition(wpos));
 
-
+        Debug.Log("Player start region: " + playerStartreg);
         ChunkRegionGenerator = GameGenerator.GenerateChunks(playerStartreg);
         GeneratePlayer(wpos);
     }

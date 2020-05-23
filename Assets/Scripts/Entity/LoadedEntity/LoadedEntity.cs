@@ -50,6 +50,24 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
     void OnDrawGizmos()
     {
+
+        if (IsPlayer)
+            return;
+        if (EntityManager.Instance == null || Entity==null || Entity.TilePos==null)
+            return;
+        List<Entity> near = EntityManager.Instance.GetEntitiesNearChunk(World.GetChunkPosition(Entity.TilePos));
+        if (near == null)
+            return;
+        foreach (Entity e in near)
+        {
+            if (e == Entity)
+                continue;
+
+            Color c = Entity.EntityAI.CombatAI.CanSeeEntity(e)?Color.green:Color.red;
+            Gizmos.color = c;
+            Gizmos.DrawLine(e.Position + Vector3.up, Entity.Position + Vector3.up);
+        }
+        /*
         Vector3 floorPos = new Vector3(transform.position.x, 0, transform.position.z);
         floorPos.y = GetWorldHeight();
         Gizmos.DrawSphere(floorPos, 0.2f);
@@ -79,7 +97,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         if(Entity is Player)
         {
             
-        }
+        }*/
     }
 
     public void SetEntity(Entity entity)
@@ -147,6 +165,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     private bool IsFalling;
     private bool IsRunning;
     private bool IsGrounded;
+    private bool ShouldLook;
 
     private Vector2 DesiredVelocity;
     private bool CheckMoveableTerrain(Vector3 pos, Vector3 desiredDirection, float distance)
@@ -252,12 +271,14 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
         IsIdle = false;
         LookTowards = v;
+        ShouldLook = true;
     }
     public void LookTowardsPoint(Vector2 v)
     {
 
         IsIdle = false;
         LookTowards = new Vector3(v.x,0, v.y);
+        ShouldLook = true;
     }
     public void SetLookBasedOnMovement(bool onMovement)
     {
@@ -267,7 +288,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     private float GetWorldHeight(float x, float z)
     {
         
-        ChunkData2 chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(x,z), false);
+        ChunkData chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(x,z), false);
         if (chunk == null)
             return World.ChunkHeight;
 
@@ -370,8 +391,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
 
 
-
-        if(!(Entity is Player))
+        if (!(Entity is Player))
         {
             
             float gHeight = GetWorldHeight();
@@ -381,9 +401,20 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
                 transform.position = new Vector3(transform.position.x, gHeight, transform.position.z);
             }
             AnimationManager.SetSpeedPercentage(LEPathFinder.CurrentSpeed() / Entity.MovementData.RunSpeed);
+            EntityHealthBar.SetHealthPct(Entity.CombatManager.CurrentHealth / Entity.CombatManager.MaxHealth);
+
+            if (ShouldLook)
+            {
+                float angle = Vector3.SignedAngle(Vector3.forward, LookTowards - transform.position, Vector3.up);
+                Quaternion quat = Quaternion.Euler(new Vector3(0, angle, 0));
+                transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.fixedDeltaTime * LOOK_ROTATION_SPEED);
+                Entity.SetLookAngle(transform.rotation.eulerAngles.y);
+            }
+
+            Entity.SetLookAngle(transform.rotation.eulerAngles.y);
         }
 
-        
+
 
         Entity.SetPosition(transform.position);
         //RigidBody.angularVelocity = Vector3.zero;
