@@ -74,9 +74,9 @@ public abstract class BuilderBase
 
                     for (int z_ = 0; z_ < World.ChunkSize; z_++)
                     {
-                        
+
                         baseHeight = heightFunc((x + BaseChunk.x) * World.ChunkSize + x_, (z + BaseChunk.z) * World.ChunkSize + z_);
-                        
+
                         SetHeight(x * World.ChunkSize + x_, z * World.ChunkSize + z_, baseHeight);
                         SetTile(x * World.ChunkSize + x_, z * World.ChunkSize + z_, Tile.FromID(baseTile));
                         // HeightMaps[x, z][x_, z_] = baseHeight;
@@ -89,11 +89,11 @@ public abstract class BuilderBase
 
     }
 
-    public BuilderBase(Vec2i baseChunk, Vec2i chunkSize, GameGenerator gameGen=null)
+    public BuilderBase(Vec2i baseChunk, Vec2i chunkSize, GameGenerator gameGen = null)
     {
         BaseChunk = baseChunk;
         ChunkSize = chunkSize;
-        BaseTile = BaseChunk*World.ChunkSize;
+        BaseTile = BaseChunk * World.ChunkSize;
         TileSize = ChunkSize * World.ChunkSize;
 
         ChunkVoxels = new ChunkVoxelData[ChunkSize.x, ChunkSize.z];
@@ -105,25 +105,25 @@ public abstract class BuilderBase
         if (GameGenerator.Instance != null && GameGenerator.Instance.TerrainGenerator != null)
         {
             ChunkBases = new ChunkBase[ChunkSize.x, ChunkSize.z];
-            
+
         }
 
-        for (int x=0; x<ChunkSize.x; x++)
+        for (int x = 0; x < ChunkSize.x; x++)
         {
-            for(int z=0; z<ChunkSize.z; z++)
+            for (int z = 0; z < ChunkSize.z; z++)
             {
-                HeightMaps[x, z] = new float[World.ChunkSize+1, World.ChunkSize+1];
+                HeightMaps[x, z] = new float[World.ChunkSize + 1, World.ChunkSize + 1];
 
-                if (ChunkBases != null) 
+                if (ChunkBases != null)
                     ChunkBases[x, z] = GameGenerator.Instance.TerrainGenerator.ChunkBases[x + BaseChunk.x, z + BaseChunk.z];
                 float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
-                int baseTile = (ChunkBases==null || ChunkBases[x, z] == null) ? Tile.NULL.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
+                int baseTile = (ChunkBases == null || ChunkBases[x, z] == null) ? Tile.NULL.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
                 ChunkBaseHeights[x, z] = baseHeight;
                 TileMaps[x, z] = new int[World.ChunkSize, World.ChunkSize];
-                
-                
+
+
                 ChunkVoxels[x, z] = new ChunkVoxelData();
-                
+
             }
         }
         for (int x = 0; x < ChunkSize.x; x++)
@@ -132,10 +132,10 @@ public abstract class BuilderBase
             {
                 float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
                 int baseTile = (ChunkBases == null || ChunkBases[x, z] == null) ? Tile.NULL.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
-                
+
                 for (int x_ = 0; x_ < World.ChunkSize; x_++)
                 {
-                    
+
                     for (int z_ = 0; z_ < World.ChunkSize; z_++)
                     {
                         if (gameGen != null)
@@ -144,13 +144,118 @@ public abstract class BuilderBase
                         }
                         SetHeight(x * World.ChunkSize + x_, z * World.ChunkSize + z_, baseHeight);
                         SetTile(x * World.ChunkSize + x_, z * World.ChunkSize + z_, Tile.FromID(baseTile));
-                       // HeightMaps[x, z][x_, z_] = baseHeight;
+                        // HeightMaps[x, z][x_, z_] = baseHeight;
                         //TileMaps[x, z][x_, z_] = baseTile;
                     }
                 }
             }
         }
+        //FlattenBase();
+    }
 
+
+    public void RaiseBase(float deltaheight, int boundry)
+    {
+        //Find the average height of this base
+        float sum = 0;
+        foreach (float[,] f in HeightMaps)
+        {
+            foreach (float h in f)
+            {
+                sum += h;
+            }
+        }
+        float mean = sum / (ChunkSize.x * ChunkSize.z * World.ChunkSize * World.ChunkSize);
+        //Once we know an average height, we wish the overall base to be raised to a height mean+deltaHeight
+        float mag = boundry;
+        float mag2 =  boundry;
+        float curMag = 0;
+        for (int x = 0; x < TileSize.x; x++)
+        {
+            for (int z = 0; z < TileSize.z; z++)
+            {
+                float lerp = 0;
+                
+                //If we are within 'boundry' distance of the bounds, the interpolation should be complete.
+                if ((x >= boundry && x <= TileSize.x - boundry) && (z >= boundry && z <= TileSize.z - boundry))
+                    lerp = 1;
+                else
+                {
+                    Vector2 nearestPoint;
+                    if (x < boundry && z < boundry)
+                    {
+                        nearestPoint = new Vector2(boundry, boundry);
+                    }
+                    else if (x < boundry && z > TileSize.z - boundry)
+                    {
+                        nearestPoint = new Vector2(boundry, TileSize.z - boundry);
+                    }
+                    else if (x > TileSize.x - boundry && z > TileSize.z - boundry)
+                    {
+                        nearestPoint = new Vector2(TileSize.x - boundry, TileSize.z - boundry);
+                    }
+                    else if (x > TileSize.x - boundry && z < boundry)
+                    {
+                        nearestPoint = new Vector2(TileSize.x - boundry, boundry);
+                    }
+                    else if (x < boundry)
+                    {
+                        nearestPoint = new Vector2(boundry, z);
+                    }
+                    else if (z < boundry)
+                    {
+                        nearestPoint = new Vector2(x, boundry);
+                    }
+                    else if (x > TileSize.x - boundry)
+                    {
+                        nearestPoint = new Vector2(TileSize.x - boundry, z);
+                    }
+                    else
+                    {
+                        nearestPoint = new Vector2(x, TileSize.z - boundry);
+                    }
+                    lerp = 1-Vector2.Distance(new Vector2(x, z), nearestPoint)/ boundry;
+                }
+                float nHeight = Mathf.Lerp(GetHeight(x, z),deltaheight + mean, lerp);
+
+                SetHeight(x, z, nHeight);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Flattens the whole builder base.
+    /// This is done by finding the average height, and then lerping each height 
+    /// towards the mean height, with boundry points having a lower amount of interpolation.
+    /// </summary>
+    public void FlattenBase(float amount=5)
+    {
+        float sum = 0;
+        foreach(float[,] f in HeightMaps)
+        {
+            foreach(float h in f)
+            {
+                sum += h;
+            }
+        }
+        float mean = sum / (ChunkSize.x * ChunkSize.z * World.ChunkSize * World.ChunkSize);
+
+        float lerpScale = Mathf.Max(TileSize.x/2, TileSize.z/2);
+
+        for(int x=0; x<TileSize.x; x++)
+        {
+            for (int z = 0; z < TileSize.z; z++)
+            {
+                float xDist = Mathf.Min(x, TileSize.x - x);
+                float zDist = Mathf.Min(z, TileSize.z - z);
+                float tDist = Mathf.Min(xDist, zDist);
+                float boundryDist = Mathf.Sqrt(xDist * xDist * zDist * zDist);
+                //float nHeight = Mathf.Lerp(GetHeight(x,z), mean, xDist * zDist/ lerpScale);
+                float nHeight = Mathf.Lerp(GetHeight(x, z), mean, tDist / lerpScale * amount);
+
+                SetHeight(x, z, nHeight);
+            }
+        }
     }
 
 
@@ -295,19 +400,16 @@ public abstract class BuilderBase
     public float FlattenArea(int x, int z, int width, int depth)
     {
 
-        List<float> boundryHeights = new List<float>(2 * width + 2 * depth);
-
-        for(int i=0; i<width; i++)
+        int maxHeight = -1;
+        for (int i = 0; i < width; i++)
         {
-            boundryHeights.Add(GetHeight(x + i, z));
-            boundryHeights.Add(GetHeight(x + i, z + depth));
+            for (int j = 0; j < depth; j++)
+            {
+                int f = (int)Mathf.CeilToInt(GetHeight(x + i, z + j));
+                if (f > maxHeight)
+                    maxHeight = f;
+            }
         }
-        for (int i = 0; i < depth; i++)
-        {
-            boundryHeights.Add(GetHeight(0, z+i));
-            boundryHeights.Add(GetHeight(width, z+i));
-        }
-        float maxHeight = Mathf.Max(boundryHeights.ToArray());
         for(int i=0; i<width; i++)
         {
             for (int j = 0; j < depth; j++)
@@ -336,34 +438,18 @@ public abstract class BuilderBase
         {
             int dChunkHeight = (int)Mathf.Clamp((ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz - 1]), 0, World.ChunkHeight - 1) ;
             ChunkVoxels[cx - 1, cz - 1].AddVoxel(World.ChunkSize, y , World.ChunkSize,vox);
-
-            // dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]);
-            ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y , tz, vox);
-           /* try
-            {
-                ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y + dChunkHeight, tz, vox);
-            }catch(System.Exception e)
-            {
-                Debug.Log("Values- cx: " + cx + ", cz: " + cz + ", cHeight" + dChunkHeight + " tz: " + tz);
-                Debug.Log(e);
-
-            }*/
-            
-
-           // dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz - 1]);
+            ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y , tz, vox);    
             ChunkVoxels[cx, cz - 1].AddVoxel(tx, y , World.ChunkSize,vox);
 
 
         }
         else if (tx == 0 && cx > 0)
         {
-            int dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]);
 
             ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y , tz,vox);
         }
         else if (tz == 0 && cz > 0)
         {
-            int dChunkHeight = (int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz - 1]);
 
             ChunkVoxels[cx, cz - 1].AddVoxel(tx, y , World.ChunkSize,vox);
         }
@@ -505,6 +591,7 @@ public abstract class BuilderBase
             {
                 float height = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
                 ChunkData chunk_xz = new ChunkData(BaseChunk.x + x, BaseChunk.z + z, TileMaps[x, z], true, height, HeightMaps[x, z], ObjectMaps[x,z]);
+                ChunkVoxels[x, z].HasBoundryVoxels = true;
                 chunk_xz.SetVoxelData(ChunkVoxels[x, z]);
                 chunks.Add(chunk_xz);
                 if (DEBUG)
@@ -515,8 +602,13 @@ public abstract class BuilderBase
                 }
             }
         }
-
+        OnCreate();
         return chunks;
+    }
+
+    public virtual void OnCreate()
+    {
+
     }
 
     protected static int WorldToChunk(int w)

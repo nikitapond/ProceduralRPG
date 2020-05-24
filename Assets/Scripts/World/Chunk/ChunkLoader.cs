@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using MarchingCubesProject;
 public class ChunkLoader : MonoBehaviour
 {
+
+    public const int MAX_LOAD_PER_FRAME = 5;
+
     public GameObject ChunkPrefab;
     public GameObject ChunkVoxelPrefab;
 
@@ -92,6 +95,7 @@ public class ChunkLoader : MonoBehaviour
         ChunksToLoadPositions.Clear();
         ForceLoad = false;
         Debug.EndDeepProfile("force_chunk_load");
+        AstarPath.active.Scan();
 
     }
 
@@ -123,12 +127,15 @@ public class ChunkLoader : MonoBehaviour
                 ChunksToLoadPositions.Remove(lc.Position);
             }
         }
-
-        if(ObjectsToLoad.Count > 0)
+        for(int i=0; i< MAX_LOAD_PER_FRAME; i++)
         {
-            Debug.Log("[ChunkLoader] " + ObjectsToLoad.Count + " objects to load in");
-            LoadSingleObject();
+            if (ObjectsToLoad.Count > 0)
+            {
+                //Debug.Log("[ChunkLoader] " + ObjectsToLoad.Count + " objects to load in");
+                LoadSingleObject();
+            }
         }
+        
 
     }
 
@@ -150,7 +157,7 @@ public class ChunkLoader : MonoBehaviour
         LoadedChunk2 lc2 = ChunkRegionManager.GetLoadedChunk(chunk);
         if (lc2 == null)
         {
-            Debug.Log(chunk);
+            //Debug.Log(chunk);
             Debug.Log("[ChunkLoader] Chunk for object is not loaded, attempting another object");
             //if the chunk is null, we throw this object to the end of the que and try again.  
             lock (ObjectsToLoadLock)
@@ -163,7 +170,7 @@ public class ChunkLoader : MonoBehaviour
         Vec2i localPos = Vec2i.FromVector3(objData.Position.Mod(World.ChunkSize));
         float off = lc2.Chunk.GetHeight(localPos);
         WorldObject obj = WorldObject.CreateWorldObject(objData, lc2.transform, off + 0.7f);
-        Debug.Log("Created object " + obj);
+        //Debug.Log("Created object " + obj);
         obj.AdjustHeight();
     }
 
@@ -202,7 +209,7 @@ public class ChunkLoader : MonoBehaviour
                 MeshCollider voxelMc = voxelObj.GetComponent<MeshCollider>();
                 voxelMc.sharedMesh = voxelMf.mesh;
                 voxelObj.transform.parent = cObj.transform;
-                //voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.7f);
+                voxelObj.transform.localPosition = Vector3.zero;
 
                 voxelMf.mesh.RecalculateNormals();
             }
@@ -210,6 +217,18 @@ public class ChunkLoader : MonoBehaviour
 
         cObj.transform.position = pChunk.Position.AsVector3() * World.ChunkSize;
         loaded.SetChunk(pChunk.ChunkData);
+        lock (ObjectsToLoadLock)
+        {
+            if (pChunk.ChunkData.WorldObjects != null)
+            {
+                ObjectsToLoad.AddRange(pChunk.ChunkData.WorldObjects);
+                Debug.Log("Chunk " + pChunk.ChunkData.X + "," + pChunk.ChunkData.Z + " has " + pChunk.ChunkData.WorldObjects.Count + " objects");
+                foreach (WorldObjectData objDat in pChunk.ChunkData.WorldObjects)
+                {
+                    Debug.Log(objDat);
+                }
+            }
+        }
         return loaded;
     }
 
@@ -312,7 +331,7 @@ public class ChunkLoader : MonoBehaviour
                 PreLoadedChunks.Add(preLoaded);
             }
 
-    
+    /*
             //Add all objects to be loaded.
             lock (ObjectsToLoadLock)
             {
@@ -325,7 +344,7 @@ public class ChunkLoader : MonoBehaviour
                         Debug.Log(objDat);
                     }
                 }
-            }
+            }*/
             Debug.EndDeepProfile("chunk_pre_load");
             UnityEngine.Profiling.Profiler.EndSample();
 
@@ -474,13 +493,13 @@ public class ChunkLoader : MonoBehaviour
         return terrainMesh;
     }
 
-    private PreMesh GenerateSmoothTerrain(ChunkData chunk, int LOD = 1) {
+    private PreMesh GenerateSmoothTerrain(ChunkData chunk, ChunkData[] neighbors, int LOD = 1) {
 
         int size = World.ChunkSize / LOD;
         Color[,] colourMap = new Color[size + 1, size + 1];
         ClearBuffers();
-        ChunkData[] neighbors = ChunkRegionManager.GetNeighbors(new Vec2i(chunk.X, chunk.Z));
-
+         
+        
         for (int x=0; x<=size; x++)
         {
             for(int z=0; z <= size; z++)
@@ -630,8 +649,9 @@ public class ChunkLoader : MonoBehaviour
 
         //We create a thread safe mesh for the terrain
         // PreMesh terrainMesh = GenerateMarchingCubesTerrain(chunk);
+        ChunkData[] neighbors = ChunkRegionManager.GetNeighbors(new Vec2i(chunk.X, chunk.Z));
 
-        PreMesh terrainMesh = GenerateSmoothTerrain(chunk);
+        PreMesh terrainMesh = GenerateSmoothTerrain(chunk, neighbors);
 
         Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies", Debug.CHUNK_LOADING);
         //Create the base pre-loaded chunk
@@ -640,6 +660,59 @@ public class ChunkLoader : MonoBehaviour
         if (chunk.VoxelData == null)
             return preChunk;
 
+
+        int maxHeight = 0;
+        if(neighbors != null)
+        {
+            foreach(ChunkData cd in neighbors)
+            {
+                if(cd != null && cd.VoxelData != null)
+                {
+                    if (maxHeight < cd.VoxelData.TotalHeight())
+                        maxHeight = cd.VoxelData.TotalHeight();
+                }
+            }
+        }
+
+        //If the chunk hasn't had its boundry points defined, we do it now
+        if (!chunk.VoxelData.HasBoundryVoxels)
+        {
+            for(int y=0; y<maxHeight; y++)
+            {
+                for (int i = 0; i < World.ChunkSize; i++)
+                {
+                    if (neighbors[0] != null && neighbors[0].VoxelData!=null)
+                    {
+                        VoxelNode node = neighbors[0].VoxelData.GetVoxelNode(i, y, 0);
+                        if (node.IsNode)
+                        {
+                            chunk.VoxelData.SetVoxelNode(i, y, World.ChunkSize, node);
+                        }
+                    }
+                    if (neighbors[2] != null && neighbors[2].VoxelData != null)
+                    {
+                        VoxelNode node = neighbors[2].VoxelData.GetVoxelNode(0, y, i);
+                        if (node.IsNode)
+                        {
+                            chunk.VoxelData.SetVoxelNode(World.ChunkSize, y, i, node);
+                        }
+                    }
+                    
+                }
+                if (neighbors[1] != null && neighbors[1].VoxelData != null)
+                {
+                    VoxelNode node = neighbors[1].VoxelData.GetVoxelNode(0, y, 0);
+                    if (node.IsNode)
+                    {
+                        chunk.VoxelData.SetVoxelNode(World.ChunkSize, y, World.ChunkSize, node);
+                    }
+                }
+
+            }
+            chunk.VoxelData.HasBoundryVoxels = true;
+
+
+        }
         
 
         foreach(Voxel v in MiscUtils.GetValues<Voxel>())

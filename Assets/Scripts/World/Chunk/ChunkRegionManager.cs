@@ -17,7 +17,7 @@ public class ChunkRegionManager : MonoBehaviour
 
     private Subworld CurrentSubworld;
 
-    private bool InSubworld { get { return CurrentSubworld != null; } }
+    public bool InSubworld { get { return CurrentSubworld != null; } }
 
 
     private ChunkLoader ChunkLoader;
@@ -47,6 +47,11 @@ public class ChunkRegionManager : MonoBehaviour
         bool forceLoad = false;
         if (LoadedChunksCentre == null)
             forceLoad = true;
+        else if(playerChunk.QuickDistance(LoadedChunksCentre) > LoadChunkRadius* LoadChunkRadius * 2)
+        {
+            UnloadAllChunks();
+            forceLoad = true;
+        }
         if (playerChunk != LoadedChunksCentre)
         {
             LoadChunks(new Vec2i(playerChunk.x, playerChunk.z), LoadChunkRadius, forceLoad);
@@ -339,12 +344,9 @@ public class ChunkRegionManager : MonoBehaviour
 
         if (InSubworld)
         {
-            if (c.x > 0 && c.z > 0 && c.x < CurrentSubworld.ChunkSize.x - 1 && c.z < CurrentSubworld.ChunkSize.z - 1)
-            {
-                return new ChunkData[] { CurrentSubworld.GetChunkSafe(c.x, c.z+1), CurrentSubworld.GetChunkSafe(c.x+1, c.z + 1),
+            return new ChunkData[] { CurrentSubworld.GetChunkSafe(c.x, c.z+1), CurrentSubworld.GetChunkSafe(c.x+1, c.z + 1),
                                       CurrentSubworld.GetChunkSafe(c.x+1, c.z), };
-            }
-            return null;
+         
         }
         else if(c.x > 0 && c.x < World.WorldSize - 2 && c.z > 0 && c.z < World.WorldSize - 2)
         {

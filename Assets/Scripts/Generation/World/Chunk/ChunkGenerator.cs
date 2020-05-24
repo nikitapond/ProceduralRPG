@@ -176,18 +176,29 @@ public class ChunkGenerator
         }
 
         float dem_sqr = (a * a + b * b);
-
+        ChunkVoxelData vox = new ChunkVoxelData();
         for (int tx = 0; tx < World.ChunkSize; tx++)
         {
             for (int tz = 0; tz < World.ChunkSize; tz++)
             {
+                float baseheight = GameGen.TerrainGenerator.WorldHeight(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
+
                 float dist_sqr = ((a * tz + b * tx + c) * (a * tz + b * tx + c)) / dem_sqr;
                 if (dist_sqr < (cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) / divBy)
                 {
                     Vector2 off = new Vector2(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
                     //Debug.Log("here");
                     tiles[tx, tz] = Tile.WATER.ID;
+                    //float baseheight = GameGen.TerrainGenerator.WorldHeight(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
+                    float lerp = dist_sqr / ((cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) / divBy);
+
+
+                    heights[tx, tz] = Mathf.Lerp(baseheight, baseheight-5, 1/lerp);
                     heights[tx, tz] = Mathf.Clamp(cb.BaseHeight - 5, 1, 16);
+                    for(int y=Mathf.FloorToInt(heights[tx,tz]); y<baseheight; y++)
+                    {
+                        vox.SetVoxelNode(tx, y, tz, new VoxelNode(Voxel.glass));
+                    }
                     /*
                     if (!(data[tx, tz] is Water))
                     {
@@ -242,13 +253,18 @@ public class ChunkGenerator
                 else if (dist_sqr < (cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) * 2 / divBy)
                 {
                     tiles[tx, tz] = Tile.SAND.ID;
-                    heights[tx, tz] = cb.BaseHeight;
-
+                    heights[tx, tz] = baseheight;
+                    for (int y = Mathf.FloorToInt(heights[tx, tz]); y < baseheight; y++)
+                    {
+                        vox.SetVoxelNode(tx, y, tz, new VoxelNode(Voxel.glass));
+                    }
                 }
                 else
                 {
                     tiles[tx, tz] = Tile.GRASS.ID;
-                    heights[tx, tz] = cb.BaseHeight;
+                    heights[tx, tz] = baseheight;
+
+                    // heights[tx, tz] = cb.BaseHeight;
 
                     //if (genRan.Random() < 0.25f)
                     //    data[tx, tz] = new Grass(new Vec2i(x * World.ChunkSize + tx + 1, z * World.ChunkSize + tz - 1));
@@ -277,8 +293,9 @@ public class ChunkGenerator
                     data_.Add(WorldObject.ObjectPositionHash(i, j), data[i, j]);
             }
         }
-
-        return new ChunkData(x, z, tiles, cb.IsLand,baseHeight:cb.BaseHeight, heightMap:heights);
+        ChunkData cd = new ChunkData(x, z, tiles, cb.IsLand, baseHeight: cb.BaseHeight, heightMap: heights);
+        cd.SetVoxelData(vox);
+        return cd;
     }
 
 

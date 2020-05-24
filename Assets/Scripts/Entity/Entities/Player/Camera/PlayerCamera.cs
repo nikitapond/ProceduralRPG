@@ -26,6 +26,15 @@ public class PlayerCamera : MonoBehaviour
 
     }
 
+    public void SetThirdPersonCamera()
+    {
+        if(CameraController != null)
+        {
+            Destroy(CameraController);
+        }
+        CameraController = gameObject.AddComponent<ThirdPersonCC>();
+    }
+
     public void SetCameraController()
     {
         CameraController oldCC = GetComponent<CameraController>();

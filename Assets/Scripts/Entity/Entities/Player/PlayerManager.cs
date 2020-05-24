@@ -252,7 +252,17 @@ public class PlayerManager : MonoBehaviour
 
         }
 
-
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            if(PlayerCameraScript.CameraController is FirstPersonCC)
+            {
+                PlayerCameraScript.SetThirdPersonCamera();
+            }
+            else
+            {
+                PlayerCameraScript.SetFirstPersonCamera();
+            }
+        }
         // Debug.BeginDeepProfile("PlayerManagerUpdate");
 
         Vector3 worldMousePos = GetWorldMousePosition();
@@ -336,8 +346,8 @@ public class PlayerManager : MonoBehaviour
         if(LookObject == null)
         {
             DebugGUI.Instance.ClearData("player_view");
-            Debug.Log(GUIManager.Instance);
-            Debug.Log(GUIManager.Instance.IngameGUI);
+            //Debug.Log(GUIManager.Instance);
+            //Debug.Log(GUIManager.Instance.IngameGUI);
             GUIManager.Instance.IngameGUI.SetNPC(null);
         }
         else

@@ -347,7 +347,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         //Debug.Log(entityLookDirection + ", " + difPos + ", " + angle);
         if (angle > fov)
             return false;
-        Debug.Log("object in way");
+        //Debug.Log("object in way");
         return LineOfSight(other);
     }
 

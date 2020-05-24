@@ -12,7 +12,8 @@ GameObject:
   - component: {fileID: 5613073698491629869}
   - component: {fileID: 2222858062012972500}
   - component: {fileID: 3856586131230104640}
-  m_Layer: 8
+  - component: {fileID: 1358036373505225333}
+  m_Layer: 10
   m_Name: WoodSpike
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -94,3 +95,15 @@ CapsuleCollider:
   m_Height: 3.63
   m_Direction: 1
   m_Center: {x: 0, y: 1.1, z: 0}
+--- !u!114 &1358036373505225333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 497080058133301512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84748a38a43d9894d9d3b3ec4781be61, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

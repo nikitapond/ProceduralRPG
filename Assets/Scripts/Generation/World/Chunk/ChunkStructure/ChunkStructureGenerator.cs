@@ -187,7 +187,7 @@ public class ChunkStructureGenerator
             //If a bandit camp, create a bandit camp builder then generate structure.
             if(str is BanditCamp)
             {
-                builder = new BanditCampBuilder(str);
+                builder = new BanditCampBuilder(str, GameGenerator);
             }
 
             builder.Generate(genRan);

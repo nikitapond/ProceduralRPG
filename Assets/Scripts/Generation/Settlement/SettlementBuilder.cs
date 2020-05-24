@@ -34,6 +34,8 @@ public class SettlementBuilder : BuilderBase
 
     //public Voxel[] Voxels;
 
+    public int SettlementWallBoundry = 5;
+
     //Defines the size of the settlement from one edge to another, in units of tiles.
     public int TileSize { get; private set; }
     public SettlementType SettlementType { get; private set; }
@@ -111,6 +113,7 @@ public class SettlementBuilder : BuilderBase
         PathNodes = new float[TileSize / NODE_RES, TileSize / NODE_RES];
         PNSize = TileSize / PathNodeRes;
 
+        FlattenBase(5);
         //AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
 
 
@@ -216,7 +219,7 @@ public class SettlementBuilder : BuilderBase
 
         PlaceBuildings(mustAdd);
         CreatePathNodes();
-
+        /*
         for (int x = 0; x < TileSize; x++)
         {
             for (int z = 0; z < TileSize; z++)
@@ -235,7 +238,7 @@ public class SettlementBuilder : BuilderBase
                 }
                 //SetVoxelNode(x, 0, z, new VoxelNode(Voxel.grass));
             }
-        }
+        }*/
 
     }
     public SettlementPathNode ENTR_NODE;
@@ -968,8 +971,8 @@ public class SettlementBuilder : BuilderBase
 
         for (int i = 0; i < attempts; i++)
         {
-            Vec2i pos = GenerationRandom.RandomVec2i(0, TileSize - 1 - width);
-            if (IsAreaFree(pos.x, pos.z, width, height))
+            Vec2i pos = GenerationRandom.RandomVec2i(SettlementWallBoundry, TileSize - 1 - width- SettlementWallBoundry);
+            if (IsAreaFree(pos.x-1, pos.z-1, width+2, height+2))
             {
                 return pos;
             }
@@ -1006,7 +1009,7 @@ public class SettlementBuilder : BuilderBase
                 return null;
         }
 
-        int height = (int)FlattenArea(pos.x, pos.z, b.Width, b.Height);
+        int height = (int)FlattenArea(pos.x-1, pos.z-1, b.Width+2, b.Height+2);
   
         //Debug.Log("Adding building " + b);
         //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);

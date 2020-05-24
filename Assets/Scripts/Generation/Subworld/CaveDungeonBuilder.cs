@@ -47,7 +47,7 @@ public class CaveDungeonBuilder : SubworldBuilder
             for (int z = 0; z < TileSize.z; z++)
             {
                 float scale = 0.1f;
-                int height = (int)(8 * Mathf.PerlinNoise(x * scale, z * scale));
+                float height = (8 * Mathf.PerlinNoise(x * scale, z * scale));
                 int thingy = (int)Mathf.Clamp(8 * Mathf.PerlinNoise(x * scale, z * scale), 0, 3);
                 SetHeight(x, z, height);
                 /*

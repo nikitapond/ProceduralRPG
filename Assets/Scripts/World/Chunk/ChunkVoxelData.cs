@@ -14,6 +14,9 @@ public class ChunkVoxelData
     [System.NonSerialized]
     public VoxelNode[] Voxels;
 
+    public bool HasBoundryVoxels = false;
+
+
     private int totalHeight_=-1;
     public int TotalHeight()
     {

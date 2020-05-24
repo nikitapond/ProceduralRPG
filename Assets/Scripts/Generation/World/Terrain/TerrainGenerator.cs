@@ -134,13 +134,20 @@ public class TerrainGenerator
     public float WorldHeightChunk(float x, float z)
     {
 
+        float c = 0;
+        for(int i=1; i<8; i++)
+        {
+            float scale = 32* Mathf.Pow(0.5f, i);
+            float octave = 0.05f * i;
+            c += scale * Mathf.PerlinNoise(x * octave, z * octave);
+        }
 
-        float c = 5 + 1*Mathf.PerlinNoise(x * 0.3f, z * 0.3f)*20;
+        //float c = 5 + 1*Mathf.PerlinNoise(x * 0.3f, z * 0.3f)*20;
 
         //float c = 5 + (World.ChunkHeight - 5) * (1 - Mathf.Pow(Mathf.PerlinNoise(x * 0.01f, z * 0.01f), 2)); 
         //float radialScale = ((x - World.WorldSize / 2) * (x - World.WorldSize / 2) + (z - World.WorldSize / 2) * (z - World.WorldSize / 2))/ WorldRad;
         //c *= (1-Mathf.Clamp(radialScale, 0, 1));
-
+        
         if((x - World.WorldSize / 2) * (x - World.WorldSize / 2) + (z - World.WorldSize / 2) * (z - World.WorldSize / 2) > WorldRad)
         {
             c = 1;

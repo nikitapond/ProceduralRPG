@@ -268,6 +268,19 @@ public class GameGenerator
         entityGen.GenerateAllKingdomEntities();
 
 
+        foreach(KeyValuePair<Vec2i, ChunkStructure> kvp in StructureGenerator.ChunkStructureShells)
+        {
+            if (kvp.Value.HasEntities)
+            {
+                Debug.Log(string.Format("Chunk at position {0} has {1} entities", kvp.Key, kvp.Value.Entities.Count));
+                foreach(Entity e in kvp.Value.Entities)
+                {
+                    
+                    GameManager.EntityManager.AddFixedEntity(e);
+                }
+            }
+        }
+
         Debug.EndDeepProfile("entity_gen");
 
     }
