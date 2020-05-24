@@ -41,11 +41,11 @@ public class WorldObject : MonoBehaviour
 
     public void AdjustHeight()
     {
-        Vector3 basePos = new Vector3(transform.position.x, World.ChunkHeight, transform.position.z);
+        Vector3 basePos = new Vector3(transform.position.x,256, transform.position.z);
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, World.ChunkHeight, layerMask: GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 256, layerMask: GROUND_LAYER_MASK))
         {
-            Debug.Log("Height raycast succesful: " + hit.point.y);
+            //Debug.Log("Height raycast succesful: " + hit.point.y);
             basePos.y = hit.point.y + Data.Position.y;
             transform.position = basePos;
         }

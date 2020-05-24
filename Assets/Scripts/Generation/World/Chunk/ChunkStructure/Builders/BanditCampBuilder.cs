@@ -25,7 +25,7 @@ public class BanditCampBuilder : ChunkStructureBuilder
             }
         }
         GenerateSubworldCave(new Vec2i(6, 6));
-        DEBUG = true;
+        DEBUG = false;
     }
 
 
@@ -34,10 +34,10 @@ public class BanditCampBuilder : ChunkStructureBuilder
 
         DoubleBed b = new DoubleBed();
         b.SetPosition(localEntrance);
-        AddObject(b, true, true);
+        AddObject(b, true);
         TrapDoor td = new TrapDoor();
         td.SetPosition(localEntrance);
-        AddObject(td, true, true);
+        AddObject(td, true);
         Debug.Log("HERHEHRE");
         
         CaveDungeonBuilder cdb = new CaveDungeonBuilder(localEntrance + BaseTile, new Vec2i(4, 4));

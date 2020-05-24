@@ -16,7 +16,76 @@ namespace MarchingCubesProject
 			EdgeVertex = new Vector3[12];
 		}
 
-		
+		public void Generate(Dictionary<int, VoxelNode[]> allVoxels, VoxelBounds b, Voxel current, int width, int height, int depth, IList<Vector3> verts, IList<int> indices)
+		{
+			if (Surface > 0.0f)
+			{
+				WindingOrder[0] = 0;
+				WindingOrder[1] = 1;
+				WindingOrder[2] = 2;
+			}
+			else
+			{
+				WindingOrder[0] = 2;
+				WindingOrder[1] = 1;
+				WindingOrder[2] = 0;
+			}
+
+			int x, y, z, i;
+			int ix, iy, iz;
+
+			for (y = 0; y < height; y++)
+			{
+
+				int pY = Mathf.FloorToInt((float)y / (World.ChunkHeight));
+			
+				if (allVoxels.TryGetValue(pY, out VoxelNode[] vox))
+				{
+					//Debug.Log("y Value of " + y + " has node at  " + pY);
+					int y_ = y % (World.ChunkHeight);
+					for (x = 0; x < width - 1; x++)
+					{
+						for (z = 0; z < depth - 1; z++)
+						{
+
+							//Get the values in the 8 neighbours which make up a cube
+							for (i = 0; i < 8; i++)
+							{
+								ix = x + VertexOffset[i, 0];
+								iy = y_ + VertexOffset[i, 1];
+								iz = z + VertexOffset[i, 2];
+								//int index_ = x + y * width + z * width * height;
+								int index = ix + iy * width + iz * width * (World.ChunkHeight+1);
+								//Debug.Log(string.Format("Vals: {0}, {1}, {2}", ix, iy, iz));
+								try
+								{
+									if (vox[index].ContainsVoxel(current))
+									{
+										Cube[i] = -1;
+									}
+									else
+									{
+										Cube[i] = 1;
+									}
+								}catch(System.Exception e)
+								{
+									Debug.Log(e);
+									Debug.Log(string.Format("Vals: {0}, {1}, {2}", ix, iy, iz));
+
+								}
+
+
+
+							}
+							March(x, y, z, Cube, verts, indices);
+
+						}
+					}
+
+				}
+
+			}
+		}
 		public void Generate(VoxelNode[] voxels, VoxelBounds b, Voxel current, int width, int height, int depth, IList<Vector3> verts, IList<int> indices)
 		{			
 			if (Surface > 0.0f)

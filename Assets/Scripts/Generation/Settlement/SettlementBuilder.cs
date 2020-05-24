@@ -50,7 +50,39 @@ public class SettlementBuilder : BuilderBase
 
     //public float AverageHeight = 5;
 
-    public SettlementBuilder(GameGenerator gameGen, SettlementBase set) : base (set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize))
+    public SettlementBuilder(HeightFunction heightFunc, SettlementBase set) : base(set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize), heightFunc)
+    {
+       
+        GenerationRandom = new GenerationRandom(0);
+        Centre = set.Centre;
+        SettlementChunks = set.SettlementChunks;
+        TileSize = set.TileSize;
+        PathTile = Tile.STONE_PATH;
+        MidTile = new Vec2i(TileSize / 2, TileSize / 2);
+        //Tiles = new Tile[TileSize, TileSize];
+        SettlementObjects = new WorldObjectData[TileSize, TileSize];
+        Buildings = new List<Building>();
+        //PathNodes = new List<Vec2i>();
+        BuildingPlots = new List<Recti>();
+        SettlementType = set.SettlementType;
+
+        // Heights = new float[TileSize, TileSize];
+
+
+        //TestNodes = new List<SettlementPathNode>();
+
+        //Defines a path node to be once every chunk
+        PathNodeRes = World.ChunkSize;
+        PathNodes = new float[TileSize / NODE_RES, TileSize / NODE_RES];
+        PNSize = TileSize / PathNodeRes;
+
+        //AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
+
+
+        // Voxels = new Voxel[(TileSize) * TileSize * World.ChunkHeight];
+    }
+
+    public SettlementBuilder(GameGenerator gameGen, SettlementBase set) : base (set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize), gameGen)
     {
         GameGenerator = gameGen;
         if(gameGen != null)
@@ -92,8 +124,17 @@ public class SettlementBuilder : BuilderBase
         //ChooseRandomEntrancePoints();
         AddInitPaths();
         List<BuildingPlan> mustAdd = new List<BuildingPlan>();
-
-
+        /*
+        for(int x=10; x<20; x++)
+        {
+            for(int z=10; z<20; z++)
+            {
+                for(int y=40; y<128; y++)
+                {
+                    SetVoxelNode(x, y, z, new VoxelNode(Voxel.stone));
+                }
+            }
+        }*/
 
        
 
@@ -965,10 +1006,8 @@ public class SettlementBuilder : BuilderBase
                 return null;
         }
 
-        //We find the lowest position in this 
-        float minHeight = GetLowestChunkHeight(pos.x, pos.z, b.Width, b.Height);
-
-        float maxHeight = GetHighestChunkHeight(pos.x-1, pos.z-1, b.Width+2, b.Height+2);
+        int height = (int)FlattenArea(pos.x, pos.z, b.Width, b.Height);
+  
         //Debug.Log("Adding building " + b);
         //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);
         for (int x = 0; x < b.Width; x++)
@@ -976,21 +1015,16 @@ public class SettlementBuilder : BuilderBase
             for (int z = 0; z < b.Height; z++)
             {
 
-                int cx = WorldToChunk(x+pos.x);
-                int cz = WorldToChunk(z+pos.z);
-
-                //We find the base height of this chunk
-                float cHeight = ChunkBaseHeights[cx, cz];
-                float heightDelta = maxHeight - cHeight;
 
 
                 SetTile(x + pos.x, z + pos.z, b.BuildingTiles[x, z]);
 
 
-                SetHeight(x + pos.x, z + pos.z, maxHeight);
+                //SetHeight(x + pos.x, z + pos.z, maxHeight);
                 for(int y=0; y < vox.Height; y++)
                 {
-                    SetVoxelNode(x + pos.x, (int)heightDelta + y, z + pos.z, vox.GetVoxelNode(x, y, z));
+                    SetVoxelNode(x + pos.x, height + y, z + pos.z, vox.GetVoxelNode(x, y, z));
+                    
                 }
             }
         }

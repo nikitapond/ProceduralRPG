@@ -202,7 +202,7 @@ public class ChunkLoader : MonoBehaviour
                 MeshCollider voxelMc = voxelObj.GetComponent<MeshCollider>();
                 voxelMc.sharedMesh = voxelMf.mesh;
                 voxelObj.transform.parent = cObj.transform;
-                voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.7f);
+                //voxelObj.transform.localPosition = Vector3.up * (pChunk.ChunkData.BaseHeight+0.7f);
 
                 voxelMf.mesh.RecalculateNormals();
             }
@@ -338,17 +338,17 @@ public class ChunkLoader : MonoBehaviour
                 
         }    
     }
-    /// <summary>
-    /// Creates a pre loaded chunk from chunk data.
-    /// This entire function is run in a thread
-    /// </summary>
-    /// <param name="cData"></param>
-    /// <returns></returns>
-    private PreLoadedChunk GeneratePreLoadedChunk(ChunkData chunk)
-    {
-        //Null till we integrate fully
-        //ChunkData2[] neighbors = null;
 
+    private void ClearBuffers()
+    {
+        CurrentVerticies.Clear();
+        CurrentUVs.Clear();
+        CurrentTriangles.Clear();
+        CurrentColours.Clear();
+    }
+
+    private PreMesh GenerateMarchingCubesTerrain(ChunkData chunk)
+    {
         ChunkData[] neighbors = ChunkRegionManager.GetNeighbors(new Vec2i(chunk.X, chunk.Z));
 
 
@@ -385,7 +385,7 @@ public class ChunkLoader : MonoBehaviour
                     if (neighbors != null && neighbors[2] != null)
                     {
                         height = neighbors[2].BaseHeight;
-                       if (neighbors[2].Heights != null)
+                        if (neighbors[2].Heights != null)
                             height = neighbors[2].Heights[0, z];
 
                         colourMap[x, z] = neighbors[2].GetTile(0, z).GetColor();
@@ -441,17 +441,17 @@ public class ChunkLoader : MonoBehaviour
         MarchingCubes.Generate(cube, World.ChunkSize + 1, World.ChunkHeight + 1, World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
 
         //We iterate each triangle
-        for(int i=0; i<CurrentTriangles.Count; i += 3)
+        for (int i = 0; i < CurrentTriangles.Count; i += 3)
         {
             int tri1 = CurrentTriangles[i];
-            int tri2 = CurrentTriangles[i+1];
-            int tri3 = CurrentTriangles[i+2];
+            int tri2 = CurrentTriangles[i + 1];
+            int tri3 = CurrentTriangles[i + 2];
 
             //We find the average/mid point of this triangle
             Vector3 mid = (CurrentVerticies[tri1] + CurrentVerticies[tri2] + CurrentVerticies[tri3]) / 3;
             Vec2i tMid = Vec2i.FromVector3(mid);
             Color c = colourMap[tMid.x, tMid.z];
-        
+
             CurrentColours.Add(c);
             CurrentColours.Add(c);
             CurrentColours.Add(c);
@@ -470,6 +470,169 @@ public class ChunkLoader : MonoBehaviour
         terrainMesh.Verticies = CurrentVerticies.ToArray();
         terrainMesh.Triangles = CurrentTriangles.ToArray();
         terrainMesh.Colours = CurrentColours.ToArray();
+
+        return terrainMesh;
+    }
+
+    private PreMesh GenerateSmoothTerrain(ChunkData chunk, int LOD = 1) {
+
+        int size = World.ChunkSize / LOD;
+        Color[,] colourMap = new Color[size + 1, size + 1];
+        ClearBuffers();
+        ChunkData[] neighbors = ChunkRegionManager.GetNeighbors(new Vec2i(chunk.X, chunk.Z));
+
+        for (int x=0; x<=size; x++)
+        {
+            for(int z=0; z <= size; z++)
+            {
+                float height = 0;
+               
+
+
+                if (x == size && z == size)
+                {
+                    if (neighbors != null && neighbors[1] != null)
+                    {
+                        height = neighbors[1].BaseHeight;
+                        if (neighbors[1].Heights != null)
+                            height = neighbors[1].Heights[0, 0];
+                        colourMap[x, z] = neighbors[1].GetTile(0, 0).GetColor();
+                    }
+
+                    else
+                    {
+                       //height = chunk.Heights != null ? chunk.Heights[x - 1, z - 1] : height;
+                        colourMap[x, z] = chunk.GetTile((x - 1)*LOD, (z - 1)*LOD).GetColor();
+                    }
+
+                }
+                else if (x == size)
+                {
+                    if (neighbors != null && neighbors[2] != null)
+                    {
+                        
+                        height = neighbors[2].BaseHeight;
+                        if (neighbors[2].Heights != null)
+                            height = neighbors[2].Heights[0, z*LOD];
+                            
+                        colourMap[x, z] = neighbors[2].GetTile(0, z*LOD).GetColor();
+
+                    }
+                    else
+                    {
+                        height = chunk.Heights != null ? chunk.Heights[(x - 1)*LOD, z*LOD] : height;
+                        colourMap[x, z] = chunk.GetTile((x - 1)*LOD, z*LOD).GetColor();
+
+                    }
+                }
+                else if (z ==size)
+                {
+                    if (neighbors != null && neighbors[0] != null)
+                    {
+                        height = neighbors[0].BaseHeight;
+                        if (neighbors[0].Heights != null)
+                            height = neighbors[0].Heights[x*LOD, 0];
+
+                        colourMap[x, z] = neighbors[0].GetTile(x*LOD, 0).GetColor();
+
+                    }
+                    else
+                    {
+
+                       // height = chunk.Heights != null ? chunk.Heights[x, z - 1] : height;
+                        colourMap[x, z] = chunk.GetTile(x*LOD, (z - 1)*LOD).GetColor();
+
+                    }
+                }
+                else
+                {
+                    if (chunk.Heights != null)
+                    {
+                        height = chunk.Heights[x*LOD, z*LOD];
+                    }
+                    colourMap[x, z] = chunk.GetTile(x*LOD, z*LOD).GetColor();
+                }
+                CurrentColours.Add(colourMap[x, z]);
+                CurrentVerticies.Add(new Vector3(x * LOD, height, z * LOD));
+                /*
+                for (int y = 0; y < height + 1; y++)
+                {
+                    int idx = x + y * (World.ChunkSize + 1) + z * (World.ChunkHeight + 1) * (World.ChunkSize + 1);
+
+                    //cube[idx] = -2;
+                }*/
+
+            }
+        }      
+       
+
+        int vert = 0;
+        int tris = 0;
+
+        for(int z=0; z<size; z++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                CurrentTriangles.Add(vert + 1);
+                CurrentTriangles.Add(vert + size + 1);
+                CurrentTriangles.Add(vert + 0);
+
+
+                CurrentTriangles.Add(vert + size + 2);
+                CurrentTriangles.Add(vert + size + 1);
+                CurrentTriangles.Add(vert + 1);
+                
+                
+                vert++;
+                tris += 6;
+            }
+            vert++;
+        }
+        
+        //We iterate each triangle
+       /* for (int i = 0; i < CurrentTriangles.Count; i += 3)
+        {
+            int tri1 = CurrentTriangles[i];
+            int tri2 = CurrentTriangles[i + 1];
+            int tri3 = CurrentTriangles[i + 2];
+            /*Vector3 vec1 = CurrentVerticies[i];
+            Vector3 vec2 = CurrentVerticies[i+1];
+            Vector3 vec3 = CurrentVerticies[i+2];
+
+            //We find the average/mid point of this triangle
+             Vector3 mid = (CurrentVerticies[tri1] + CurrentVerticies[tri2] + CurrentVerticies[tri3]) / 3;
+            //Vector3 mid = (vec1 + vec2 + vec3) / 3;
+            Vec2i tMid = Vec2i.FromVector3(mid);
+            Color c = colourMap[tMid.x, tMid.z];
+
+            CurrentColours.Add(c);
+            CurrentColours.Add(c);
+            CurrentColours.Add(c);
+        }
+        Debug.Log("Colours: " + CurrentColours.Count + " vert: " + CurrentVerticies.Count);*/
+
+        PreMesh pmesh = new PreMesh();
+        pmesh.Verticies = CurrentVerticies.ToArray();
+        pmesh.Triangles = CurrentTriangles.ToArray();
+        pmesh.Colours = CurrentColours.ToArray();
+        return pmesh;
+    }
+
+    /// <summary>
+    /// Creates a pre loaded chunk from chunk data.
+    /// This entire function is run in a thread
+    /// </summary>
+    /// <param name="cData"></param>
+    /// <returns></returns>
+    private PreLoadedChunk GeneratePreLoadedChunk(ChunkData chunk, int lod=1)
+    {
+
+
+        //We create a thread safe mesh for the terrain
+        // PreMesh terrainMesh = GenerateMarchingCubesTerrain(chunk);
+
+        PreMesh terrainMesh = GenerateSmoothTerrain(chunk);
+
         Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies", Debug.CHUNK_LOADING);
         //Create the base pre-loaded chunk
         PreLoadedChunk preChunk = new PreLoadedChunk(new Vec2i(chunk.X, chunk.Z), terrainMesh, chunk);
@@ -492,7 +655,13 @@ public class ChunkLoader : MonoBehaviour
                 CurrentColours.Clear();
                 CurrentUVs.Clear();
                 //Generate the voxel mesh
-                MarchingCubes.Generate(chunk.VoxelData.Voxels, vb, v, World.ChunkSize+1, World.ChunkHeight+1, World.ChunkSize+1, CurrentVerticies, CurrentTriangles);
+                //MarchingCubes.Generate(chunk.VoxelData.Voxels, vb, v, World.ChunkSize+1, World.ChunkHeight+1, World.ChunkSize+1, CurrentVerticies, CurrentTriangles);
+                //MarchingCubes.Generate(chunk.VoxelData.Voxels, vb, v, World.ChunkSize + 1, chunk.VoxelData.TotalHeight(), World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
+                //MarchingCubes.Generate(chunk.VoxelData.AllVoxels, vb, v, World.ChunkSize + 1, chunk.VoxelData.TotalHeight(), World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
+
+                MarchingCubes.Generate(chunk.VoxelData.AllVoxels, vb, v, World.ChunkSize + 1, chunk.VoxelData.TotalHeight(), World.ChunkSize + 1, CurrentVerticies, CurrentTriangles);
+
+
                 PreMesh voxelMesh = new PreMesh();
                 voxelMesh.Verticies = CurrentVerticies.ToArray();
                 voxelMesh.Triangles = CurrentTriangles.ToArray();
@@ -549,5 +718,18 @@ public class ChunkLoader : MonoBehaviour
         return UV;
 
 
+    }
+}
+
+public struct LODBoundry
+{
+    public int ThisLOD;
+    public int OtherLOD;
+    public Vec2i Direction;
+    public LODBoundry(int thisLOD, int otherLOD, Vec2i direction)
+    {
+        ThisLOD = thisLOD;
+        OtherLOD = otherLOD;
+        Direction = direction;
     }
 }

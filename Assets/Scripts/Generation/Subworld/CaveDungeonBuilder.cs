@@ -49,12 +49,13 @@ public class CaveDungeonBuilder : SubworldBuilder
                 float scale = 0.1f;
                 int height = (int)(8 * Mathf.PerlinNoise(x * scale, z * scale));
                 int thingy = (int)Mathf.Clamp(8 * Mathf.PerlinNoise(x * scale, z * scale), 0, 3);
-               
+                SetHeight(x, z, height);
+                /*
                 for(int y=0; y<height; y++)
                 {
                     SetVoxelNode(x, y, z, new VoxelNode(Voxel.stone));
 
-                }
+                }*/
             }
         }
         SubworldEntrance = new Vec2i(5, 5);
