@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
-
+using System.Collections.Generic;
 public class LineI
 {
 
@@ -25,6 +25,122 @@ public class LineI
         b = dx;
         a = -dz;
         c = dz * start.x - dx * start.z;
+
+    }
+
+
+    public List<Vec2i> ConnectPoints()
+    {
+        List<Vec2i> points = new List<Vec2i>();
+        int x = Start.x;
+        int z = Start.z;
+
+        int xDir = (int)Mathf.Sign(End.x - Start.x);
+        int zDir = (int)Mathf.Sign(End.z - Start.z);
+        points.Add(new Vec2i(x, z));
+        while (!(x == End.x && z == End.z))
+        {
+            //data[x, z] = copy.Copy(globalPos + new Vec2i(x, z));
+
+
+
+            int dx = (int)Mathf.Abs(End.x - x);
+            int dz = (int)Mathf.Abs(End.z - z);
+
+            if (dx > dz)
+            {
+                x += xDir;
+            }
+            else if (dz > dx)
+            {
+                z += zDir;
+
+            }
+            else
+            {
+                x += xDir;
+                z += zDir;
+            }
+
+            points.Add(new Vec2i(x, z));
+        }
+
+
+        /*
+        Vector2 disp = new Vector2(End.x - Start.x, End.z - Start.z);
+        Vector2 grad = disp.normalized;
+
+        int size = (int)disp.magnitude + 1;
+       
+        int x = Start.x;
+        int z = Start.z;
+        float dx = x;
+        float dz = z;
+        float deltaX = Mathf.Abs(grad.x);
+        float deltaZ = Mathf.Abs(grad.y);
+
+        int xIncr = (int)Mathf.Sign(grad.x);
+        if (deltaX < 0.0001f)
+            xIncr = 0;
+        int zIncr = (int)Mathf.Sign(grad.y);
+        if (deltaZ < 0.0001f)
+            zIncr = 0;
+        List<Vec2i> points = new List<Vec2i>();
+
+        for(int i=0; i<size * 2; i++)
+        {
+            dx += grad.x;
+            dz += grad.y;
+            int x_ = (int)dx;
+            int z_ = (int)dz;
+
+            if (x_ != x)
+                x = x_;
+            if (z_ != z)
+                z = z_;
+            points.Add(new Vec2i(x, z));
+            if (x == End.x && z == End.z)
+            {
+                break;
+            }
+            /*
+            dx += deltaX;
+            dz += deltaZ;
+            if(dx > 1)
+            {
+                x += xIncr;
+                dx = 0;
+            }
+            if(dz > 1) {
+                z += zIncr;
+                dz = 0;
+            }
+            /*
+            if(dx > dz)
+            {
+                x+= xIncr;
+                dx = 0;
+            }else if(dz > dx)
+            {
+                z+= zIncr;
+                dz = 0;
+            }
+            else
+            {
+                x+=xIncr;
+                z+=zIncr;
+                dz = 0;
+                dx = 0;
+            }
+           
+            points.Add(new Vec2i(x, z));
+            if(x == End.x && z == End.z)
+            {
+                break;
+            }*/
+
+        
+        return points;
 
     }
 

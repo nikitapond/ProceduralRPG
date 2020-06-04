@@ -8,7 +8,7 @@ public class World
 {
     public static readonly int ChunkHeight = 16;
     public readonly static int ChunkSize = 16; //Chunk size in tiles
-    public readonly static int WorldSize = 256; //World size in chunks
+    public readonly static int WorldSize = 1024; //World size in chunks
     public readonly static int RegionSize = 32;
     public readonly static int RegionCount = WorldSize / RegionSize;
 

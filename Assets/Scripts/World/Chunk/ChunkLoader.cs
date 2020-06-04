@@ -191,7 +191,14 @@ public class ChunkLoader : MonoBehaviour
         MeshFilter mf = loaded.GetComponent<MeshFilter>();
         //Create the terrain mesh
         mf.mesh = PreLoadedChunk.CreateMesh(pChunk.TerrainMesh);
-        mf.mesh.RecalculateNormals();
+        try
+        {
+            mf.mesh.RecalculateNormals();
+        }catch(System.Exception e)
+        {
+            Debug.Log(e);
+        }
+        
         MeshCollider mc = loaded.GetComponent<MeshCollider>();
         mc.sharedMesh = mf.mesh;
         //Iterate all voxels

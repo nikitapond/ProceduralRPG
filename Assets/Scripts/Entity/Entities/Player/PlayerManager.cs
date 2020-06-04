@@ -247,7 +247,6 @@ public class PlayerManager : MonoBehaviour
 
         if (GameManager.Paused)
         {
-            Debug.Log("Caused by Pause = true");
             return;
 
         }

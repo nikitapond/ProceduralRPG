@@ -19,6 +19,15 @@ public class Vec2i
     {
         return Vec2i.QuickDistance(this, b);
     }
+    public float Distance(Vec2i b)
+    {
+        return Mathf.Sqrt(Vec2i.QuickDistance(this, b));
+    }
+
+    public static float Distance(Vec2i a, Vec2i b)
+    {
+        return Mathf.Sqrt(Vec2i.QuickDistance(a, b));
+    }
 
     public static Vec2i Rotate(Vec2i initial, Vec2i rotate)
     {

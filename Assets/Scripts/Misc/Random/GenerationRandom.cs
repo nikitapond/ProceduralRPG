@@ -74,6 +74,12 @@ public class GenerationRandom
     {
         return random.Next(0, 2) == 0 ? true : false;
     }
+
+    public Color RandomColor(float alpha=1)
+    {
+        return new Color(Random(), Random(), Random(), alpha);
+    }
+
     public Vec2i RandomQuadDirection()
     {
         //Random number of either 0 or 1

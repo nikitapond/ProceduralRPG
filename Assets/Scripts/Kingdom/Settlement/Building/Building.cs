@@ -28,6 +28,21 @@ public abstract class Building
     public static BuildingPlan HOUSE = House.BuildingPlan;
     public static BuildingPlan BARACKS = Barracks.BuildingPlanCity;
     public static BuildingPlan TAVERN = Tavern.BuildingPlan;
+
+    public static BuildingPlan WHEATFARM = Farm.WheatFarm;
+    public static BuildingPlan SILKFARM = Farm.SilkFarm;
+    public static BuildingPlan VEGFARM = Farm.VegFarm;
+    public static BuildingPlan CATTLEFARM = Farm.CattleFarm;
+    public static BuildingPlan SHEEPFARM = Farm.SheepFarm;
+
+    public static BuildingPlan WOODCUTTER = WoodCutter.BuildingPlan;
+
+    public static BuildingPlan IRONMINE = Mine.IronMine;
+    public static BuildingPlan SILVERMINE = Mine.SilverMine;
+    public static BuildingPlan GOLDMINE = Mine.GoldMine;
+
+    public static BuildingPlan BAKERY = Bakery.BuildingPlan;
+    public static BuildingPlan LUMBERMILL = LumberMill.BuildingPlan;
     public int SettlementID { get; private set; }
 
     public Inventory Inventory { get; private set; }

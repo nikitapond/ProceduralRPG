@@ -57,6 +57,7 @@ public class WorldMap
 
     private Color GetColorFromChunkBase(ChunkBase cb)
     {
+        
         Color c = Color.magenta;
         switch (cb.Biome)
         {
@@ -71,6 +72,9 @@ public class WorldMap
                 break;
             case ChunkBiome.forrest:
                 c = new Color(34f / 255f, 139f / 255f, 34f / 255f);
+                break;
+            case ChunkBiome.mountain:
+                c = Color.grey;
                 break;
         }
 

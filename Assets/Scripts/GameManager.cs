@@ -14,9 +14,9 @@ public class GameManager : MonoBehaviour
     public GameObject TEST_PREF;
 
     public static bool IsPlaying { get; private set; }
-    public bool[] toDraw = { false, false, false, false };
+    public bool[] toDraw = { false, false, false, false, false };
 
-    public Texture2D[] toDrawTexts = { null, null, null, null };
+    public Texture2D[] toDrawTexts = { null, null, null, null, null };
     public static Settlement TestSettle;
 
     public static string GameToLoad = "none";
@@ -156,18 +156,26 @@ public class GameManager : MonoBehaviour
 
         GameGenerator = new GameGenerator(seed);
         GameGenerator.GenerateWorld(WorldManager);
+        /*
         GameGenerator.GenerateEntities(WorldManager.World);
-        GameGenerator.GenerateDungeons();
+        GameGenerator.GenerateDungeons();*/
         GameGenerator.GenerateWorldMap();
         //QuestManager.SetQuests(GameGenerator.GenerateQuests(WorldManager.World));
 
 
         //Vec2i wpos = Vec2i.FromVector2(QuestManager.Unstarted[0].Initiator.GetNPC().Position2);
         //Vec2i wpos = WorldManager.World.GetChunkStructure(0).Position * World.ChunkSize + new Vec2i(2, 2);
+        Vec2i wpos = null;
+        try
+        {
+            wpos = WorldManager.World.GetSettlement(0).Centre * World.ChunkSize;
 
-        Vec2i wpos = WorldManager.World.GetSettlement(0).Centre * World.ChunkSize;
+        }catch(System.Exception e)
+        {
+            wpos = new Vec2i(World.WorldSize / 2, World.WorldSize / 2) * World.ChunkSize;
+        }
         //Vec2i wpos = new Vec2i(1, 1) * World.ChunkSize * World.WorldSize / 2;
-       // Vec2i wEntr = WorldManager.World.GetSubworld(1).WorldEntrance;
+        // Vec2i wEntr = WorldManager.World.GetSubworld(1).WorldEntrance;
         //TestSettle = QuestManager.Unstarted[0].Initiator.GetNPC().NPCKingdomData.GetSettlement();
         Debug.Log(TestSettle);
 
@@ -276,7 +284,7 @@ public class GameManager : MonoBehaviour
         {
             GUI.DrawTexture(new Rect(0, 0, World.WorldSize, World.WorldSize), GameGenerator.MAP);
         }
-        for(int i=0; i<4; i++)
+        for(int i=0; i< toDrawTexts.Length; i++)
         {
             if(toDraw[i] && toDrawTexts[i] != null)
             {

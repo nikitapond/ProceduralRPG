@@ -551,8 +551,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TEST_PREF: {fileID: 5245253030320946309, guid: fd077dfb00431fa41919071b68df96de,
     type: 3}
-  toDraw: 00000000
+  toDraw: 0000000000
   toDrawTexts:
+  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}

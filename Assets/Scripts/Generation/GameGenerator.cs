@@ -81,8 +81,8 @@ public class GameGenerator
         //TODO - check if this is still required (probably not)
         ChunkGenerator = new ChunkGenerator(this);
 
-        
-
+        PreGeneratedChunks = new Dictionary<Vec2i, ChunkData>();
+        return;
         Debug.BeginDeepProfile("kingdom_set_gen");
         //We then generate empty kingdoms based on these empty chunks
         Debug.Log("[GameGen] Generating Kingdoms");

@@ -293,7 +293,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             return World.ChunkHeight;
 
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(new Vector3(x, 64, z), Vector3.down), out hit, 64, layerMask: GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(new Vector3(x, 512, z), Vector3.down), out hit, 512, layerMask: GROUND_LAYER_MASK))
         {
             return hit.point.y;
         }
@@ -307,10 +307,10 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
     private float GetWorldHeight()
     {
-        Vector3 basePos = new Vector3(transform.position.x, 64, transform.position.z);
+        Vector3 basePos = new Vector3(transform.position.x, 512, transform.position.z);
 
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 64, layerMask:GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 512, layerMask:GROUND_LAYER_MASK))
         {
             return hit.point.y;
         }

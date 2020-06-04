@@ -9,7 +9,7 @@ public class BanditCampBuilder : ChunkStructureBuilder
     public BanditCampBuilder(ChunkStructure structure, GameGenerator gameGen = null) : base(structure, gameGen)
     {
         structure.Name = "Bandit camp";
-        RaiseBase(Boundry, Boundry);
+        RaiseBase(2, Boundry);
     }
 
     public override void Generate(GenerationRandom ran)
@@ -32,30 +32,51 @@ public class BanditCampBuilder : ChunkStructureBuilder
 
     private void BuildWallAndEntrance()
     {
-
+        Recti boundry = new Recti(Boundry, Boundry, TileSize.x - 2 * Boundry, TileSize.z - 2 * Boundry);
+        Vec2i entrance = GenRan.RandomFromArray(boundry.BoundaryPoints);
         for (int x = Boundry + 1; x < TileSize.x - Boundry - 1; x++)
         {
 
-            if(!(x>Boundry+3 && x < Boundry + 8))
+            Vec2i p1 = new Vec2i(x, Boundry + 1);
+
+            if(entrance.QuickDistance(p1) > 4)
             {
                 WoodSpikeWall wall1 = new WoodSpikeWall();
-                wall1.SetPosition(new Vec2i(x, Boundry + 1));
+                wall1.SetPosition(p1);
                 AddObject(wall1, true);
             }
+            Vec2i p2 = new Vec2i(x, TileSize.z - Boundry - 1);
+
+            if (entrance.QuickDistance(p2) > 4)
+            {
+                WoodSpikeWall wall2 = new WoodSpikeWall();
+                wall2.SetPosition(p2);
+                AddObject(wall2, true);
+            }
+
+
             
-            WoodSpikeWall wall2 = new WoodSpikeWall();
-            wall2.SetPosition(new Vec2i(x, TileSize.z - Boundry - 1));
-            AddObject(wall2, true);
         }
         for (int z = Boundry + 1; z < TileSize.z - Boundry - 1; z++)
         {
-            WoodSpikeWall wall1 = new WoodSpikeWall();
-            wall1.SetPosition(new Vec2i(Boundry + 1, z));
-            AddObject(wall1, true);
-            WoodSpikeWall wall2 = new WoodSpikeWall();
-            wall2.SetPosition(new Vec2i(TileSize.x - Boundry - 1, z));
-            AddObject(wall2, true);
+
+            Vec2i p1 = new Vec2i(Boundry + 1, z);
+
+            if(p1.QuickDistance(entrance) > 4)
+            {
+                WoodSpikeWall wall1 = new WoodSpikeWall();
+                wall1.SetPosition(p1);
+                AddObject(wall1, true);
+            }
+            Vec2i p2 = new Vec2i(TileSize.x - Boundry - 1, z);
+            if (p2.QuickDistance(entrance) > 4)
+            {
+                WoodSpikeWall wall2 = new WoodSpikeWall();
+                wall2.SetPosition(p2);
+                AddObject(wall2, true);
+            }         
         }
+
         for(int x=0; x<TileSize.x; x++)
         {
             for(int z=0; z<TileSize.z; z++)

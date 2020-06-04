@@ -9,7 +9,7 @@ public class ChunkGenerator
 
     private int[,] EMPTY_PLAINS;
     private int[,] EMPTY_DESERT;
-
+    private int[,] MOUNTAIN;
     private int[,] OCEAN;
     private float[,] OCEAN_HEIGHT;
     private ChunkBase[,] ChunkBases;
@@ -29,7 +29,9 @@ public class ChunkGenerator
         EMPTY_PLAINS = new int[World.ChunkSize, World.ChunkSize];
         OCEAN = new int[World.ChunkSize, World.ChunkSize];
         EMPTY_DESERT = new int[World.ChunkSize, World.ChunkSize];
-        OCEAN_HEIGHT = new float[World.ChunkSize, World.ChunkSize]; 
+        OCEAN_HEIGHT = new float[World.ChunkSize, World.ChunkSize];
+        MOUNTAIN = new int[World.ChunkSize, World.ChunkSize];
+
         for (int x = 0; x < World.ChunkSize; x++)
         {
             for (int z = 0; z < World.ChunkSize; z++)
@@ -38,6 +40,7 @@ public class ChunkGenerator
                 OCEAN[x, z] = Tile.WATER.ID;
                 EMPTY_DESERT[x, z] = Tile.SAND.ID;
                 OCEAN_HEIGHT[x, z] = 1;
+                MOUNTAIN[x, z] = Tile.STONE_FLOOR.ID;
             }
         }
 
@@ -81,12 +84,16 @@ public class ChunkGenerator
         if (!cb.IsLand)
         {
             return new ChunkData(x, z, (int[,])OCEAN.Clone(), cb.IsLand);
-        }
+        }/*
         if(cb.Biome == ChunkBiome.dessert)
         {
             return new ChunkData(x, z, (int[,])EMPTY_DESERT.Clone(), cb.IsLand, 1, (float[,])OCEAN_HEIGHT.Clone());
-        }
-        int[,] tiles = (int[,])EMPTY_PLAINS.Clone();
+        }if(cb.Biome == ChunkBiome.mountain)
+        {
+            return new ChunkData(x, z, (int[,])MOUNTAIN.Clone(), cb.IsLand, 1, (float[,])OCEAN_HEIGHT.Clone());
+
+        }*/
+        int[,] tiles = (int[,])(cb.Biome == ChunkBiome.dessert ? EMPTY_DESERT.Clone() : cb.Biome == ChunkBiome.mountain ? MOUNTAIN.Clone() : EMPTY_PLAINS.Clone());
 
         GenerationRandom genRan = new GenerationRandom(Seed + x << 16 + z);
 

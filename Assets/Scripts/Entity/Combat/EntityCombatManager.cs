@@ -342,4 +342,15 @@ public class EntityCombatManager : IGamePauseEvent
             stopwatch.Start();
         
     }
+
+    /// <summary>
+    /// TODO:
+    /// Calculates the total combat strength of this entity
+    /// Takes into account combat skills, weapons, and armour 
+    /// </summary>
+    /// <returns></returns>
+    public int CalculateEntityCombatStrength()
+    {
+        return 1;
+    }
 }
