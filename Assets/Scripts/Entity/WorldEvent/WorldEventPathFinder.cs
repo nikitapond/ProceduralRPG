@@ -25,7 +25,7 @@ public class WorldEventPathFinder
     
     private float[,] CostMap;
 
-    public WorldEventPathFinder(ChunkBase[,] map)
+    public WorldEventPathFinder(ChunkBase2[,] map)
     {
         GeneratePathfindingMap(map);
     }
@@ -33,7 +33,7 @@ public class WorldEventPathFinder
     /// <summary>
     /// Turns the array of chunk bases into a cost map
     /// </summary>
-    private void GeneratePathfindingMap(ChunkBase[,] map)
+    private void GeneratePathfindingMap(ChunkBase2[,] map)
     {
         CostMap = new float[map.GetLength(0), map.GetLength(1)];
 
@@ -41,7 +41,8 @@ public class WorldEventPathFinder
         {
             for(int z=0; z< map.GetLength(1); z++)
             {
-                ChunkBase cBase = map[x, z];
+                ChunkBase2 cBase = map[x, z];
+                
                 if (cBase.HasSettlement)
                 {
                     CostMap[x, z] = 10; //Low cost for inside settlement

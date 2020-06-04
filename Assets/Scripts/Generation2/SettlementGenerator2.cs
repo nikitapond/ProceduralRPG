@@ -96,8 +96,8 @@ public class SettlementGenerator2
             {
                 //Take a random point
                 GridPoint gp = GenRan.RandomFromList(freePoints);
-                if (gp.EnclosedBiomes[14].Contains(ChunkBiome.mountain))
-                    continue;
+                
+
                 //freePoints.Remove(gp);
 
                 int minDist = -1;
@@ -158,6 +158,15 @@ public class SettlementGenerator2
 
         foreach (SettlementShell s in shells)
         {
+
+            for(int x=0; x<s.Type.GetSize(); x++)
+            {
+                for(int z=0; z<s.Type.GetSize(); z++)
+                {
+                    GameGen.TerGen.ChunkBases[x, z].HasSettlement = true;
+                }
+            }
+
             CalculateSettlementEconomies(s);
             SetEcon.Add(s.Economy);
         }
@@ -205,6 +214,9 @@ public class SettlementGenerator2
         if(shell.Type == SettlementType.VILLAGE)
         {
             GenerateVillageEconomy(settlementResources, shell);
+        }else if(shell.Type == SettlementType.TOWN)
+        {
+            GenerateTownEconomy(settlementResources, shell);
         }
 
     }
@@ -334,9 +346,9 @@ public class SettlementGenerator2
         shell.RequiredBuildings = reqBuildings;
         shell.StartInventory = economicInventory;
         shell.UserPerTick = usePerTick;
-        shell.ProductionPerTick = producePerTick;
+        shell.RawProductionPerTick = producePerTick;
         shell.DesiredStock = DesiredInventoryAmounts;
-
+        shell.EconomicProduction = new Dictionary<EconomicProduction, int>();
         SettlementEconomy econ = new SettlementEconomy(shell);
         //Set the economy
         GameGen.GridPlacement.GridPoints[shell.GridPointPlacement.x, shell.GridPointPlacement.z].Economy = econ;
@@ -348,54 +360,87 @@ public class SettlementGenerator2
         List<BuildingPlan> reqBuildings = new List<BuildingPlan>();
 
         //A measure of how much of each resource is produced per tick
-        Dictionary<EconomicItem, int> producePerTick = new Dictionary<EconomicItem, int>();
-
-        //How much of each item is used per tick
+        Dictionary<EconomicItem, int> rawProductionPerTick = new Dictionary<EconomicItem, int>();
+        //A measure of how much can be produced by industry
+        Dictionary<EconomicProduction, int> productionPerTick = new Dictionary<EconomicProduction, int>();
+        //How much of each item is used per tick (excluding economy)
         Dictionary<EconomicItem, int> usePerTick = new Dictionary<EconomicItem, int>();
 
         EconomicInventory economicInventory = new EconomicInventory();
-        Dictionary<EconomicItem, int> DesiredInventoryAmounts = new Dictionary<EconomicItem, int>();
+        Dictionary<EconomicItem, int> desiredStock = new Dictionary<EconomicItem, int>();
 
         usePerTick.Add(Economy.Bread, 15);
         usePerTick.Add(Economy.Vegetables, 10);
         usePerTick.Add(Economy.Clothes, 3);
-
         //Use a small amount of weapons and armour per tick
         usePerTick.Add(Economy.LeatherArmour, 1);
         usePerTick.Add(Economy.IronWeapons, 1);
 
+              
+
+        //All towns will have a bakery, this will produce bread from wheat
         reqBuildings.Add(Building.BAKERY);
+        productionPerTick.Add(Economy.WheatToBread, 50);
+        economicInventory.AddItem(Economy.Wheat, 500);
 
-        
-
+        //If we are in a forrest, then the town till cut wood & make into planks
         if (settlementResources.TryGetValue(ChunkResource.wood, out float v) && v > 1)
         {
             reqBuildings.Add(Building.WOODCUTTER);
-            //We add the logs produced here
-            foreach (EconomicItem it in ChunkResource.wood.GetEconomicItem())
-            {
-                if (!producePerTick.ContainsKey(it))
-                    producePerTick.Add(it, 0);
-                producePerTick[it] += ((int)v * 10);
-            }
 
-
+            int rawProduce = (int)v*2;
+            rawProductionPerTick.Add(ChunkResource.wood.GetEconomicItem()[0], rawProduce);
+            //Takes 1 log and make 3 planks
+            //We set the production such that it wished to import as much wood as possible
+            productionPerTick.Add(Economy.WoodLogToPlank, (int)(rawProduce * GenRan.Random(2, 4)));
         }
-        
+        bool hasSmelt = false;
+
+        if(settlementResources.TryGetValue(ChunkResource.ironOre, out float v1) && v1 > 1)
+        {
+            hasSmelt = true;
+            reqBuildings.Add(Building.SMELTER);
+            reqBuildings.Add(Building.BLACKSMITH);
+
+            //We add some planks to start so we can produce weapons from start
+            economicInventory.AddItem(Economy.WoodPlank, 5000);
 
 
+            rawProductionPerTick.Add(Economy.IronOre, (int)v1);
+
+            productionPerTick.Add(Economy.Iron_OreToBar, (int)(v1 * GenRan.Random(2, 4)));
+            productionPerTick.Add(Economy.IronToWeapon, 3);
+            productionPerTick.Add(Economy.LeatherToArmour, 3);
+        }
+        if (settlementResources.TryGetValue(ChunkResource.silverOre, out float v2) && v2 > 1)
+        {
+            if(!hasSmelt)
+                reqBuildings.Add(Building.SMELTER);
+            rawProductionPerTick.Add(Economy.SilverOre, (int)v2);
+
+            productionPerTick.Add(Economy.Silver_OreToBar, (int)(v2 * GenRan.Random(2, 4)));
+        }
+        if (settlementResources.TryGetValue(ChunkResource.goldOre, out float v3) && v3 > 1)
+        {
+            if (!hasSmelt)
+                reqBuildings.Add(Building.SMELTER);
+            rawProductionPerTick.Add(Economy.GoldOre, (int)v3);
+
+            productionPerTick.Add(Economy.Gold_OreToBar, (int)(v3 * GenRan.Random(2, 4)));
+        }
         //Calculates the amount 
         foreach (KeyValuePair<EconomicItem, int> kvp in usePerTick)
         {
-            DesiredInventoryAmounts.Add(kvp.Key, kvp.Value * Economy.KEEP_IN_INVENTORY_MULT);
-            economicInventory.AddItem(kvp.Key, DesiredInventoryAmounts[kvp.Key]);
+            int amount = kvp.Value * Economy.KEEP_IN_INVENTORY_MULT;
+            desiredStock.Add(kvp.Key, amount);
+            economicInventory.AddItem(kvp.Key, amount);
         }
         shell.RequiredBuildings = reqBuildings;
         shell.StartInventory = economicInventory;
         shell.UserPerTick = usePerTick;
-        shell.ProductionPerTick = producePerTick;
-        shell.DesiredStock = DesiredInventoryAmounts;
-
+        shell.RawProductionPerTick = rawProductionPerTick;
+        shell.DesiredStock = desiredStock;
+        shell.EconomicProduction = productionPerTick;
         SettlementEconomy econ = new SettlementEconomy(shell);
         //Set the economy
         GameGen.GridPlacement.GridPoints[shell.GridPointPlacement.x, shell.GridPointPlacement.z].Economy = econ;
@@ -413,8 +458,9 @@ public class SettlementGenerator2
         public List<BuildingPlan> RequiredBuildings;
         public EconomicInventory StartInventory;
         public Dictionary<EconomicItem, int> UserPerTick;
-        public Dictionary<EconomicItem, int> ProductionPerTick;
+        public Dictionary<EconomicItem, int> RawProductionPerTick;
         public Dictionary<EconomicItem, int> DesiredStock;
+        public Dictionary<EconomicProduction, int> EconomicProduction;
         public SettlementShell(SettlementType type, GridPoint gridPoint)
         {
             Type = type;

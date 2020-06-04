@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-public class EntityGroup
+public abstract class EntityGroup
 {
 
     public enum GroupType
@@ -12,18 +12,23 @@ public class EntityGroup
     }
 
 
-    public GroupType Type { get; private set; }
+    public abstract GroupType Type { get; }
 
-    private List<int> GroupEntityIDs;
-    private Inventory GroupInventory;
-    private int CombatStrength;
+    protected List<int> GroupEntityIDs;
+    protected Inventory GroupInventory;
+    protected int CombatStrength;
 
     public List<Vec2i> Path { get; private set; }
-    public int CurrentPathIndex { get; private set; }
+    public int CurrentPathIndex { get; protected set; }
 
-    public EntityGroup(GroupType type, Vec2i startChunk, Vec2i endChunk, List<Entity> entities=null)
+    /// <summary>
+    /// Creates a entity group that aims to travel from the start chunk to the end chunk
+    /// </summary>
+    /// <param name="startChunk"></param>
+    /// <param name="endChunk"></param>
+    /// <param name="entities"></param>
+    public EntityGroup(Vec2i startChunk, Vec2i endChunk, List<Entity> entities=null)
     {
-        Type = type;
         GroupEntityIDs = new List<int>();
         GroupInventory = new Inventory();
         if(entities != null)
@@ -41,7 +46,11 @@ public class EntityGroup
 
     }
 
-
+    public void GenerateNewPath(Vec2i start, Vec2i end)
+    {
+        Path = WorldEventManager.Instance.PathFinder.GeneratePath(start, end);
+        CurrentPathIndex = 0;
+    }
     public Vec2i NextPathPoint()
     {
         CurrentPathIndex++;
@@ -68,5 +77,13 @@ public class EntityGroup
         }
         return ent;
     }
+    /// <summary>
+    /// Function called to decide the next position of this group
+    /// </summary>
+    public abstract bool DecideNextTile(out Vec2i nextTile);
+
+    public abstract void OnReachDestination(Vec2i position);
+
+    public abstract void OnGroupInteract(EntityGroup other);
 
 }

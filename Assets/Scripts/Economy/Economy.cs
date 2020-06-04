@@ -3,7 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 public class Economy
 {
-    public static int KEEP_IN_INVENTORY_MULT = 48 * 7; //1 tick is 30 seconds = 30 minutes in game time -> 48*7 = 1 week of storage
+    public static readonly int KEEP_IN_INVENTORY_MULT = 48 * 7; //1 tick is 30 seconds = 30 minutes in game time -> 48*7 = 1 week of storage
 
   
 
@@ -112,6 +112,12 @@ public class EconomicInventory
             AllItems.Add(item, count);
         }
     }
+
+    public Dictionary<EconomicItem, int> GetAllItems()
+    {
+        return AllItems;
+    }
+
     /// <summary>
     /// Removes the set amount of product from this inventory, returns the remaining
     /// If the remaining is negative, we set the count to 0, but still return the -ve number

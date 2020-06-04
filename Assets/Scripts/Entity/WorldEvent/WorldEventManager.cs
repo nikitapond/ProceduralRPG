@@ -15,19 +15,22 @@ public class WorldEventManager : MonoBehaviour
     private Object ThreadLock;
 
     public WorldEventPathFinder PathFinder { get; private set; }
-    private ChunkBase[,] ChunkBases;
-
+    public ChunkBase2[,] ChunkBases { get; private set; }
+    public GridPlacement GridPlacement { get; private set; }
 
     private List<SettlementEconomy> Economies;
+
+
     public void SetEconomies(List<SettlementEconomy> econ)
     {
         Debug.Log("Has set");
         Economies = econ;
     }
 
-    public void Init(ChunkBase[,] chunks, List<Settlement> settlements, List<ChunkStructure> chunkStructures)
+    public void Init(ChunkBase2[,] chunks, GridPlacement gp, List<Settlement> settlements, List<ChunkStructure> chunkStructures)
     {
         PathFinder = new WorldEventPathFinder(chunks);
+        GridPlacement = gp;
         ChunkBases = chunks;
         
         ThreadLock = new Object();
@@ -51,8 +54,8 @@ public class WorldEventManager : MonoBehaviour
     /// </summary>
     public void Tick()
     {
-        ChunkBase[,] copy = CopyCurrent();
-        ChunkBase[,] next = CopyCurrent();
+        ChunkBase2[,] copy = CopyCurrent();
+        ChunkBase2[,] next = CopyCurrent();
 
         //We prepair an empty set to fill
         for(int x=0; x<World.WorldSize; x++)
@@ -67,7 +70,7 @@ public class WorldEventManager : MonoBehaviour
         {
             for (int z = 0; z < World.WorldSize; z++)
             {
-                ChunkBase cb = copy[x, z];
+                ChunkBase2 cb = copy[x, z];
                 //If this chunk has entity groups
                 if (cb.HasEntityGroups())
                 {
@@ -103,11 +106,11 @@ public class WorldEventManager : MonoBehaviour
         }
     }
 
-    private void AtPathEnd(ChunkBase[,] next, EntityGroup group, Vec2i lastPos)
+    private void AtPathEnd(ChunkBase2[,] next, EntityGroup group, Vec2i lastPos)
     {
         if(group.Type == EntityGroup.GroupType.Traders)
         {
-            ChunkBase cb = next[lastPos.x, lastPos.z];
+            ChunkBase2 cb = next[lastPos.x, lastPos.z];
             if (cb.HasSettlement)
             {
 
@@ -117,7 +120,7 @@ public class WorldEventManager : MonoBehaviour
     }
 
 
-    public ChunkBase[,] GetData()
+    public ChunkBase2[,] GetData()
     {
         lock (ThreadLock)
         {
@@ -125,9 +128,9 @@ public class WorldEventManager : MonoBehaviour
         }
     }
 
-    private ChunkBase[,] CopyCurrent()
+    private ChunkBase2[,] CopyCurrent()
     {
-        ChunkBase[,] data = new ChunkBase[World.WorldSize, World.WorldSize];
+        ChunkBase2[,] data = new ChunkBase2[World.WorldSize, World.WorldSize];
         lock (ThreadLock)
         {
             for (int x = 0; x < World.WorldSize; x++)

@@ -7,6 +7,24 @@ public enum SettlementType
 {
     CAPITAL, CITY, TOWN, VILLAGE
 }
+public static class SettlementTypeHelper
+{
+    public static int GetSize(this SettlementType t)
+    {
+        switch (t)
+        {
+            case SettlementType.CAPITAL:
+                return 16;
+            case SettlementType.CITY:
+                return 14;
+            case SettlementType.TOWN:
+                return 12;
+            case SettlementType.VILLAGE:
+                return 10;
+        }
+        return 10;
+    }
+}
 public class SettlementBuilder : BuilderBase
 {
     public static int NODE_RES = 16;

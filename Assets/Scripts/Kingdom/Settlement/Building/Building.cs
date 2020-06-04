@@ -43,6 +43,7 @@ public abstract class Building
 
     public static BuildingPlan BAKERY = Bakery.BuildingPlan;
     public static BuildingPlan LUMBERMILL = LumberMill.BuildingPlan;
+    public static BuildingPlan SMELTER = Smelter.BuildingPlan;
     public int SettlementID { get; private set; }
 
     public Inventory Inventory { get; private set; }

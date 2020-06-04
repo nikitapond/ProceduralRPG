@@ -13,9 +13,11 @@ public class ChunkBase2
 
     private Dictionary<ChunkResource, float> ResourceAmounts;
 
+    private List<EntityGroup> EntityGroups;
+
     public int KingdomID = -1;
 
-
+    public bool HasSettlement;
     public ChunkBase2(Vec2i position, float height, ChunkBiome biome)
     {
         Pos = position;
@@ -24,6 +26,28 @@ public class ChunkBase2
         ResourceAmounts = new Dictionary<ChunkResource, float>();
     }
 
+    public bool HasEntityGroups()
+    {
+        return !(EntityGroups == null || EntityGroups.Count == 0);
+    }
+    public List<EntityGroup> GetEntityGroups()
+    {
+        return EntityGroups;
+    }
+    public void AddEntityGroup(EntityGroup group)
+    {
+        if (EntityGroups == null)
+            EntityGroups = new List<EntityGroup>();
+        EntityGroups.Add(group);
+    }
+    public void RemoveEntityGroup(EntityGroup group)
+    {
+        EntityGroups?.Remove(group);
+    }
+    public void ClearEntityGroups()
+    {
+        EntityGroups?.Clear();
+    }
 
     public bool ProducesResource(ChunkResource res)
     {
