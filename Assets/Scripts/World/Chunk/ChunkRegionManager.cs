@@ -5,7 +5,13 @@ using System.Collections;
 
 public class ChunkRegionManager : MonoBehaviour
 {
-    public static int LoadChunkRadius = 6;
+
+    public static ChunkRegionManager Instance;
+
+
+    public static int LoadChunkRadius = 40;
+    public static int[] LOD_Distances = { 16, 20, 24, 28, 32 , 40};
+
     private Object ThreadSafe;
     public ChunkRegion[,] LoadedRegions { get; private set; }
     public Dictionary<Vec2i, LoadedChunk2> LoadedChunks { get; private set; }
@@ -20,11 +26,13 @@ public class ChunkRegionManager : MonoBehaviour
     public bool InSubworld { get { return CurrentSubworld != null; } }
 
 
-    private ChunkLoader ChunkLoader;
+    public ChunkLoader ChunkLoader { get; private set; }
 
 
     void Awake()
     {
+        Instance = this;
+
         LoadedChunks = new Dictionary<Vec2i, LoadedChunk2>();
         LoadedRegions = new ChunkRegion[World.RegionCount, World.RegionCount];
 
@@ -52,6 +60,7 @@ public class ChunkRegionManager : MonoBehaviour
             UnloadAllChunks();
             forceLoad = true;
         }
+
         if (playerChunk != LoadedChunksCentre)
         {
             LoadChunks(new Vec2i(playerChunk.x, playerChunk.z), LoadChunkRadius, forceLoad);
@@ -226,28 +235,49 @@ public class ChunkRegionManager : MonoBehaviour
     /// <param name="middle"></param>
     /// <param name="radius"></param>
     public void LoadChunks(Vec2i middle, int radius, bool forceLoad)
-    {
+    { 
+
+        
         Debug.BeginDeepProfile("load_chunks");
 
-        Debug.BeginDeepProfile("load_chunks1");
+
+        
+        //We define a list of chunks to unload
+        List<Vec2i> toUnload = new List<Vec2i>();
+
+        HashSet<int> currentlyLoadedH = new HashSet<int>();
         //A list containing all the chunks currently loaded
-        List<Vec2i> currentlyLoaded = new List<Vec2i>();
         foreach(KeyValuePair<Vec2i,LoadedChunk2> kvp in LoadedChunks)
         {
-            currentlyLoaded.Add(kvp.Value.Position);
+
+            int distSqr = middle.QuickDistance(kvp.Key);
+            if(distSqr > radius*radius)
+                toUnload.Add(kvp.Key);
+/*
+            int dx = Mathf.Abs(middle.x - kvp.Key.x);
+            int dz = Mathf.Abs(middle.z - kvp.Key.z);
+            //If we are too far from the radius, we must unload this chunk
+            if (dx > radius || dz > radius)
+                toUnload.Add(kvp.Key);
+                */
+            currentlyLoadedH.Add(kvp.Key.GetHashCode());
         }
-        //We do not wish to start generating a chunk if it has already been added to the generation loop
-        currentlyLoaded.AddRange(ChunkLoader.GetCurrentlyLoadingChunks());
+        foreach (Vec2i v in ChunkLoader.GetCurrentlyLoadingChunks())
+        {
+            currentlyLoadedH.Add(v.GetHashCode());
+        }
+        //We iterate each chunk too far from the player, and unload it
+        foreach (Vec2i v in toUnload)
+        {
+            UnloadChunk(v);
+        }
+
         LoadedChunksCentre = middle;
 
-        //We initiate a list of all the chunks we wish to unload.
-        //To start, this is a list of all currently loaded chunks.
-        List<Vec2i> toUnload = new List<Vec2i>(currentlyLoaded);
+        Debug.EndDeepProfile("load_chunks");
+        Debug.BeginDeepProfile("load_chunks1");
 
-        Debug.Log("Currently loaded " + currentlyLoaded.Count);
-        Debug.EndDeepProfile("load_chunks1");
-        Debug.BeginDeepProfile("load_chunks2");
-
+        //We now iterate the position of each chunk we require
         for (int x = -radius; x <= radius; x++)
         {
             for (int z = -radius; z <= radius; z++)
@@ -256,8 +286,63 @@ public class ChunkRegionManager : MonoBehaviour
                 if (x + middle.x < 0 || x + middle.x >= World.WorldSize - 1 || z + middle.z < 0 || z + middle.z >= World.WorldSize - 1)
                     continue;
                 Vec2i pos = new Vec2i(x + middle.x, z + middle.z);
-                //If this chunk isn't currently loaded/being loaded
-                if(!currentlyLoaded.Contains(pos)){
+                int distSqr = middle.QuickDistance(pos);
+                if (distSqr > radius * radius)
+                    continue;
+                int lod = CalculateLOD(distSqr);
+                int posHash = pos.GetHashCode();
+                //if our currently loaded does not contain the position, we must generate it
+                if (!currentlyLoadedH.Contains(posHash))
+                {
+
+
+                    ChunkData cd = GetChunk(pos);
+                    if (cd == null)
+                    {
+                        Debug.Log("Chunk at " + pos + " was null");
+                        continue;
+                    }
+                    LoadedChunks.Add(pos, ChunkLoader.GetLoadedChunk(cd, lod));
+                    
+
+                    GameManager.EntityManager.LoadChunk(pos);
+
+                    //ChunkLoader.LoadChunk(cd);
+                }
+                else if (toUnload.Contains(pos))
+                {
+                    //We check if 'toUnload' contains this position (this should always happen if the chunk
+                    //isn't already loaded.
+                    //We then remove it from this list, as this list will define which chunks need to be unloaded.
+                    toUnload.Remove(pos);
+                }
+                else
+                {
+                    //If the chunk is loaded, we get it and set its LOD - this ensures it will update if required
+                    LoadedChunk2 lc = GetLoadedChunk(pos);
+                    lc.SetLOD(lod);
+                }
+            }
+        }
+        Debug.BeginDeepProfile("load_chunks1");
+
+
+        /*
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int z = -radius; z <= radius; z++)
+            {
+                //Check if the requested position is inside world bounds
+                if (x + middle.x < 0 || x + middle.x >= World.WorldSize - 1 || z + middle.z < 0 || z + middle.z >= World.WorldSize - 1)
+                    continue;
+                Vec2i pos = new Vec2i(x + middle.x, z + middle.z);
+
+                int lod = CalculateLOD(middle.QuickDistance(pos));
+
+                int posHash = pos.GetHashCode();
+
+                if (!currentlyLoadedH.Contains(posHash))
+                {
                     ChunkData cd = GetChunk(pos);
                     if (cd == null)
                     {
@@ -265,6 +350,7 @@ public class ChunkRegionManager : MonoBehaviour
                         continue;
                     }
                     GameManager.EntityManager.LoadChunk(pos);
+                    
                     ChunkLoader.LoadChunk(cd);
                 }else if (toUnload.Contains(pos))
                 {
@@ -275,6 +361,7 @@ public class ChunkRegionManager : MonoBehaviour
                 }
             }
         }
+        
         Debug.EndDeepProfile("load_chunks2");
 
         if (forceLoad)
@@ -298,9 +385,60 @@ public class ChunkRegionManager : MonoBehaviour
         }
         Debug.EndDeepProfile("load_chunks");
 
+        UnloadChunk(new Vec2i(0, 0));*/
+    }
+
+
+    /// <summary>
+    /// Calculates the LOD a chunk should have, given their relative distance to the player
+    /// </summary>
+    /// <param name="distanceSqr">The square of the distance between the player, and the chunk we are testing</param>
+    /// <returns></returns>
+    private int CalculateLOD(int distanceSqr)
+    {
+
+        //Iterate the distances for each i'th LOD
+        for (int i=0; i<LOD_Distances.Length; i++)
+        {
+            //If test distance is larger than the specified LOD distance, then we have surpassed the LOD of this chunk
+            if(distanceSqr < LOD_Distances[i]* LOD_Distances[i])
+            {
+                return i+1;
+            }
+        }
+
+
+        return LOD_Distances.Length-1;
+
+    }
+    /// <summary>
+    /// Finds the LOD of the 4 neighboring chunks for the specified position
+    /// </summary>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public int[] CalculateNeighborLODs(Vec2i v)
+    {
+        if(LoadedChunksCentre == null)
+            return new int[]{ 1,1,1,1};
+
+        int[] lods = new int[4];
+
+        for(int i=0; i<4; i++)
+        {
+            Vec2i v_ = v + Vec2i.QUAD_DIR[i];
+            lods[i] = CalculateLOD(v_.QuickDistance(LoadedChunksCentre));
+        }
+        return lods;
+
 
     }
 
+    /// <summary>
+    /// Checks the <see cref="LoadedChunks"/> dictionary for the relevent chunk position
+    /// Returns null if not present
+    /// </summary>
+    /// <param name="chunk">The coordinate of the chunk we wish to find</param>
+    /// <returns></returns>
     public LoadedChunk2 GetLoadedChunk(Vec2i chunk)
     {
         if(LoadedChunks.TryGetValue(chunk, out LoadedChunk2 val))
@@ -321,8 +459,12 @@ public class ChunkRegionManager : MonoBehaviour
         {
             LoadedChunk2 loaded = LoadedChunks[chunk];
             LoadedChunks.Remove(chunk);
+
+            //We set inactive, and add it the chunk Loaders ChunkBuffer
+            loaded.gameObject.SetActive(false);
+            ChunkLoader.AddToChunkBuffer(loaded);
             //GameManager.EntityManager.UnloadChunk(chunk);
-            Destroy(loaded.gameObject);
+            //Destroy(loaded.gameObject);
         }
     }
 

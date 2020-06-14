@@ -41,7 +41,6 @@ public abstract class BuilderBase
         if (GameGenerator.Instance != null && GameGenerator.Instance.TerrainGenerator != null)
         {
             ChunkBases = new ChunkBase[ChunkSize.x, ChunkSize.z];
-
         }
 
         for (int x = 0; x < ChunkSize.x; x++)

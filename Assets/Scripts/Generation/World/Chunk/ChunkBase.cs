@@ -150,13 +150,13 @@ public static class ChunkBiomeHelper
             case ChunkBiome.ocean:
                 return Mathf.Infinity;
             case ChunkBiome.mountain:
-                return 600;
+                return 4000;
             case ChunkBiome.grassland:
-                return 200;
+                return 2000;
             case ChunkBiome.dessert:
-                return 250;
+                return 3000;
             case ChunkBiome.forrest:
-                return 300;
+                return 3000;
         }
         return 500;
     }

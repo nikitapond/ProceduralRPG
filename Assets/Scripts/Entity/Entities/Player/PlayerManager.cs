@@ -219,6 +219,7 @@ public class PlayerManager : MonoBehaviour
         if (Console.Instance != null && Console.Instance.Active)
             return;
 
+        
 
         if (GUIManager.Instance!=null && GUIManager.Instance.DialogGUI.InConversation)
         {

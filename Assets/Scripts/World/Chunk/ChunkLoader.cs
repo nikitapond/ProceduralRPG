@@ -6,8 +6,10 @@ using MarchingCubesProject;
 public class ChunkLoader : MonoBehaviour
 {
 
-    public const int MAX_LOAD_PER_FRAME = 5;
 
+
+    public const int MAX_LOAD_PER_FRAME = 5;
+    public const int MAX_CHUNK_LOADS_PER_FRAME = 64;
     public GameObject ChunkPrefab;
     public GameObject ChunkVoxelPrefab;
 
@@ -25,6 +27,7 @@ public class ChunkLoader : MonoBehaviour
     private List<PreLoadedChunk> PreLoadedChunks;
     private List<WorldObjectData> ObjectsToLoad;
 
+    private List<LoadedChunk2> ChunkBuffer;
 
     private List<Vector3> CurrentVerticies;
     private List<int> CurrentTriangles;
@@ -33,8 +36,16 @@ public class ChunkLoader : MonoBehaviour
 
     private ChunkRegionManager ChunkRegionManager;
 
+
+    private PriorityQueue<LoadedChunk2> ChunksToLoad2;
+
+
     private void Awake()
     {
+        ChunksToLoad2 = new PriorityQueue<LoadedChunk2>();
+
+        ChunkBuffer = new List<LoadedChunk2>();
+
         ChunkToLoadLock = new Object();
         ChunksToLoad = new List<ChunkData>(60);
         ChunksToLoadPositions = new List<Vec2i>(60);
@@ -56,12 +67,98 @@ public class ChunkLoader : MonoBehaviour
         ForceLoad = false;
     }
 
+
+    /// <summary>
+    /// Returns a new loaded chunk, with the relevent chunk data and LOD.
+    /// 
+    /// We check if the <see cref="ChunkLoader.ChunkBuffer"/> contains any chunks
+    /// If it does, we remove one, set the data, and return.
+    /// If it doesn't, we Instantiate a new chunk
+    /// </summary>
+    /// <param name="chunk"></param>
+    /// <param name="lod"></param>
+    /// <returns></returns>
+    public LoadedChunk2 GetLoadedChunk(ChunkData chunk, int lod)
+    {
+        LoadedChunk2 lChunk;
+        //Check if any chunks are in the buffer
+        if (ChunkBuffer.Count != 0)
+        {
+            //If there is, we get it and remove from the buffer
+            lChunk = ChunkBuffer[0];
+            ChunkBuffer.RemoveAt(0);
+            lChunk.SetChunkAndLOD(chunk, lod);
+        }
+        else
+        {
+            //If there are none, we create a new one
+            GameObject cObj = Instantiate(ChunkPrefab);
+            cObj.transform.parent = transform;
+            lChunk = cObj.GetComponent<LoadedChunk2>();
+            lChunk.SetChunkAndLOD(chunk, lod);
+
+        }
+
+
+        return lChunk;
+    }
+    /// <summary>
+    /// Adds the loaded chunk to the chunk buffer.
+    /// This should be used when a chunk position is no longer required
+    /// </summary>
+    /// <param name="chunk"></param>
+    public void AddToChunkBuffer(LoadedChunk2 chunk)
+    {
+        ChunkBuffer.Add(chunk);
+    }
+
     /// <summary>
     /// Calling this function forces the chunk loader to load all chunks currently in its list.
     /// This must be called from the main thread.
     /// </summary>
     public void ForceLoadAll()
     {
+
+
+        ForceLoad = true;
+        //Wait for the thread to finish
+        MainThread?.Join();
+
+        Debug.BeginDeepProfile("force_chunk_load");
+        //All threads have stopped now, so we are not required to be thread safe.
+        //TODO - add some thread generation here to improve performance?
+        Debug.Log("[ChunkLoader] Force load starting - " + ChunksToLoad.Count + " chunks to load", Debug.CHUNK_LOADING);
+
+        foreach(KeyValuePair<LoadedChunk2, float> kvp in ChunksToLoad2.GetAllElements())
+        {
+            PreLoadedChunk plc = GeneratePreLoadedChunk(kvp.Key.Chunk, kvp.Key.LOD);
+            plc.SetLoadedChunk(kvp.Key);
+            PreLoadedChunks.Add(plc);
+        }
+        ChunksToLoad2.ClearQue();
+
+       
+        ChunksToLoad.Clear();
+        Debug.Log("[ChunkLoader] Force load - " + PreLoadedChunks.Count + " chunks to create", Debug.CHUNK_LOADING);
+
+        foreach (PreLoadedChunk plc in PreLoadedChunks)
+        {
+            //If for some reason this has already been generated, don't bother
+            if (ChunkRegionManager.LoadedChunks.ContainsKey(plc.Position))
+            {
+                Debug.Log("[ChunkLoader] Loaded chunk at position " + plc.Position + " has already generated", Debug.CHUNK_LOADING);
+                continue;
+            }
+            CreateChunk(plc);
+            //ChunkRegionManager.LoadedChunks.Add(lc.Position, lc);
+        }
+        PreLoadedChunks.Clear();
+        ChunksToLoadPositions.Clear();
+        ForceLoad = false;
+        Debug.EndDeepProfile("force_chunk_load");
+        AstarPath.active.Scan();
+
+        /*
         //We set the force load variable to true.
         //this forces the chunk loader thread to stop when it can
         ForceLoad = true;
@@ -75,6 +172,7 @@ public class ChunkLoader : MonoBehaviour
         foreach(ChunkData cd in ChunksToLoad)
         {
             PreLoadedChunks.Add(GeneratePreLoadedChunk(cd));
+
         }
         ChunksToLoad.Clear();
         Debug.Log("[ChunkLoader] Force load - " + PreLoadedChunks.Count + " chunks to create", Debug.CHUNK_LOADING);
@@ -96,8 +194,39 @@ public class ChunkLoader : MonoBehaviour
         ForceLoad = false;
         Debug.EndDeepProfile("force_chunk_load");
         AstarPath.active.Scan();
+        */
+    }
+
+
+    /// <summary>
+    /// Adds this loaded chunk to the generation que
+    /// </summary>
+    /// <param name="chunk"></param>
+    public void AddToGenerationQue(LoadedChunk2 chunk)
+    {
+        float priority = chunk.LOD;
+        //If we already contain this chunk, then we don't need to add again
+        
+
+        //Stay thread safe - add object 
+        lock (ChunkToLoadLock)
+        {
+            if (ChunksToLoad2.Contains(chunk))
+                return;
+            ChunksToLoad2.Enqueue(chunk, priority);
+
+        }
+        if (MainThread == null || !MainThread.IsAlive)
+        {
+            //We start/restart the internal load loop
+            MainThread = new Thread(() => InternalThreadLoop());
+            Debug.Log("[ChunkLoader] Chunk Loader thread starting", Debug.CHUNK_LOADING);
+            MainThread.Start();
+        }
+
 
     }
+
 
     /// <summary>
     /// Main update loop.
@@ -106,6 +235,42 @@ public class ChunkLoader : MonoBehaviour
     /// </summary>
     void Update()
     {
+
+        for(int i=0; i < MAX_CHUNK_LOADS_PER_FRAME; i++)
+        {
+            PreLoadedChunk toCreate = null;
+            //Attempt to get a pre-loaded chunk so we can add it to the world.
+            lock (PreLoadedChunkLock)
+            {
+                if (PreLoadedChunks.Count != 0)
+                {
+                    toCreate = PreLoadedChunks[0];
+                    PreLoadedChunks.RemoveAt(0);
+                }
+            }
+
+            if (toCreate != null)
+            {
+                CreateChunk(toCreate);
+                //ChunkRegionManager.LoadedChunks.Add(lc.Position, lc);
+                //After this chunk has finished loading, we remove its position from the list of currently being generated chunks
+                lock (ChunkToLoadLock)
+                {
+                    ChunksToLoadPositions.Remove(toCreate.LoadedChunk.Position);
+                }
+            }
+        }
+ 
+        for (int i = 0; i < MAX_LOAD_PER_FRAME; i++)
+        {
+            if (ObjectsToLoad.Count > 0)
+            {
+                //Debug.Log("[ChunkLoader] " + ObjectsToLoad.Count + " objects to load in");
+                LoadSingleObject();
+            }
+        }
+
+        /*
         PreLoadedChunk toCreate=null;
         //Attempt to get a pre-loaded chunk so we can add it to the world.
         lock (PreLoadedChunkLock)
@@ -135,9 +300,12 @@ public class ChunkLoader : MonoBehaviour
                 LoadSingleObject();
             }
         }
-        
+        */
 
     }
+
+
+
 
 
     private void LoadSingleObject(int count=0)
@@ -182,12 +350,12 @@ public class ChunkLoader : MonoBehaviour
     /// <returns></returns>
     private LoadedChunk2 CreateChunk(PreLoadedChunk pChunk)
     {
-        GameObject cObj = Instantiate(ChunkPrefab);
+        GameObject cObj = pChunk.LoadedChunk.gameObject;
         cObj.transform.parent = transform;
 
         cObj.name = "chunk_" + pChunk.Position;
-        LoadedChunk2 loaded = cObj.GetComponent<LoadedChunk2>();
-
+        LoadedChunk2 loaded = pChunk.LoadedChunk;
+        loaded.gameObject.SetActive(true);
         MeshFilter mf = loaded.GetComponent<MeshFilter>();
         //Create the terrain mesh
         mf.mesh = PreLoadedChunk.CreateMesh(pChunk.TerrainMesh);
@@ -199,8 +367,19 @@ public class ChunkLoader : MonoBehaviour
             Debug.Log(e);
         }
         
-        MeshCollider mc = loaded.GetComponent<MeshCollider>();
-        mc.sharedMesh = mf.mesh;
+        if(pChunk.LoadedChunk.LOD == 1)
+        {
+            MeshCollider mc = loaded.GetComponent<MeshCollider>();
+            mc.sharedMesh = mf.mesh;
+        }
+        else
+        {
+            MeshCollider mc = loaded.GetComponent<MeshCollider>();
+            mc.sharedMesh = null;
+        }
+
+
+        
         //Iterate all voxels
         foreach (Voxel v in MiscUtils.GetValues<Voxel>())
         {
@@ -223,7 +402,7 @@ public class ChunkLoader : MonoBehaviour
         }
 
         cObj.transform.position = pChunk.Position.AsVector3() * World.ChunkSize;
-        loaded.SetChunk(pChunk.ChunkData);
+        //loaded.SetChunk(pChunk.ChunkData);
         lock (ObjectsToLoadLock)
         {
             if (pChunk.ChunkData.WorldObjects != null)
@@ -307,6 +486,60 @@ public class ChunkLoader : MonoBehaviour
     /// </summary>
     private void InternalThreadLoop()
     {
+
+        bool shouldLive = true;
+        LoadedChunk2 toLoad;
+        Vec2i position;
+        //Form loop that lasts while we generate all chunks
+        while (shouldLive)
+        {
+
+            UnityEngine.Profiling.Profiler.BeginSample("chunk_pre_load");
+            Debug.BeginDeepProfile("chunk_pre_load");
+            //thread safety
+            lock (ChunkToLoadLock)
+            {
+                //If the count is 0, then the thread has finished for now.
+
+                //Debug.Log("Chunks To Load: " + ChunksToLoad2.Count);
+                if (ChunksToLoad2.Count == 0)
+                    return;
+                toLoad = ChunksToLoad2.Dequeue();
+
+
+
+
+                position = toLoad.Position;
+            }
+            Debug.Log("[ChunkLoader] Chunk Loader starting to generate chunk " + toLoad.Position, Debug.CHUNK_LOADING);
+
+            //Create pre-generated chunk
+            PreLoadedChunk preLoaded = GeneratePreLoadedChunk(toLoad.Chunk, toLoad.LOD);
+
+
+            preLoaded.SetLoadedChunk(toLoad);
+
+            Debug.Log("[ChunkLoader] Finished creating PreChunk: " + toLoad.Position, Debug.CHUNK_LOADING);
+
+            //Thread safe add the preloaded chunk
+            lock (PreLoadedChunkLock)
+            {
+                PreLoadedChunks.Add(preLoaded);
+            }
+
+            Debug.EndDeepProfile("chunk_pre_load");
+            UnityEngine.Profiling.Profiler.EndSample();
+
+            //If we have requested a force load, we exit the thread.
+            if (ForceLoad)
+            {
+                Debug.Log("[ChunkLoader] Force load is starting, need to finish loading chunk " + toLoad.Position, Debug.CHUNK_LOADING);
+                return;
+            }
+
+        }
+
+        /*
         bool shouldLive = true;
         ChunkData toLoad;
         Vec2i position;
@@ -318,12 +551,17 @@ public class ChunkLoader : MonoBehaviour
             //thread safety
             lock (ChunkToLoadLock)
             {
+                
                 //If the count is 0, then the thread has finished for now.
                 if (ChunksToLoad.Count == 0)
                     return;
                 //otherwise, we set the object
                 toLoad = ChunksToLoad[0];
                 ChunksToLoad.RemoveAt(0);
+                //We get the lowest priority chunk
+
+
+
                 position = new Vec2i(toLoad.X, toLoad.Z);
             }
             Debug.Log("[ChunkLoader] Chunk Loader starting to generate chunk " + toLoad, Debug.CHUNK_LOADING);
@@ -338,20 +576,6 @@ public class ChunkLoader : MonoBehaviour
                 PreLoadedChunks.Add(preLoaded);
             }
 
-    /*
-            //Add all objects to be loaded.
-            lock (ObjectsToLoadLock)
-            {
-                if(toLoad.WorldObjects != null)
-                {
-                    ObjectsToLoad.AddRange(toLoad.WorldObjects);
-                    Debug.Log("Chunk " + toLoad.X + "," + toLoad.Z + " has " + toLoad.WorldObjects.Count + " objects");
-                    foreach(WorldObjectData objDat in toLoad.WorldObjects)
-                    {
-                        Debug.Log(objDat);
-                    }
-                }
-            }*/
             Debug.EndDeepProfile("chunk_pre_load");
             UnityEngine.Profiling.Profiler.EndSample();
 
@@ -362,7 +586,7 @@ public class ChunkLoader : MonoBehaviour
                 return;
             }
                 
-        }    
+        }  */
     }
 
     private void ClearBuffers()
@@ -500,14 +724,24 @@ public class ChunkLoader : MonoBehaviour
         return terrainMesh;
     }
 
+
+    private static int[] POWER_OF_2 = new int[] { 1, 2, 4, 8, 16, 32};
+
     private PreMesh GenerateSmoothTerrain(ChunkData chunk, ChunkData[] neighbors, int LOD = 1) {
 
-        int size = World.ChunkSize / LOD;
+        //int jump = (int)Mathf.Pow(2, LOD - 1);
+        Debug.Log(LOD);
+        int jump = POWER_OF_2[LOD-1];
+        
+        int size = World.ChunkSize/jump;
         Color[,] colourMap = new Color[size + 1, size + 1];
         ClearBuffers();
-         
+
         
-        for (int x=0; x<=size; x++)
+
+
+
+        for (int x=0; x<= size; x++)
         {
             for(int z=0; z <= size; z++)
             {
@@ -528,7 +762,7 @@ public class ChunkLoader : MonoBehaviour
                     else
                     {
                        //height = chunk.Heights != null ? chunk.Heights[x - 1, z - 1] : height;
-                        colourMap[x, z] = chunk.GetTile((x - 1)*LOD, (z - 1)*LOD).GetColor();
+                        colourMap[x, z] = chunk.GetTile((x - 1)* jump, (z - 1)* jump).GetColor();
                     }
 
                 }
@@ -539,15 +773,15 @@ public class ChunkLoader : MonoBehaviour
                         
                         height = neighbors[2].BaseHeight;
                         if (neighbors[2].Heights != null)
-                            height = neighbors[2].Heights[0, z*LOD];
+                            height = neighbors[2].Heights[0, z* jump];
                             
-                        colourMap[x, z] = neighbors[2].GetTile(0, z*LOD).GetColor();
+                        colourMap[x, z] = neighbors[2].GetTile(0, z* jump).GetColor();
 
                     }
                     else
                     {
-                        height = chunk.Heights != null ? chunk.Heights[(x - 1)*LOD, z*LOD] : height;
-                        colourMap[x, z] = chunk.GetTile((x - 1)*LOD, z*LOD).GetColor();
+                        height = chunk.Heights != null ? chunk.Heights[(x - 1)* jump, z*jump] : height;
+                        colourMap[x, z] = chunk.GetTile((x - 1)* jump, z* jump).GetColor();
 
                     }
                 }
@@ -557,16 +791,16 @@ public class ChunkLoader : MonoBehaviour
                     {
                         height = neighbors[0].BaseHeight;
                         if (neighbors[0].Heights != null)
-                            height = neighbors[0].Heights[x*LOD, 0];
+                            height = neighbors[0].Heights[x* jump, 0];
 
-                        colourMap[x, z] = neighbors[0].GetTile(x*LOD, 0).GetColor();
+                        colourMap[x, z] = neighbors[0].GetTile(x* jump, 0).GetColor();
 
                     }
                     else
                     {
 
                        // height = chunk.Heights != null ? chunk.Heights[x, z - 1] : height;
-                        colourMap[x, z] = chunk.GetTile(x*LOD, (z - 1)*LOD).GetColor();
+                        colourMap[x, z] = chunk.GetTile(x* jump, (z - 1)* jump).GetColor();
 
                     }
                 }
@@ -574,12 +808,12 @@ public class ChunkLoader : MonoBehaviour
                 {
                     if (chunk.Heights != null)
                     {
-                        height = chunk.Heights[x*LOD, z*LOD];
+                        height = chunk.Heights[x* jump, z* jump];
                     }
-                    colourMap[x, z] = chunk.GetTile(x*LOD, z*LOD).GetColor();
+                    colourMap[x, z] = chunk.GetTile(x* jump, z* jump).GetColor();
                 }
                 CurrentColours.Add(colourMap[x, z]);
-                CurrentVerticies.Add(new Vector3(x * LOD, height, z * LOD));
+                CurrentVerticies.Add(new Vector3(x * jump, height, z * jump));
                 /*
                 for (int y = 0; y < height + 1; y++)
                 {
@@ -658,7 +892,7 @@ public class ChunkLoader : MonoBehaviour
         // PreMesh terrainMesh = GenerateMarchingCubesTerrain(chunk);
         ChunkData[] neighbors = ChunkRegionManager.GetNeighbors(new Vec2i(chunk.X, chunk.Z));
 
-        PreMesh terrainMesh = GenerateSmoothTerrain(chunk, neighbors);
+        PreMesh terrainMesh = GenerateSmoothTerrain(chunk, neighbors, lod);
 
         Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies", Debug.CHUNK_LOADING);
         //Create the base pre-loaded chunk
@@ -680,6 +914,9 @@ public class ChunkLoader : MonoBehaviour
                 }
             }
         }
+
+        
+
 
         //If the chunk hasn't had its boundry points defined, we do it now
         if (!chunk.VoxelData.HasBoundryVoxels)

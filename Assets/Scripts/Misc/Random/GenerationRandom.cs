@@ -7,6 +7,9 @@ using System.Collections.Generic;
 [System.Serializable]
 public class GenerationRandom
 {
+
+    public static GenerationRandom RNG = new GenerationRandom(System.DateTime.Now.Millisecond);
+
     private System.Random random;
     public GenerationRandom(int seed)
     {

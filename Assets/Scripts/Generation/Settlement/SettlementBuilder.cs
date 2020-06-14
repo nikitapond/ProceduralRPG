@@ -38,13 +38,12 @@ public class SettlementBuilder : BuilderBase
     //Defines the middle tile of the Settelment in local coordinates
     private Vec2i MidTile { get; }
     //The chunk coordinate at the centre of the settlement, defines its position in the world
-    public Vec2i Centre { get; private set; }
 
     //An array of all the chunks that this settelment contains/belongs to.
     public Vec2i[] SettlementChunks { get; private set; }
 
     //Array that holds all WorkObjects that will exist in this settlement
-    public WorldObjectData[,] SettlementObjects { get; set; }
+    //public WorldObjectData[,] SettlementObjects { get; set; }
     //Array that hold all Tiles for this settlement
     //public Tile[,] Tiles { get; set; }
 
@@ -70,17 +69,17 @@ public class SettlementBuilder : BuilderBase
 
     //public float AverageHeight = 5;
 
+
     public SettlementBuilder(HeightFunction heightFunc, SettlementBase set) : base(set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize), heightFunc)
     {
        
         GenerationRandom = new GenerationRandom(0);
-        Centre = set.Centre;
         SettlementChunks = set.SettlementChunks;
         TileSize = set.TileSize;
         PathTile = Tile.STONE_PATH;
         MidTile = new Vec2i(TileSize / 2, TileSize / 2);
         //Tiles = new Tile[TileSize, TileSize];
-        SettlementObjects = new WorldObjectData[TileSize, TileSize];
+        //SettlementObjects = new WorldObjectData[TileSize, TileSize];
         Buildings = new List<Building>();
         //PathNodes = new List<Vec2i>();
         BuildingPlots = new List<Recti>();
@@ -109,13 +108,12 @@ public class SettlementBuilder : BuilderBase
             GenerationRandom = new GenerationRandom(gameGen.Seed);
         else
             GenerationRandom = new GenerationRandom(0);
-        Centre = set.Centre;
         SettlementChunks = set.SettlementChunks;
         TileSize = set.TileSize;
         PathTile = Tile.STONE_PATH;
         MidTile = new Vec2i(TileSize / 2, TileSize / 2);
         //Tiles = new Tile[TileSize, TileSize];
-        SettlementObjects = new WorldObjectData[TileSize, TileSize];
+        //SettlementObjects = new WorldObjectData[TileSize, TileSize];
         Buildings = new List<Building>();
         //PathNodes = new List<Vec2i>();
         BuildingPlots = new List<Recti>();
@@ -778,7 +776,7 @@ public class SettlementBuilder : BuilderBase
         //Vec2i toOut = new Vec2i(MiscMaths.RandomRange(1, TileSize - 2), MiscMaths.RandomRange(1, TileSize - 2));
         while (true)
         {
-            if (GetTile(toOut.x, toOut.z) == 0 && SettlementObjects[toOut.x, toOut.z] == null)
+            if (GetTile(toOut.x, toOut.z) == 0)
                 return toOut;
             toOut = GenerationRandom.RandomVec2i(1, TileSize - 2);
 

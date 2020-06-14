@@ -14,6 +14,9 @@ public class PreLoadedChunk
     public Dictionary<Voxel, PreMesh> VoxelMesh { get; private set; }
     public float[,] heights;
     public ChunkData ChunkData { get; private set; }
+
+    public LoadedChunk2 LoadedChunk { get; private set; }
+
     public PreLoadedChunk(Vec2i cPos, PreMesh terrain, ChunkData cDat)
     {
         Position = cPos;
@@ -37,6 +40,11 @@ public class PreLoadedChunk
             
 
         return mesh;
+    }
+
+    public void SetLoadedChunk(LoadedChunk2 lc)
+    {
+        LoadedChunk = lc;
     }
 
 }

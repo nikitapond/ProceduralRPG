@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-public class PriorityQueue<T>
+﻿using System.Collections;
+using System.Collections.Generic;
+public class PriorityQueue<T> : IEnumerable<T>
 {
     // From Red Blob: I'm using an unsorted array for this example, but ideally this
     // would be a binary heap. Find a binary heap class:
@@ -36,5 +37,35 @@ public class PriorityQueue<T>
         T bestItem = elements[bestIndex].Key;
         elements.RemoveAt(bestIndex);
         return bestItem;
+    }
+
+    public List<KeyValuePair<T,float>> GetAllElements()
+    {
+        return elements;
+    }
+    public void ClearQue()
+    {
+        elements.Clear();
+    }
+
+    public bool Contains(T item)
+    {
+        for (int i = 0; i < elements.Count; i++)
+        {
+            if (elements[i].Key.Equals(item))
+                return true;
+        }
+        return false;
+
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return (IEnumerator)this;
     }
 }

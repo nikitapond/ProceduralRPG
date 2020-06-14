@@ -4,9 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;
 public class EconomyTest : MonoBehaviour
 {
+    public static EconomyTest Instance;
 
     public GameObject MeshObject;
 
+    public GameObject Caravan;
     public GameObject GridPoint;
     public RawImage Image;
     public RawImage KingdomMap;
@@ -14,10 +16,17 @@ public class EconomyTest : MonoBehaviour
 
     public Text InfoText;
     GameGenerator2 GameGen;
+
+    Dictionary<EntityGroup, GameObject> Caravans;
     void Start()
     {
+        Instance = this;
         GameGen = new GameGenerator2(0);
         GameGen.GenerateWorld();
+
+        
+
+        Caravans = new Dictionary<EntityGroup, GameObject>();
 
         Image.texture = GameGen.TerGen.ToTexture();
         GenMeshes();
@@ -33,7 +42,34 @@ public class EconomyTest : MonoBehaviour
             (t.GetComponent<GridPointTest>()).SetPoint(gp);
             //Gizmos.DrawCube(new Vector3(pos.x, pos.z, -1), Vector3.one);
         }
-        
+        foreach(EntityGroup c in WorldEventManager.Instance.EntityGroups)
+        {
+            GameObject obj = Instantiate(Caravan);
+            obj.transform.SetParent(Image.transform, false);
+            Vec2i pos = c.CurrentChunk;
+            obj.transform.localPosition = new Vector3(pos.x - World.WorldSize / 2, pos.z - World.WorldSize / 2, 0);
+            Caravans.Add(c, obj);
+
+            obj.GetComponent<EntityGroupDisplay>().SetEntityGroup(c);
+        }
+
+    }
+
+    public void AddEntityGroup(EntityGroup g)
+    {
+        GameObject obj = Instantiate(Caravan);
+        obj.transform.SetParent(Image.transform, false);
+        Vec2i pos = g.CurrentChunk;
+        obj.transform.localPosition = new Vector3(pos.x - World.WorldSize / 2, pos.z - World.WorldSize / 2, 0);
+        Caravans.Add(g, obj);
+
+        obj.GetComponent<EntityGroupDisplay>().SetEntityGroup(g);
+    }
+    public void RemoveEntityGroup(EntityGroup g)
+    {
+        GameObject obj = Caravans[g];
+        Caravans.Remove(g);
+        Destroy(obj);
     }
 
 
@@ -54,6 +90,13 @@ public class EconomyTest : MonoBehaviour
             InfoText.text = ChunkBaseDetail(current);
         }
 
+        foreach(KeyValuePair<EntityGroup, GameObject> kvp in Caravans)
+        {
+            Vec2i pos = kvp.Key.CurrentChunk;
+            kvp.Value.transform.localPosition = new Vector3(pos.x - World.WorldSize / 2, pos.z - World.WorldSize / 2, 0);
+
+        }
+
 
     }
 
@@ -71,6 +114,19 @@ public class EconomyTest : MonoBehaviour
             output += res + ": " + b.GetResourceAmount(res) + "\n";
         }
         output += "riv_height: " + GameGen.TerGen.RiverGen.GetValAtChunk(b.Pos) + "\n";
+
+        GridPoint nearestPoint = GameGen.GridPlacement.GetNearestPoint(b.Pos);
+        if(nearestPoint != null)
+        {
+            output += "Nearest Grid Point: " + nearestPoint.GridPos + " at chunk " + nearestPoint.ChunkPos + "\n";
+            output += "Has Road? " + nearestPoint.HasRoad + "\n";
+            output += "Settlement? " + nearestPoint.HasSettlement + "\n";
+        }
+        else
+        {
+            output += "No grid point found near " + b.Pos;
+        }
+
         return output;
     }
 

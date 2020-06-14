@@ -28,7 +28,7 @@ public class ChunkBase2
 
     public bool HasEntityGroups()
     {
-        return !(EntityGroups == null || EntityGroups.Count == 0);
+        return !(EntityGroups == null);
     }
     public List<EntityGroup> GetEntityGroups()
     {
@@ -117,9 +117,9 @@ public static class ChunkResourceHelper
             case ChunkResource.wood:
                 return new EconomicItem[] { Economy.WoodLog };
             case ChunkResource.cattleFarm:
-                return new EconomicItem[] { Economy.CowCarcass, Economy.CowHide };
+                return new EconomicItem[] { Economy.CowCarcus, Economy.CowHide };
             case ChunkResource.sheepFarm:
-                return new EconomicItem[] { Economy.SheepCarcass, Economy.Wool };
+                return new EconomicItem[] { Economy.SheepCarcus, Economy.Wool };
             case ChunkResource.wheatFarm:
                 return new EconomicItem[] { Economy.Wheat };
             case ChunkResource.vegetableFarm:

@@ -5,46 +5,46 @@ public class Economy
 {
     public static readonly int KEEP_IN_INVENTORY_MULT = 48 * 7; //1 tick is 30 seconds = 30 minutes in game time -> 48*7 = 1 week of storage
 
-  
 
 
-   // #region RAW_RESOURCES
-    public static EconomicItem IronOre = new EconomicItem("Iron Ore", 1, 10);
-    public static EconomicItem SilverOre = new EconomicItem("Silver Ore", 2, 50);
-    public static EconomicItem GoldOre = new EconomicItem("Gold Ore", 3, 100);
 
-    public static EconomicItem WoodLog = new EconomicItem("Wood Log", 4, 20);
+    // #region RAW_RESOURCES
+    public static EconomicItem IronOre = new EconomicItem("Iron Ore", 1, 10, EconomicItemType.ore);
+    public static EconomicItem SilverOre = new EconomicItem("Silver Ore", 2, 50, EconomicItemType.ore);
+    public static EconomicItem GoldOre = new EconomicItem("Gold Ore", 3, 100, EconomicItemType.ore);
 
-    public static EconomicItem Wheat = new EconomicItem("Wheat", 5, 1);
-    public static EconomicItem Vegetables = new EconomicItem("Vegetables", 6, 5);
-    public static EconomicItem CowCarcass = new EconomicItem("Cow", 7, 200);
-    public static EconomicItem SheepCarcass = new EconomicItem("Sheep", 8, 250);
+    public static EconomicItem WoodLog = new EconomicItem("Wood Log", 4, 20, EconomicItemType.wood);
+
+    public static EconomicItem Wheat = new EconomicItem("Wheat", 5, 1, EconomicItemType.food);
+    public static EconomicItem Vegetables = new EconomicItem("Vegetables", 6, 5, EconomicItemType.food);
+    public static EconomicItem CowCarcus = new EconomicItem("Cow", 7, 200, EconomicItemType.animalProduce);
+    public static EconomicItem SheepCarcus = new EconomicItem("Sheep", 8, 250, EconomicItemType.animalProduce);
 
 
-    public static EconomicItem Silk = new EconomicItem("Silk", 9, 50);
-    public static EconomicItem CowHide = new EconomicItem("Cow Hide", 10, 20);
-    public static EconomicItem Wool = new EconomicItem("Wool", 11, 30);
+    public static EconomicItem Silk = new EconomicItem("Silk", 9, 50, EconomicItemType.misc);
+    public static EconomicItem CowHide = new EconomicItem("Cow Hide", 10, 20, EconomicItemType.animalProduce);
+    public static EconomicItem Wool = new EconomicItem("Wool", 11, 30, EconomicItemType.animalProduce);
 
-   // #endregion
+    // #endregion
     #region PRODUCED_RESOURCES
-    public static EconomicItem IronBar = new EconomicItem("Iron Bar", 12, 20);
-    public static EconomicItem SilverBar = new EconomicItem("Silver Bar", 13, 70);
-    public static EconomicItem GoldBar = new EconomicItem("Gold Bar", 14, 130);    
+    public static EconomicItem IronBar = new EconomicItem("Iron Bar", 12, 20, EconomicItemType.bars);
+    public static EconomicItem SilverBar = new EconomicItem("Silver Bar", 13, 70, EconomicItemType.bars);
+    public static EconomicItem GoldBar = new EconomicItem("Gold Bar", 14, 130, EconomicItemType.bars);
 
-    public static EconomicItem WoodPlank = new EconomicItem("Wood Plank", 15, 20);
+    public static EconomicItem WoodPlank = new EconomicItem("Wood Plank", 15, 20, EconomicItemType.wood);
 
-    public static EconomicItem Bread = new EconomicItem("Bread", 16, 2);
-    public static EconomicItem Beef = new EconomicItem("Beef", 17, 30);
-    public static EconomicItem Mutton = new EconomicItem("Mutton", 18, 35);
+    public static EconomicItem Bread = new EconomicItem("Bread", 16, 2, EconomicItemType.food);
+    public static EconomicItem Beef = new EconomicItem("Beef", 17, 30, EconomicItemType.food);
+    public static EconomicItem Mutton = new EconomicItem("Mutton", 18, 35, EconomicItemType.food);
 
-    public static EconomicItem Leather = new EconomicItem("Leather", 19, 40);
+    public static EconomicItem Leather = new EconomicItem("Leather", 19, 40, EconomicItemType.animalProduce);
 
-    public static EconomicItem LeatherArmour = new EconomicItem("Leather Armour", 20, 50);
-    public static EconomicItem IronArmour = new EconomicItem("Iron Armour", 21, 150);
-    public static EconomicItem IronWeapons = new EconomicItem("Iron Weapon", 22, 100);
+    public static EconomicItem LeatherArmour = new EconomicItem("Leather Armour", 20, 50, EconomicItemType.combat);
+    public static EconomicItem IronArmour = new EconomicItem("Iron Armour", 21, 150, EconomicItemType.combat);
+    public static EconomicItem IronWeapons = new EconomicItem("Iron Weapon", 22, 100, EconomicItemType.combat);
 
-    public static EconomicItem FancyClothes = new EconomicItem("Fancy Clothes", 23, 50);
-    public static EconomicItem Clothes = new EconomicItem("Clothes", 24, 20);
+    public static EconomicItem FancyClothes = new EconomicItem("Fancy Clothes", 23, 50, EconomicItemType.misc);
+    public static EconomicItem Clothes = new EconomicItem("Clothes", 24, 20, EconomicItemType.misc);
     #endregion
 
     #region PRODUCTION
@@ -55,8 +55,8 @@ public class Economy
     public static EconomicProduction WoodLogToPlank = new EconomicProduction(new EconomicItem[] { WoodLog }, new EconomicItem[] { WoodPlank, WoodPlank, WoodPlank });
 
     public static EconomicProduction WheatToBread = new EconomicProduction(new EconomicItem[] { Wheat }, new EconomicItem[] { Bread });
-    public static EconomicProduction CowToBeef = new EconomicProduction(new EconomicItem[] { CowCarcass }, new EconomicItem[] { Beef, Beef, Beef, Beef, Beef, Beef, Beef, Beef, Beef, Beef });
-    public static EconomicProduction SheepToMutton = new EconomicProduction(new EconomicItem[] { SheepCarcass }, new EconomicItem[] { Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton });
+    public static EconomicProduction CowToBeef = new EconomicProduction(new EconomicItem[] { CowCarcus }, new EconomicItem[] { Beef, Beef, Beef, Beef, Beef, Beef, Beef, Beef, Beef, Beef });
+    public static EconomicProduction SheepToMutton = new EconomicProduction(new EconomicItem[] { SheepCarcus }, new EconomicItem[] { Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton, Mutton });
 
     public static EconomicProduction HideToLeather = new EconomicProduction(new EconomicItem[] { CowHide }, new EconomicItem[] { Leather });
 
@@ -69,7 +69,7 @@ public class Economy
     #endregion
 
 
-    public static EconomicItem[] AllRawItems = { IronOre, SilverOre, GoldOre, WoodLog, Wheat, Vegetables, CowCarcass, SheepCarcass, Silk, CowHide, Wool };
+    public static EconomicItem[] AllRawItems = { IronOre, SilverOre, GoldOre, WoodLog, Wheat, Vegetables, CowCarcus, SheepCarcus, Silk, CowHide, Wool };
     public static EconomicItem[] AllProducedItems = { IronBar, SilverBar, GoldBar, WoodPlank, Bread, Beef, Mutton, Leather, LeatherArmour, IronArmour, IronWeapons, FancyClothes, Clothes };
 
 }
@@ -83,7 +83,10 @@ public class EconomicInventory
     {
         AllItems = new Dictionary<EconomicItem, int>();
     }
-
+    public EconomicInventory(Dictionary<EconomicItem, int> items)
+    {
+        AllItems = items;
+    }
 
     public bool HasItem(EconomicItem item)
     {
@@ -111,6 +114,12 @@ public class EconomicInventory
         {
             AllItems.Add(item, count);
         }
+    }
+
+    public void AddAll(Dictionary<EconomicItem, int> items)
+    {
+        foreach (KeyValuePair<EconomicItem, int> kvp in items)
+            AddItem(kvp.Key, kvp.Value);
     }
 
     public Dictionary<EconomicItem, int> GetAllItems()
@@ -154,6 +163,7 @@ public class EconomicInventory
     }
 }
 
+
 public struct EconomicProduction
 {
     public EconomicItem[] InputItems;
@@ -165,17 +175,45 @@ public struct EconomicProduction
     }
 }
 
-
+public enum EconomicItemType
+{
+    food, animalProduce, ore, wood, bars, produce, misc, combat
+}
+public static class EconomicItemTypeHelper
+{
+    /// <summary>
+    /// Returns the entity group associated with exports of a specific type
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public static EntityGroup.GroupType GetTypeFromExport(this EconomicItemType type)
+    {
+        switch (type)
+        {
+            case EconomicItemType.animalProduce:
+                return EntityGroup.GroupType.VillageAnimalExport;
+            case EconomicItemType.food:
+                return EntityGroup.GroupType.VillageFoodExport;
+            case EconomicItemType.ore:
+                return EntityGroup.GroupType.VillageOreExport;
+            case EconomicItemType.wood:
+                return EntityGroup.GroupType.VillageWoodExport;
+        }
+        return EntityGroup.GroupType.Traders;
+    }
+}
 public class EconomicItem
 {
     public string Name;
     public int ItemID;
     public float Value;
-    public EconomicItem(string name, int id, float value)
+    public EconomicItemType ExportType;
+    public EconomicItem(string name, int id, float value, EconomicItemType type)
     {
         Name = name;
         ItemID = id;
         Value = value;
+        ExportType = type;
     }
 
     public override string ToString()

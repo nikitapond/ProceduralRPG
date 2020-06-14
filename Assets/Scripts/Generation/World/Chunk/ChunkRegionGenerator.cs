@@ -100,9 +100,11 @@ public class ChunkRegionGenerator
         
         Vec2i[] toGen = new Vec2i[3];
         List<Thread> initGenThreads = new List<Thread>();
-        for(int x=-1, i=0; x<=1; x++, i++)
+
+        int genR = 3;
+        for(int x=-genR, i=0; x<= genR; x++, i++)
         {
-            for(int z=-1; z<=1; z++, i++)
+            for(int z=-genR; z<= genR; z++, i++)
             {
 
                 Vec2i toGen_ = midpoint + new Vec2i(x, z);

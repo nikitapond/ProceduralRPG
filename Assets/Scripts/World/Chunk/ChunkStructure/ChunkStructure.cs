@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-public abstract class ChunkStructure
+public abstract class ChunkStructure : IWorldEventLocation
 {
 
     public string Name;
+
 
 
     public Vec2i Position { get; private set; }
@@ -23,7 +24,6 @@ public abstract class ChunkStructure
     public bool HasLootChest { get { return MainLootChest != null; } }
 
 
-
     public WorldMapLocation WorldMapLocation { get; private set; }
 
     public ChunkStructure(Vec2i cPos, Vec2i cSize)
@@ -31,6 +31,7 @@ public abstract class ChunkStructure
         Position = cPos;
         Size = cSize;
     }
+
 
 
     public void SetEntities(List<Entity> entities)
@@ -58,4 +59,8 @@ public abstract class ChunkStructure
     {
         StructureID = id;
     }
+
+    public abstract void Tick();
+
+    public abstract void GroupReturn(EntityGroup group);
 }

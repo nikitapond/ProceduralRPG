@@ -4,14 +4,18 @@ using UnityEngine;
 using UnityEngine.UI;
 public class GridPointTest : MonoBehaviour
 {
-
+    private Button Button;
+    private Text Text;
     private GridPoint p;
     public void SetPoint(GridPoint p)
     {
         this.p = p;
+        Text = GetComponentInChildren<Text>();
         if (p.HasSettlement)
         {
-            ColorBlock b = GetComponent<Button>().colors;
+            Button = GetComponent<Button>();
+
+            ColorBlock b = Button.colors;
             
 
             Color c = Color.magenta;
@@ -22,8 +26,27 @@ public class GridPointTest : MonoBehaviour
             else if (p.SettlementShell.Type == SettlementType.VILLAGE)
                 c = Color.yellow;
 
+            Text.text = p.SettlementShell.Type.ToString();
+
             b.normalColor = c;
-            GetComponent<Button>().colors = b;
+            Button.colors = b;
+        }
+        else if(p.ChunkStructure != null)
+        {
+            Button = GetComponent<Button>();
+
+            ColorBlock b = Button.colors;
+
+
+            Color c = Color.magenta;
+            if (p.ChunkStructure is BanditCamp)
+            {
+                c = Color.grey;
+                Text.text = "Bandit";
+            }             
+
+            b.normalColor = c;
+            Button.colors = b;
         }
         else
         {

@@ -25,9 +25,10 @@ public class KingdomGenerator2
         for(int i=0; i<4; i++)
         {
             Kingdoms[i] = new Kingdom("king " + i, caps[i]);
+            GameGen.World.AddKingdom(Kingdoms[i]);
             int ip1 = (i + 1) % 4;
             //GameGen.GridPlacement.GetNearestPoint(caps[i]).HasSettlement = true;
-            //BuildRoad(GameGen.GridPlacement.GetNearestPoint(caps[i]), GameGen.GridPlacement.GetNearestPoint(caps[ip1]));
+            BuildRoad(GameGen.GridPlacement.GetNearestPoint(caps[i]), GameGen.GridPlacement.GetNearestPoint(caps[ip1]));
         }
         ClaimChunks(Kingdoms);
     }
@@ -78,7 +79,9 @@ public class KingdomGenerator2
                 {
                     int id = GameGen.TerGen.ChunkBases[p.ChunkPos.x, p.ChunkPos.z].KingdomID;
                    /// Debug.Log(kings[GameGen.TerGen.ChunkBases[x, z].KingdomID]);
-                    p.Kingdom = kings[GameGen.TerGen.ChunkBases[p.ChunkPos.x, p.ChunkPos.z].KingdomID];
+                   
+                    if(id != -1)
+                        p.Kingdom = kings[GameGen.TerGen.ChunkBases[p.ChunkPos.x, p.ChunkPos.z].KingdomID];
                 }
             }
         }
@@ -184,13 +187,17 @@ public class KingdomGenerator2
 
     public void BuildRoad(GridPoint a, GridPoint b)
     {
-        List<GridPoint> path = GameGen.GridPlacement.ConnectPoints(a, b);
+        List<GridPoint> path = new List<GridPoint>(50);
+        path.Add(a);
+        path.AddRange(GameGen.GridPlacement.ConnectPoints(a, b));
+        //List<GridPoint> path = GameGen.GridPlacement.ConnectPoints(a, b);
+        
         path[path.Count - 1].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
-        Debug.Log(path.Count);
-        for(int i=0; i<path.Count-1; i++)
+        GameGen.GridPlacement.GridPoints[path[path.Count - 1].GridPos.x, path[path.Count - 1].GridPos.z].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
+        for (int i=0; i<path.Count-1; i++)
         {
             path[i].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
-            //GameGen.GridPlacement.GridPoints[path[i].GridPos.x, path[i].GridPos.z].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
+            GameGen.GridPlacement.GridPoints[path[i].GridPos.x, path[i].GridPos.z].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
             Vec2i v1 = path[i].ChunkPos;
             Vec2i v2 = path[i + 1].ChunkPos;
             LineI li = new LineI(v1, v2);

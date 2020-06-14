@@ -65,6 +65,8 @@ public class WorldEventPathFinder
 
     public List<Vec2i> GeneratePath(Vec2i start, Vec2i end, bool debug = false)
     {
+
+
         if (debug)
             Debug.Log("[PathFinder] Finding normal path from " + start + " to " + end);
 

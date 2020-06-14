@@ -6,8 +6,11 @@ using System.Collections.Generic;
 /// </summary>
 public class World
 {
+
+    public static World Instance;
+
     public static readonly int ChunkHeight = 16;
-    public readonly static int ChunkSize = 16; //Chunk size in tiles
+    public readonly static int ChunkSize = 32; //Chunk size in tiles
     public readonly static int WorldSize = 1024; //World size in chunks
     public readonly static int RegionSize = 32;
     public readonly static int RegionCount = WorldSize / RegionSize;
@@ -21,6 +24,7 @@ public class World
 
     public ChunkBase[,] ChunkBases;
 
+    public ChunkBase2[,] ChunkBases2;
 
     public WorldMap WorldMap { get; private set; }
     public World()
@@ -30,6 +34,8 @@ public class World
         WorldKingdoms = new Dictionary<int, Kingdom>();
         WorldSubWorlds = new Dictionary<int, Subworld>();
         WorldChunkStructures = new Dictionary<int, ChunkStructure>();
+
+        Instance = this;
     }
 
     public void CreateWorldMap()
@@ -73,6 +79,25 @@ public class World
         }        
     }
 
+    public void AddSettlementRange(List<Settlement> sets)
+    {
+        lock (SettlementAddLock)
+        {
+            int place = WorldSettlements.Count;
+            foreach(Settlement s in sets)
+            {
+                if (WorldSettlements.ContainsKey(place))
+                    place++;
+                else
+                {
+                    WorldSettlements.Add(place, s);
+                    s.SetSettlementID(place);
+                }
+            }
+        }
+    }
+
+
     public int AddSubworld(Subworld subworld)
     {
         int id = WorldSubWorlds.Count+1;
@@ -100,7 +125,9 @@ public class World
 
     public Settlement GetSettlement(int id)
     {
-        return id == -1 ? null : WorldSettlements[id];
+        if (WorldSettlements.TryGetValue(id, out Settlement set))
+            return set;
+        return null;
     }
 
 
@@ -108,6 +135,7 @@ public class World
     {
         int place = WorldKingdoms.Count;
         WorldKingdoms.Add(place, kingdom);
+        kingdom.SetKingdomID(place);
         return place;
     }
     public Kingdom GetKingdom(int id)

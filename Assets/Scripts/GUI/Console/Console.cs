@@ -9,8 +9,8 @@ public class Console : MonoBehaviour
     private static Dictionary<string, ConsoleCommand> ConsoleCommands;
 
     public bool Active;
-
-    public Canvas ConsoleCanvas;
+    public GameObject ConsolePlane;
+    //public Canvas ConsoleCanvas;
     public ScrollRect ScrollRect;
     public Text ConsoleText;
     public Text InputText;
@@ -23,22 +23,23 @@ public class Console : MonoBehaviour
             ConsoleCommands = new Dictionary<string, ConsoleCommand>();
             Instance = this;
             Active = false;
-            ConsoleCanvas.gameObject.SetActive(Active);
+            ConsolePlane.gameObject.SetActive(Active);
             AddAllCommands();
         }
     }
 
     private void Start()
     {
-        ConsoleCanvas.gameObject.SetActive(false);
+        ConsolePlane.gameObject.SetActive(false);
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.F3))
         {
+            Debug.Log(Active);
             Active = !Active;
-            ConsoleCanvas.gameObject.SetActive(Active);
+            ConsolePlane.gameObject.SetActive(Active);
             GameManager.SetPause(Active);
         }
 

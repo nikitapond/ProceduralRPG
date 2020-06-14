@@ -4,15 +4,18 @@ using System.Collections.Generic;
 using System.Linq;
 
 [System.Serializable]
-public class Settlement
+public class Settlement : IWorldEventLocation
 {
 
     public SettlementPathNode IMPORTANT;
+
+    public Vec2i GridPointPosition;
 
     public int SettlementID { get; private set; }
     public int KingdomID { get; private set; }
     public string Name { get; private set; }
 
+    public Vec2i BaseChunk { get; private set; }
     public Vec2i Centre { get; private set; }
     public Vec2i BaseCoord { get; private set; }
     public Recti SettlementBounds { get; private set; }
@@ -36,13 +39,17 @@ public class Settlement
 
     public float[,] PathNodes;
 
+    public SettlementEconomy Economy { get; private set; }
+
+
     public Settlement(Kingdom kingdom, string name, SettlementBuilder builder)
     {
         IMPORTANT = builder.ENTR_NODE;
         Name = name;
         KingdomID = kingdom.KingdomID;
         TileSize = builder.TileSize;
-        Centre = builder.Centre;
+        BaseChunk = builder.BaseChunk;
+        Centre = builder.BaseChunk + builder.ChunkSize/2;
         BaseCoord = builder.BaseTile;
         SettlementBounds = new Recti(BaseCoord.x, BaseCoord.z, TileSize, TileSize);
         SettlementChunks = builder.SettlementChunks;
@@ -60,6 +67,11 @@ public class Settlement
         }
 
         SettlementPathFinder = builder.SettlementPathFinder;
+    }
+
+    public void SetEconomy(SettlementEconomy econ)
+    {
+        Economy = econ;
     }
 
     public void SetWorldMapLocation(WorldMapLocation wml)
@@ -86,6 +98,8 @@ public class Settlement
     public void SetSettlementID(int id)
     {
         SettlementID = id;
+        if (Economy != null)
+            Economy.SettlementID = id;
     }
 
     public override string ToString()
@@ -112,5 +126,34 @@ public class Settlement
                 isvalid = true;
         }
         return BaseCoord + pos * World.ChunkSize;
+    }
+
+    public void Tick()
+    {
+        if (Economy != null)
+            Economy.Tick();
+    }
+
+    public void GroupReturn(EntityGroup group)
+    {
+        Economy.EntityGroupReturn(group);
+    }
+
+    public static bool operator ==(Settlement a, Settlement b)
+    {
+        if (System.Object.ReferenceEquals(a, null))
+        {
+            if (System.Object.ReferenceEquals(b, null))
+                return true;
+            return false;
+        }
+        else if (System.Object.ReferenceEquals(b, null))
+            return false;
+   
+        return a.SettlementID == b.SettlementID;
+    }
+    public static bool operator !=(Settlement a, Settlement b)
+    {
+        return !(a==b);
     }
 }

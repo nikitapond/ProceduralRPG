@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Threading;
 public class SettlementGenerator2
 {
     private GameGenerator2 GameGen;
@@ -10,11 +11,124 @@ public class SettlementGenerator2
         GameGen = gameGen;
         GenRan = new GenerationRandom(gameGen.Seed);
     }
-    private List<SettlementEconomy> SetEcon;
-    public void DecideSettlementPlacement(Kingdom[] kingdoms)
+    private Dictionary<SettlementShell, SettlementEconomy> SettlementEconomies;
+
+    public List<Settlement> Settlements;
+    public Object LOCK = new Object();
+    public void GenerateAllSettlements(Kingdom[] kingdoms)
     {
-        SetEcon = new List<SettlementEconomy>();
+        //We decide the placement (an economies) of each settlement.
+        //This also dictates information about the sort of buildings to be generated in the settlement
+        Debug.BeginDeepProfile("SettlementPlacement");
+        Dictionary<Kingdom, List<SettlementShell>> kingdomSets = DecideSettlementPlacement(kingdoms);
+        List<Thread> threads = new List<Thread>(4);
+        Debug.EndDeepProfile("SettlementPlacement");
+        Settlements = new List<Settlement>(60);
+        Debug.BeginDeepProfile("SettlementGeneration"); 
+        foreach (KeyValuePair<Kingdom, List<SettlementShell>> kvp in kingdomSets)
+        {
+            threads.Add(ThreadGenerateSettlements(kvp.Key, kvp.Value));
+            //GenerateSettlements(kvp.Key, kvp.Value);
+        }
+        Debug.EndDeepProfile("SettlementGeneration");
+        foreach (Thread t in threads)
+        {
+            t.Join();
+        }
+        Debug.BeginDeepProfile("CalcNearSets");
+        CalculateNearSettlements();
+        Debug.EndDeepProfile("CalcNearSets");
+    }
+
+    private void GenerateSettlements(Kingdom k, List<SettlementShell> toGen)
+    {
+        List<Settlement> sets = new List<Settlement>(toGen.Count);
+
+        foreach (SettlementShell s in toGen)
+        {
+            Vec2i midPos = s.ChunkPos + new Vec2i(s.Type.GetSize(), s.Type.GetSize()) / 2;
+            SettlementBase setBase = new SettlementBase(midPos, s.Type.GetSize(), s.Type);
+            SettlementBuilder builder = new SettlementBuilder(GameGen.TerGen.HeightFunction, setBase);
+            Settlement set = new Settlement(k, "Set", builder);
+            set.GridPointPosition = s.GridPointPlacement;
+
+
+
+            if (SettlementEconomies.TryGetValue(s, out SettlementEconomy econ))
+            {
+                set.SetEconomy(econ);
+            }
+            else
+            {
+                Debug.Log("No economy found for settlement " + s);
+            }
+            sets.Add(set);
+            // GameGen.World.AddSettlement(set);
+        }
+        lock (LOCK)
+        {
+            Settlements.AddRange(sets);
+        }
+        GameGen.World.AddSettlementRange(sets);
+    }
+
+    private Thread ThreadGenerateSettlements(Kingdom k, List<SettlementShell> toGen)
+    {
+        Thread thread = new Thread(() => GenerateSettlements(k, toGen));
+        thread.Start();
+        return thread;
+    }
+
+    /// <summary>
+    /// Calculates the nearest settlements of each settlement by searching grid points near to it
+    /// </summary>
+    private void CalculateNearSettlements()
+    {
+        int checkR = 8;
+        List<int> nearEconIDs = new List<int>(20);
+        foreach(Settlement  thisSet in Settlements)
+        {
+            nearEconIDs.Clear();
+            Vec2i gridPos = thisSet.GridPointPosition;
+
+            for(int x=-checkR; x<=checkR; x++)
+            {
+                for(int z=-checkR; z<=checkR; z++)
+                {
+                    //If we are at THIS grid point, then it is this settlement, so we don't check
+                    if (x == 0 && z == 0)
+                        continue;
+                    Vec2i v = gridPos + new Vec2i(x, z);
+                   
+                    if(GridPlacement.InGridBounds(v) && GameGen.GridPlacement.GridPoints[v.x, v.z] != null && GameGen.GridPlacement.GridPoints[v.x, v.z].Economy != null)
+                    {
+                        SettlementEconomy econ = GameGen.GridPlacement.GridPoints[v.x, v.z].Economy;
+                       // Debug.Log("Settlement " + thisSet + " has near settlement with ID " + econ.SettlementID);
+                        nearEconIDs.Add(econ.SettlementID);
+                    }
+                }
+            }
+            thisSet.Economy.NearSettlementsIDs = nearEconIDs.ToArray();
+
+
+        }
+    }
+
+
+    /// <summary>
+    /// Decides the placement for each settlement of each kingdom.
+    /// We then generate the settlement shell via <see cref="GenerateSettlementShells(Kingdom, List{GridPoint})"/>
+    /// </summary>
+    /// <param name="kingdoms">The kingdoms that this world has</param>
+    /// <returns></returns>
+    private Dictionary<Kingdom, List<SettlementShell>> DecideSettlementPlacement(Kingdom[] kingdoms)
+    {
+        
         Dictionary<Kingdom, List<GridPoint>> freePoints = new Dictionary<Kingdom, List<GridPoint>>();
+
+        Dictionary<Kingdom, List<SettlementShell>> kingdomSets = new Dictionary<Kingdom, List<SettlementShell>>();
+
+
         foreach (Kingdom k in kingdoms)
             freePoints.Add(k, new List<GridPoint>());
         //List<GridPoint> freePoints = new List<GridPoint>();
@@ -29,30 +143,35 @@ public class SettlementGenerator2
                 }
             }
         }
-        foreach(Kingdom k in kingdoms)
+
+        SettlementEconomies = new Dictionary<SettlementShell, SettlementEconomy>(150);
+
+
+        foreach (Kingdom k in kingdoms)
         {
-            GenerateSettlementShells(k, freePoints[k]);
+            kingdomSets.Add(k, GenerateSettlementShells(k, freePoints[k]));
         }
 
-        WorldEventManager.Instance.SetEconomies(SetEcon);
-
+        //WorldEventManager.Instance.SetEconomies(SetEcon);
+        return kingdomSets;
     }
 
-    private void GenerateSettlementShells(Kingdom k, List<GridPoint> freePoints)
+    private List<SettlementShell>  GenerateSettlementShells(Kingdom k, List<GridPoint> freePoints)
     {
-        List<SettlementShell> shells = new List<SettlementShell>();
+        List<SettlementShell> shells = new List<SettlementShell>(3 + 6 + 10);
         GridPoint capitalPoint = GameGen.GridPlacement.GetNearestPoint(k.CapitalChunk);
+        Vec2i capP = capitalPoint.GridPos;
         SettlementShell cap = new SettlementShell(SettlementType.CAPITAL, capitalPoint);
         capitalPoint.SettlementShell = cap;
         shells.Add(cap);
-        
+        GameGen.GridPlacement.GridPoints[capP.x, capP.z].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
 
-        int desCityCount = GenRan.RandomInt(3, 5);
+        int desCityCount = GenRan.RandomInt(2, 3);
         int minCityClear = 130;
-        int desTownCount = GenRan.RandomInt(7, 10);
+        int desTownCount = GenRan.RandomInt(5, 6);
         int minTownClear = 80;
         
-        int desVilCount = GenRan.RandomInt(10, 15);
+        int desVilCount = GenRan.RandomInt(8, 10);
         int minVilClear = 50;
 
         int attempts = 20;
@@ -152,7 +271,7 @@ public class SettlementGenerator2
         for(int i=1; i<shells.Count; i++)
         {
             Vec2i v = shells[i].GridPointPlacement;
-            GameGen.KingdomGen.BuildRoad(capitalPoint, GameGen.GridPlacement.GridPoints[v.x, v.z]);
+            GameGen.KingdomGen.BuildRoad(GameGen.GridPlacement.GridPoints[capP.x, capP.z], GameGen.GridPlacement.GridPoints[v.x, v.z]);
 
         }
 
@@ -168,27 +287,24 @@ public class SettlementGenerator2
             }
 
             CalculateSettlementEconomies(s);
-            SetEcon.Add(s.Economy);
+            SettlementEconomies.Add(s, s.Economy);
+            //SetEcon.Add(s.Economy);
         }
-        
+
+        return shells;
     }
 
 
     /// <summary>
     /// Calculates the total produce and demand per tick for a settlement
     /// </summary>
-    public void CalculateSettlementEconomies(SettlementShell shell)
+    private void CalculateSettlementEconomies(SettlementShell shell)
     {
 
         int size = shell.Type == SettlementType.CAPITAL ? 16 : shell.Type == SettlementType.CITY ? 14 : shell.Type == SettlementType.TOWN ? 10 : 8;
 
         //The total amount of resources within the settlement bounds
         Dictionary<ChunkResource, float> settlementResources = new Dictionary<ChunkResource, float>();
-
-
-
-
-
 
         Vec2i baseChunk = shell.ChunkPos;
         //We iterate every chunk within this settlement
@@ -217,6 +333,11 @@ public class SettlementGenerator2
         }else if(shell.Type == SettlementType.TOWN)
         {
             GenerateTownEconomy(settlementResources, shell);
+        }
+        else
+        {
+            GenerateTownEconomy(settlementResources, shell);
+
         }
 
     }
@@ -345,7 +466,7 @@ public class SettlementGenerator2
         }
         shell.RequiredBuildings = reqBuildings;
         shell.StartInventory = economicInventory;
-        shell.UserPerTick = usePerTick;
+        shell.UsePerTick = usePerTick;
         shell.RawProductionPerTick = producePerTick;
         shell.DesiredStock = DesiredInventoryAmounts;
         shell.EconomicProduction = new Dictionary<EconomicProduction, int>();
@@ -375,24 +496,30 @@ public class SettlementGenerator2
         //Use a small amount of weapons and armour per tick
         usePerTick.Add(Economy.LeatherArmour, 1);
         usePerTick.Add(Economy.IronWeapons, 1);
+        SettlementProductionAbility productionAbility = new SettlementProductionAbility();
 
-              
+
+
 
         //All towns will have a bakery, this will produce bread from wheat
         reqBuildings.Add(Building.BAKERY);
         productionPerTick.Add(Economy.WheatToBread, 50);
         economicInventory.AddItem(Economy.Wheat, 500);
+        productionAbility.HasButcher = true;
+        productionPerTick.Add(Economy.CowToBeef, 5);
+        productionPerTick.Add(Economy.SheepToMutton, 5);
 
         //If we are in a forrest, then the town till cut wood & make into planks
         if (settlementResources.TryGetValue(ChunkResource.wood, out float v) && v > 1)
         {
             reqBuildings.Add(Building.WOODCUTTER);
-
+            reqBuildings.Add(Building.LUMBERMILL);
             int rawProduce = (int)v*2;
             rawProductionPerTick.Add(ChunkResource.wood.GetEconomicItem()[0], rawProduce);
             //Takes 1 log and make 3 planks
             //We set the production such that it wished to import as much wood as possible
             productionPerTick.Add(Economy.WoodLogToPlank, (int)(rawProduce * GenRan.Random(2, 4)));
+            productionAbility.HasLumberMill = true;
         }
         bool hasSmelt = false;
 
@@ -407,6 +534,7 @@ public class SettlementGenerator2
 
 
             rawProductionPerTick.Add(Economy.IronOre, (int)v1);
+            productionAbility.HasSmelter = true;
 
             productionPerTick.Add(Economy.Iron_OreToBar, (int)(v1 * GenRan.Random(2, 4)));
             productionPerTick.Add(Economy.IronToWeapon, 3);
@@ -417,6 +545,7 @@ public class SettlementGenerator2
             if(!hasSmelt)
                 reqBuildings.Add(Building.SMELTER);
             rawProductionPerTick.Add(Economy.SilverOre, (int)v2);
+            productionAbility.HasSmelter = true;
 
             productionPerTick.Add(Economy.Silver_OreToBar, (int)(v2 * GenRan.Random(2, 4)));
         }
@@ -425,6 +554,7 @@ public class SettlementGenerator2
             if (!hasSmelt)
                 reqBuildings.Add(Building.SMELTER);
             rawProductionPerTick.Add(Economy.GoldOre, (int)v3);
+            productionAbility.HasSmelter = true;
 
             productionPerTick.Add(Economy.Gold_OreToBar, (int)(v3 * GenRan.Random(2, 4)));
         }
@@ -437,10 +567,11 @@ public class SettlementGenerator2
         }
         shell.RequiredBuildings = reqBuildings;
         shell.StartInventory = economicInventory;
-        shell.UserPerTick = usePerTick;
+        shell.UsePerTick = usePerTick;
         shell.RawProductionPerTick = rawProductionPerTick;
         shell.DesiredStock = desiredStock;
         shell.EconomicProduction = productionPerTick;
+        shell.ProductionAbility = productionAbility;
         SettlementEconomy econ = new SettlementEconomy(shell);
         //Set the economy
         GameGen.GridPlacement.GridPoints[shell.GridPointPlacement.x, shell.GridPointPlacement.z].Economy = econ;
@@ -457,10 +588,11 @@ public class SettlementGenerator2
 
         public List<BuildingPlan> RequiredBuildings;
         public EconomicInventory StartInventory;
-        public Dictionary<EconomicItem, int> UserPerTick;
+        public Dictionary<EconomicItem, int> UsePerTick;
         public Dictionary<EconomicItem, int> RawProductionPerTick;
         public Dictionary<EconomicItem, int> DesiredStock;
         public Dictionary<EconomicProduction, int> EconomicProduction;
+        public SettlementProductionAbility ProductionAbility;
         public SettlementShell(SettlementType type, GridPoint gridPoint)
         {
             Type = type;

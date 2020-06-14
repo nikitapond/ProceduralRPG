@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public class GridPlacement
 {
     public static int GridPointSize = 32;
-    public static int GridSize = World.WorldSize / GridPointSize;
+    public static int GridSize = World.WorldSize / GridPointSize - 1;
     private GameGenerator2 GameGen;
     private GenerationRandom GenRan;
     public GridPoint[,] GridPoints;
@@ -21,8 +21,8 @@ public class GridPlacement
 
     public GridPoint GetNearestPoint(Vec2i cPos)
     {
-        int gx = Mathf.FloorToInt(cPos.x / (float)GridPointSize);
-        int gz = Mathf.FloorToInt(cPos.z / (float)GridPointSize);
+        int gx = (int)Mathf.RoundToInt(cPos.x / (float)GridPointSize);
+        int gz = (int)Mathf.RoundToInt(cPos.z / (float)GridPointSize);
         return GridPoints[gx, gz];
     }
 
@@ -138,7 +138,14 @@ public class GridPlacement
         return null;
     }
 
-
+    public List<Vec2i> ConnectPointsGridPoints(GridPoint a, GridPoint b) { 
+        List<Vec2i> rawPath = GPF.GeneratePath(a.GridPos, b.GridPos);
+        for(int i=0; i<rawPath.Count; i++)
+        {
+            rawPath[i] = rawPath[i] * GridPointSize;
+        }
+        return rawPath;
+    }
 
 
     public List<GridPoint> ConnectPoints(GridPoint a, GridPoint b, bool roadSearch=true)
@@ -247,7 +254,7 @@ public class GridPoint
     public Vec2i GridPos;
     public Vec2i ChunkPos;
     public bool IsValid;
-
+    public bool HasNonSettlementStructure;
     public List<Vec2i> NearestNeighbors;
     public List<int> ConnectedRoad;
     public List<ChunkBiome>[] EnclosedBiomes;
@@ -259,6 +266,7 @@ public class GridPoint
 
     public SettlementGenerator2.SettlementShell SettlementShell;
 
+    public ChunkStructure ChunkStructure;
     public SettlementEconomy Economy;
 
     //public SettlementType SetType;
@@ -422,7 +430,7 @@ public class GridPathFinder
                 return 10;
             }
         }
-        return 50000;
+        return 5000;
 
     }
 
