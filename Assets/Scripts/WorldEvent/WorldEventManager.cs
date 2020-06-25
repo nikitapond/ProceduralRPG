@@ -8,6 +8,10 @@ public class WorldEventManager : MonoBehaviour
 
 
     public List<EntityGroup> EntityGroups;
+
+
+    private List<IWorldEventLocation> EventLocations;
+
     private void Awake()
     {
         Instance = this;
@@ -23,20 +27,21 @@ public class WorldEventManager : MonoBehaviour
     public ChunkBase2[,] ChunkBases { get; private set; }
     public GridPlacement GridPlacement { get; private set; }
 
-    public List<Settlement> Settlements = new List<Settlement>();
-    public List<ChunkStructure> ChunkStructures;
+
+    public List<IWorldEventLocation> WorldEventLocations;
 
     private GenerationRandom GenRan;
 
-    public void Init(ChunkBase2[,] chunks, GridPlacement gp, List<Settlement> settlements, List<ChunkStructure> chunkStructures)
+    public void Init(ChunkBase2[,] chunks, GridPlacement gp, List<IWorldEventLocation> eventLocations)
     {
         Groups = new Dictionary<Vec2i, List<EntityGroup>>();
         PathFinder = new WorldEventPathFinder(chunks);
         GridPlacement = gp;
         ChunkBases = chunks;
-        Debug.Log(settlements.Count);
-        Settlements = settlements;
-        ChunkStructures = chunkStructures;
+
+        WorldEventLocations = eventLocations;
+
+        
         ThreadLock = new Object();
         GenRan = new GenerationRandom(0);      
 
@@ -45,27 +50,33 @@ public class WorldEventManager : MonoBehaviour
 
 
     float t = 0;
+    /// <summary>
+    /// Runs the world event ticks when required
+    /// TODO - do this on seperate thread
+    /// </summary>
     private void Update()
     {
-        t += Time.deltaTime;
-        if (t > 0.5f)
-        {
-            Debug.Log("TICK");
-            t = 0;
-            
-            try
-            {
-                EconomyTick();
-                ChunkStructureTick();
-                MovementTick();
-            }catch(System.Exception e)
-            {
-                Debug.LogError(e);
-            }
-            
-        }
+        Debug.BeginDeepProfile("WorldEventTick");
+        LocationTick();
+        MovementTick();
+        Debug.EndDeepProfile("WorldEventTick");
+
     }
 
+
+    public void GetEntityGroupsNearPoint(Vec2i point, int search, List<EntityGroup> groups)
+    {
+        for (int x = -search; x <= search; x++)
+        {
+            for (int z = -search; z <= search; z++)
+            {
+                Vec2i p = new Vec2i(x, z) + point;
+                List<EntityGroup> pg = GetAllGroupsAtPoint(p);
+                if (pg != null)
+                    groups.AddRange(pg);
+            }
+        }
+    }
     public List<EntityGroup> GetEntityGroupsNearPoint(Vec2i point, int search)
     {
         List<EntityGroup> allGroups = new List<EntityGroup>();
@@ -240,6 +251,11 @@ public class WorldEventManager : MonoBehaviour
         }
         else
         {
+            path.Add(startChunk);
+            path.Add(endChunk);
+            return path;
+
+
             Debug.BeginDeepProfile("PathFind_null");
             path = PathFinder.GeneratePath(startChunk, endChunk);
             Debug.EndDeepProfile("PathFind_null");
@@ -262,14 +278,12 @@ public class WorldEventManager : MonoBehaviour
 
 
 
-    private void ChunkStructureTick()
+   
+    private void LocationTick()
     {
-        if (ChunkStructures == null)
-            return;
-                
-        foreach(ChunkStructure cs in ChunkStructures)
+        foreach(IWorldEventLocation wel in WorldEventLocations)
         {
-            cs.Tick();
+            wel?.Tick();
         }
     }
 
@@ -278,6 +292,7 @@ public class WorldEventManager : MonoBehaviour
     /// </summary>
     private void MovementTick()
     {
+        Debug.BeginDeepProfile("MovementTick");
         Dictionary<Vec2i, List<EntityGroup>> nextGroups = new Dictionary<Vec2i, List<EntityGroup>>();
         foreach (KeyValuePair<Vec2i, List<EntityGroup>> groups in Groups)
         {
@@ -295,27 +310,32 @@ public class WorldEventManager : MonoBehaviour
             {
                 if (g.ShouldDestroy)
                 {
-                    if (EconomyTest.Instance != null)
-                    {
-                        EconomyTest.Instance.RemoveEntityGroup(g);
-
-                    }
+                    RemoveEntityGroup(g);
                 }
                 else
                 {
+                    //We find the next chunk the entity group will sit on
                     Vec2i npos = null;
                     g.DecideNextTile(out npos);
-                    //Vec2i npos = g.NextPathPoint();
+                    //If this point is null, then we let the entity reach its destination
                     if (npos == null)
                     {
-                        g.OnReachDestination(g.EndChunk);
+                        if (!g.OnReachDestination(g.EndChunk))
+                        {
+                            RemoveEntityGroup(g);
+                            continue;
+                        }
+                            
                         npos = g.CurrentChunk;
-                        continue;
                         // continue;
 
                     }
                     if (npos == null)
+                    {
+                        RemoveEntityGroup(g);
                         continue;
+                    }
+                        
                     //Debug.Log("Moved position to " + npos);
                     if (!nextGroups.ContainsKey(npos))
                         nextGroups.Add(npos, new List<EntityGroup>());
@@ -326,56 +346,42 @@ public class WorldEventManager : MonoBehaviour
 
         }
         Groups = nextGroups;
-    }
-    /// <summary>
-    /// Calculates the economic changes for all settlements for this tick.
-    /// Will spawn entity groups for trading as required.
-    /// </summary>
-    private void EconomyTick()
-    {
-        foreach(Settlement s in Settlements)
-        {
-            s.Tick();
-            /*
-            if (s != null && s.Economy != null)
-                s.Economy.Tick();*/
-        }
-        
+        Debug.EndDeepProfile("MovementTick");
+
     }
 
-
-
-    public ChunkBase2[,] GetData()
+    private void RemoveEntityGroup(EntityGroup g)
     {
-        lock (ThreadLock)
+        if (EconomyTest.Instance != null)
         {
-            return ChunkBases;
+            EconomyTest.Instance.RemoveEntityGroup(g);
+
         }
     }
 
-    private ChunkBase2[,] CopyCurrent()
-    {
-        ChunkBase2[,] data = new ChunkBase2[World.WorldSize, World.WorldSize];
-        lock (ThreadLock)
-        {
-            for (int x = 0; x < World.WorldSize; x++)
-            {
-                for (int z = 0; z < World.WorldSize; z++)
-                {
-                    data[x, z] = ChunkBases[x, z];
-                }
-            }
-        }
-        return data;
-    }
 
 
 }
-
+/// <summary>
+/// World Event Location is an interface shared by all 
+/// objects that represent a location on the world map that entity groups
+/// can travel between.
+/// - > All settlements (via settlement economoy) and chunk structures
+/// </summary>
 public interface IWorldEventLocation
 {
+    /// <summary>
+    /// Calls the update tick for this location
+    /// In settlements, this will update the economy
+    /// In chunk structures, this will randomly spawn a relevent entity
+    /// group
+    /// </summary>
     void Tick();
 
+    /// <summary>
+    /// Called when the entity group param has returned back home
+    /// </summary>
+    /// <param name="group"></param>
     void GroupReturn(EntityGroup group);
 
 }

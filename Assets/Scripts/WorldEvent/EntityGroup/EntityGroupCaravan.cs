@@ -129,18 +129,8 @@ public class EntityGroupCaravan : EntityGroup
 
     }
 
-    public override void OnReachDestination(Vec2i position)
+    public override bool OnReachDestination(Vec2i position)
     {
-
-
-        if(TargetSet != null)
-        {
-            TargetSet.Economy.Import(Trade);
-        }
-        StartChunk = position;
-        CurrentChunk = position;
-        DecideNextTradeTarget(TargetSet);
-
-
+        return true;
     }
 }

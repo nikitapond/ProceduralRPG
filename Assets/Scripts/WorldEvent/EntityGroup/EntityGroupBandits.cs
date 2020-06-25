@@ -13,12 +13,17 @@ public class EntityGroupBandits : EntityGroup
 
     private ChunkStructure Home;
 
+
+    private List<EntityGroup> NearGroups;
+
     public EntityGroupBandits(ChunkStructure home, List<Entity> entities = null, EconomicInventory inventory = null) : base(home.Position, entities, inventory)
     {
 
-        Vec2i deltaPosition = GenerationRandom.RNG.RandomVec2i(-5, 5);
+        Vec2i deltaPosition = GenerationRandom.RNG.RandomVec2i(-64, 64);
 
         Vec2i tChunk = home.Position + deltaPosition;
+
+        NearGroups = new List<EntityGroup>(20);
 
         Home = home;
         GenerateNewPath(tChunk);
@@ -28,9 +33,20 @@ public class EntityGroupBandits : EntityGroup
 
     public override bool DecideNextTile(out Vec2i nextTile)
     {
+        /*
+        if (TargetGroup == null)
+        {
+            nextTile = NextPathPoint();
+            return nextTile != null;
+        }
+
+        nextTile = CurrentChunk;
+        return true;
+        */
+
         LifeTime++;
 
-        //If no target, we move towards next point
+        //If no target,
         if (TargetGroup == null)
         {
             //search for a target
@@ -38,18 +54,18 @@ public class EntityGroupBandits : EntityGroup
             {
                 //If we find one, we set it as our current target
                 EndChunk = TargetGroup.CurrentChunk;
-                PersueTarget();
+                nextTile = PersueTarget();
             }
             else
-            {
+            {//If none is found, we move to the next point on the patrol
                 nextTile = NextPathPoint();
                 return true;
             }
         }
         else
         {
-
-
+            nextTile = PersueTarget();
+            return true;
 
         }
 
@@ -71,10 +87,11 @@ public class EntityGroupBandits : EntityGroup
 
     private bool SearchForTarget()
     {
-
-        List<EntityGroup> nearGroups = WorldEventManager.Instance.GetEntityGroupsNearPoint(CurrentChunk, 3);
+        Debug.BeginDeepProfile("TargetSearch");
+        NearGroups.Clear();
+        WorldEventManager.Instance.GetEntityGroupsNearPoint(CurrentChunk, 8, NearGroups);
         EntityGroup targetDecide = null;
-        foreach(EntityGroup g in nearGroups)
+        foreach(EntityGroup g in NearGroups)
         {
             if(g.Type == GroupType.SoldierPatrol)
             {
@@ -94,6 +111,8 @@ public class EntityGroupBandits : EntityGroup
 
 
         }
+        Debug.EndDeepProfile("TargetSearch");
+
         TargetGroup = targetDecide;
         if (targetDecide != null)
             return true;
@@ -110,18 +129,28 @@ public class EntityGroupBandits : EntityGroup
             if (g == this)
                 continue;
             if (!(g is EntityGroupBandits))
+            {
                 g.Kill();
+                if (g == TargetGroup)
+                {
+                    TargetGroup = null;
+                    OnReachDestination(CurrentChunk);
+                }
+                    
+            }
+                
         }
         
     }
 
-    public override void OnReachDestination(Vec2i position)
+    public override bool OnReachDestination(Vec2i position)
     {
         if (ReturningHome)
         {
             //This means we are back at base
             ShouldDestroy = true;
             Home.GroupReturn(this);
+            return false;
         }
 
 
@@ -132,9 +161,9 @@ public class EntityGroupBandits : EntityGroup
         }
         else
         {
-            Vec2i deltaPosition = GenerationRandom.RNG.RandomVec2i(-5, 5);
+            Vec2i deltaPosition = GenerationRandom.RNG.RandomVec2i(-64, 64);
             GenerateNewPath(CurrentChunk + deltaPosition);
-
         }
+        return true;
     }
 }

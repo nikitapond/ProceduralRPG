@@ -45,15 +45,8 @@ public class EntityGroupVillageTrader : EntityGroup
             nextTile = NextPathPoint();
             return nextTile != null;
         }
-        CurrentPathIndex++;
-        //If we are at the end of the path, we return false. This
-        if (CurrentPathIndex == Path.Count)
-        {
-            nextTile = null;
-            return false;
-        }
 
-        nextTile = Path[CurrentPathIndex];
+        nextTile = CurrentChunk;
         return true;
     }
 
@@ -62,11 +55,12 @@ public class EntityGroupVillageTrader : EntityGroup
         //throw new System.NotImplementedException();
     }
 
-    public override void OnReachDestination(Vec2i position)
+    public override bool OnReachDestination(Vec2i position)
     {
         //If we haven't sold yet, then we are at our desitnation and must sell produce
         if (!HasSold)
         {
+            Debug.Log("Village trader has sold");
             //We sell all items to the settlement
             int income = Task.End.Import(EconomicInventory.GetAllItems());
             
@@ -79,13 +73,15 @@ public class EntityGroupVillageTrader : EntityGroup
                     income = (int)remainingMoney;
                 }
             }
-
+            Debug.Log("Finding path back home");
             //After we have sold, we set the path as heading back to the home settlement.
             GenerateNewPath(Task.Start.Settlement.BaseChunk);
             HasSold = true;
+            return true;
         }
         else
         {
+            Debug.Log("back home");
             //if we have reached the destination now, we are back at our home settlement
             foreach(var kvp in EconomicInventory.GetAllItems())
             {
@@ -95,7 +91,7 @@ public class EntityGroupVillageTrader : EntityGroup
             //As the task is complete, this group should be destoryed
             ShouldDestroy = true;
             Task.Start.EntityGroupReturn(this);
-
+            return false;
         }
     }
 }
