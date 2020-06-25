@@ -5,6 +5,8 @@ using UnityEditor;
 public class Vec2i
 {
     public static Vec2i[] QUAD_DIR = new Vec2i[] { new Vec2i(1, 0), new Vec2i(0, 1), new Vec2i(-1, 0), new Vec2i(0, -1), };
+    public static Vec2i[] OCT_DIRDIR = new Vec2i[] { new Vec2i(1, 0), new Vec2i(0, 1), new Vec2i(-1, 0), new Vec2i(0, -1), 
+                                                     new Vec2i(1,1), new Vec2i(1,-1), new Vec2i(-1,1), new Vec2i(-1,-1)};
 
 
     public int x;
