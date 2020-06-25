@@ -28,8 +28,11 @@ public class GridPlacement
 
 
 
-
-    public void Generate()
+    /// <summary>
+    /// We generate all grid points for the world
+    /// Each is equally spaced
+    /// </summary>
+    public void GenerateInitialGridPoints()
     {
         for(int x=0; x<GridSize; x++)
         {
@@ -42,7 +45,7 @@ public class GridPlacement
                 if (GameGen.TerGen.ChunkBases[cPos.x, cPos.z].Biome != ChunkBiome.ocean)
                     GridPoints[x, z].IsValid = true;
                 else
-                    GridPoints[x, z] = null;
+                    GridPoints[x, z].IsValid = false;
             }
         }
         for (int x = 0; x < GridSize; x++)
@@ -251,6 +254,17 @@ public class GridPlacement
 }
 public class GridPoint
 {
+    public SettlementType SETYPE;
+    public bool HasSet;
+
+    public TacLocType TACTYPE;
+    public bool HasTacLoc;
+
+    public float Desirability;
+    public bool IsCapital = false;
+
+    public bool NearRiver = false;
+
     public Vec2i GridPos;
     public Vec2i ChunkPos;
     public bool IsValid;
@@ -279,6 +293,9 @@ public class GridPoint
         ConnectedRoad = new List<int>();
     }
 }
+
+
+
 public class GridPathFinder
 {
     public volatile int COUNT;

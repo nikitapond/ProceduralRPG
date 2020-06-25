@@ -15,6 +15,617 @@ public class SettlementGenerator2
 
     public List<Settlement> Settlements;
     public Object LOCK = new Object();
+    /// <summary>
+    /// A dataset that holds all of the settlements in the game (excluding capital) position in the world,
+    /// ordered by kingdom and by settlement type
+    /// </summary>
+    //public Dictionary<int, Dictionary<SettlementType, List<SettlementPlacement>>> SettlementPlacements;
+
+
+    /// <summary>
+    /// A weighted random list of grid points
+    /// </summary>
+    private WeightRandomList<GridPoint> DesireWeightedGridpoints;
+    /// <summary>
+    /// List containing all tactical location shells, and all settlement shells
+    /// </summary>
+    public List<Shell> SetAndTactShells;
+
+
+    #region generate_settlement_shells
+    /// <summary>
+    /// We decide the placement 
+    /// </summary>
+    public void GenerateAllSettlementShells()
+    {
+        //Datastructure ordering the KingdomTotalSettlements by relative kingdom
+        Dictionary<int, KingdomTotalSettlements> KTS = new Dictionary<int, KingdomTotalSettlements>();
+        foreach(Kingdom k in GameGen.KingdomGen.Kingdoms)
+        {
+            //Calculate the maximum number of settlements each kingdom should have
+            KTS.Add(k.KingdomID, CalculateSettlementCount(k));
+        }
+        //Create weighted random list for possible settlement placements
+        FindGridPointsSettlementDesirability();
+        //Decide the placement of all settlements
+        Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>>  setPlace = DecideSettlementPlacements(KTS);
+       
+        SetAndTactShells = new List<Shell>();
+
+        foreach (KeyValuePair<int, Dictionary<SettlementType, List<SettlementShell2>>> kingdomSets in setPlace){
+
+            foreach(KeyValuePair<SettlementType, List<SettlementShell2>> setTypes in kingdomSets.Value)
+            {
+                foreach(SettlementShell2 ss in setTypes.Value)
+                {
+                    SetAndTactShells.Add(ss);
+                }
+            }
+        }
+
+    }
+    /// <summary>
+    /// Struct holds onto the total number of cities, towns, and villages to build
+    /// </summary>
+    private struct KingdomTotalSettlements
+    {
+        public int CityCount;
+        public int TownCount;
+        public int VillageCount;
+    }
+
+    /// <summary>
+    /// Calculates the total number of cities, towns, and villages this kingdom should have
+    /// Number of each is partly random, partly based on total size of kingdom
+    /// </summary>
+    /// <param name="k"></param>
+    /// <returns></returns>
+    private KingdomTotalSettlements CalculateSettlementCount(Kingdom k)
+    {
+        //In the region of 200,000
+        int kingdomSize = k.ClaimedChunks.Count;
+        int relSize = Mathf.CeilToInt(kingdomSize / 80000f);
+        int cityCount = (int)(1 + GenRan.Random(0.5f, 1.5f) * relSize);
+        int townCount = (int)(5 + GenRan.Random(2, 4) * relSize);
+        int villageCount = (int)(4 + GenRan.Random(4, 7) * relSize);
+
+
+        Debug.Log("Kingdom " + k + " has size " + relSize + " -> City: " + cityCount + ", Town: " + townCount + ", Village: " + villageCount);
+        KingdomTotalSettlements kts = new KingdomTotalSettlements();
+        kts.CityCount = cityCount;
+        kts.TownCount = townCount;
+        kts.VillageCount = villageCount;
+        return kts;
+    }
+
+    /// <summary>
+    /// Iterates each grid point in the world, calculating its settlement desirability
+    /// We add each to a WeightRandomList <see cref="DesireWeightedGridpoints"/>.
+    /// We add each grid point with a weight of its desirability
+    /// </summary>
+    private void FindGridPointsSettlementDesirability()
+    {
+        DesireWeightedGridpoints = new WeightRandomList<GridPoint>(GameGen.Seed);
+        for (int x=0; x<GridPlacement.GridSize; x++)
+        {
+            for (int z = 0; z < GridPlacement.GridSize; z++)
+            {
+                //Get grid point
+                GridPoint gp = GameGen.GridPlacement.GridPoints[x, z];
+                float des = CalculateGridPointSettlementDesirability(gp);
+                gp.Desirability = des;
+                if(des > 0)
+                {
+                    DesireWeightedGridpoints.AddElement(gp, des);
+
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds the settlement placement desirability
+    /// </summary>
+    /// <param name="gp"></param>
+    /// <returns></returns>
+    private float CalculateGridPointSettlementDesirability(GridPoint gp)
+    {
+        bool onBorder = false;
+        bool onRiver = false;
+        bool onCoast = false;
+        bool onLake = false;
+        //Get the chunk this grid point is on
+        ChunkBase2 cb = GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z];
+        //desirability less than 0 means not valid
+        if (cb.Biome == ChunkBiome.ocean)
+            return -1;
+        int kingdomID = cb.KingdomID;
+        //If this chunk is not claimed, then we don't use it
+        if (kingdomID == -1)
+            return -1;
+        //iterate away from search point
+        for (int i = 1; i < GridPlacement.GridPointSize; i++)
+        {
+            //Search in 4 directions
+            foreach (Vec2i v in Vec2i.OCT_DIRDIR)
+            {
+                //Find the point in this direction
+                Vec2i p = cb.Pos + v * i;
+                //Ensure in world bounds
+                if (GameGenerator2.InBounds(p))
+                {
+                    //Get chunk here
+                    ChunkBase2 cb_p = GameGen.TerGen.ChunkBases[p.x, p.z];
+                    if (cb_p.Biome == ChunkBiome.ocean)
+                        onCoast = true;
+                    if (cb_p.KingdomID != -1 && cb_p.KingdomID != kingdomID)
+                        onBorder = true;
+                    if (cb_p.ChunkFeature is ChunkRiverNode)
+                        onRiver = true;
+                }
+
+            }
+        }
+
+        float des = 5 + (onRiver ? 5f : 0) + (onCoast ? 8f : 0) + (onLake ? 3f : 0) - (onBorder ? 4 : 0) + GenRan.Random();
+        return des;
+    }
+
+
+
+    public struct SettlementPlacement
+    {
+        public GridPoint GridPoint;
+        public SettlementType Type;
+
+    }
+
+
+    /// <summary>
+    /// Decides the placement for all non capital settlements.
+    /// 
+    /// <list type="bullet">
+    ///     <item>
+    ///         We choose a valid grid point by accessing <see cref="DesireWeightedGridpoints"/>, 
+    ///         and taking a weight random element from it. 
+    ///         </item>
+    ///          <item>We then check which kingdom owns the territory of the point.</item>
+    ///     <item>We check the number of capitals, towns, and villages allowed by the kingdom, based on <paramref name="kts"/></item>
+    ///     <item>If they have not reached their maximum number of a settlement type, we place one here</item>
+    ///     <item>We continuously do this until all settlements for all kingdoms are found,</item>
+    /// </list>
+    /// </summary>
+    /// <param name="kts"></param>
+    private Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>> DecideSettlementPlacements(Dictionary<int, KingdomTotalSettlements> kts)
+    {
+        
+        //Key = kingdom ID
+        //Value[0] = Dictionary ordered by settlement type, containing values representing the desired settlement placement
+        Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>> setPlace = new Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>>();
+        //We create a data structure to hold each settlement
+        foreach(Kingdom k in GameGen.KingdomGen.Kingdoms)
+        {
+            setPlace.Add(k.KingdomID, new Dictionary<SettlementType, List<SettlementShell2>>());
+            setPlace[k.KingdomID].Add(SettlementType.CITY, new List<SettlementShell2>());
+            setPlace[k.KingdomID].Add(SettlementType.TOWN, new List<SettlementShell2>());
+            setPlace[k.KingdomID].Add(SettlementType.VILLAGE, new List<SettlementShell2>());
+        }
+        bool shouldContinue = true;
+        while (shouldContinue)
+        {
+            Debug.Log("doing");
+            //if no points remain, we break
+            if (DesireWeightedGridpoints.Count == 0)
+            {
+                shouldContinue = false;
+                break;
+            }
+            //We a random point
+            GridPoint gp = DesireWeightedGridpoints.GetRandom(true);
+            Debug.Log(gp);
+            ChunkBase2 cb = GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z];
+            int kingdomID = cb.KingdomID;
+            if (kingdomID == -1)
+            {
+                Debug.Log("no king");
+                continue;
+            }
+                
+            //We have now got to a valid settlement point so we check what type of settlement we need;
+
+            SettlementType setType = SettlementType.CITY;
+            if (setPlace[kingdomID][SettlementType.CITY].Count < kts[kingdomID].CityCount)
+                setType = SettlementType.CITY;
+            else if (setPlace[kingdomID][SettlementType.TOWN].Count < kts[kingdomID].TownCount)
+                setType = SettlementType.TOWN;
+            else if (setPlace[kingdomID][SettlementType.VILLAGE].Count < kts[kingdomID].VillageCount)
+                setType = SettlementType.VILLAGE;
+            else
+            {
+                Debug.Log("Already completed set placement for " + kingdomID);
+                continue;
+            }
+                
+            //Find the shorest distance 
+            int distSqr = FindShortestSquareDistance(setPlace[kingdomID], gp);
+            //the maximum distance
+            int minDistSqr = GridPlacement.GridPointSize * GridPlacement.GridPointSize * 4;
+            if (distSqr >= minDistSqr || distSqr < 0)
+            {
+                gp.HasSet = true;
+                gp.SETYPE = setType;
+                SettlementShell2 sp = new SettlementShell2(gp, kingdomID, setType);
+        
+                setPlace[kingdomID][setType].Add(sp);
+            }
+        }
+        return setPlace;
+    }
+    /// <summary>
+    /// Finds the shortest distance (in chunk coords) between the chunk pos at the gridpoint gp, and each of the settlements
+    /// </summary>
+    /// <param name="toSearch"></param>
+    /// <param name="gp"></param>
+    /// <returns></returns>
+    private int FindShortestSquareDistance(Dictionary<SettlementType, List<SettlementShell2>> toSearch, GridPoint gp)
+    {
+        int minDist = -1;
+
+        foreach(SettlementType setType in MiscUtils.GetValues<SettlementType>())
+        {
+            if(toSearch.TryGetValue(setType, out List<SettlementShell2> settlements))
+            {
+                foreach (SettlementShell2 ss in settlements)
+                {
+                    int sqrDist = ss.GridPoint.ChunkPos.QuickDistance(gp.ChunkPos);
+                    if (minDist < 0 || sqrDist < minDist)
+                        minDist = sqrDist;
+                }
+            }
+            
+            
+        }
+
+        
+
+        return minDist;
+    }
+
+    #endregion
+    #region generate_tactical_shells
+    public void GenerateAllTacticalLocationShells()
+    {
+        //Calculate grid point desirability for tactical positions
+        FindGridPointsTacticalDesirability();
+        //Calculate the total number of towers and forts each kingdom should have
+        Dictionary<int, KingdomTotalTactialLocations> KTL = new Dictionary<int, KingdomTotalTactialLocations>();
+        foreach (Kingdom k in GameGen.KingdomGen.Kingdoms)
+        {
+            KTL.Add(k.KingdomID, CalculateTacticalLocationCount(k));
+        }
+        //Decide the placement of all tactical locations
+        Dictionary<int, Dictionary<TacLocType, List<TacticalLocationShell>>>  tactLoc = DecideAllTacticalLocationPlacements(KTL);
+
+
+        foreach(KeyValuePair<int, Dictionary<TacLocType, List<TacticalLocationShell>>> kingdomTacts in tactLoc)
+        {
+            foreach(KeyValuePair<TacLocType, List<TacticalLocationShell>> tactType in kingdomTacts.Value)
+            {
+                foreach(TacticalLocationShell lts in tactType.Value)
+                {
+                    SetAndTactShells.Add(lts);
+                }
+            }
+        }
+    }
+
+
+
+    /// <summary>
+    /// Iterates each grid point in the world, calculating its tactical desirability
+    /// We add each to a WeightRandomList <see cref="DesireWeightedGridpoints"/>.
+    /// We add each grid point with a weight of its desirability
+    /// </summary>
+    private void FindGridPointsTacticalDesirability()
+    {
+        DesireWeightedGridpoints = new WeightRandomList<GridPoint>(GameGen.Seed);
+
+        for (int x = 0; x < GridPlacement.GridSize; x++)
+        {
+            for (int z = 0; z < GridPlacement.GridSize; z++)
+            {
+                //Get grid point
+                GridPoint gp = GameGen.GridPlacement.GridPoints[x, z];
+                float des = CalculateGridPointTacticalDesirability(gp);
+                gp.Desirability = des;
+                if (des > 0)
+                {
+                    DesireWeightedGridpoints.AddElement(gp, des);
+
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds the tactical placement desirability
+    /// </summary>
+    /// <param name="gp"></param>
+    /// <returns></returns>
+    private float CalculateGridPointTacticalDesirability(GridPoint gp)
+    {
+
+        bool onBorder = false;
+        bool onRiver = false;
+        bool onCoast = false;
+        bool onLake = false;
+        bool onHill = false;
+
+
+        //Get the chunk this grid point is on
+        ChunkBase2 cb = GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z];
+        int kingdomID = cb.KingdomID;
+        //If ocean, contains settlement, or belongs to no kingdom, then we do not use it
+        if (cb.Biome == ChunkBiome.ocean || gp.HasSet || kingdomID == -1)
+            return -1;
+
+
+        //we create an array, which holds the sum of all points, for each line in the 8 octangonal directions
+        float[] sumSurroundingHeight = new float[8];
+        //iterate away from search point
+        for (int i = 1; i < GridPlacement.GridPointSize; i++)
+        {
+            int j = 0;
+            //Search in 4 directions
+            foreach (Vec2i v in Vec2i.OCT_DIRDIR)
+            {
+                //Find the point in this direction
+                Vec2i p = cb.Pos + v * i;
+                //Ensure in world bounds
+                if (GameGenerator2.InBounds(p))
+                {
+                    //Get chunk here
+                    ChunkBase2 cb_p = GameGen.TerGen.ChunkBases[p.x, p.z];
+                    if (cb_p.Biome == ChunkBiome.ocean)
+                        onCoast = true;
+                    if (cb_p.KingdomID != -1 && cb_p.KingdomID != kingdomID)
+                        onBorder = true;
+                    if (cb_p.ChunkFeature is ChunkRiverNode)
+                        onRiver = true;
+                    //Sum total height
+                    sumSurroundingHeight[j] += cb_p.Height;
+                }
+                j++;
+            }
+        }
+        // Find chunk height, and create sum for surrounding heights
+
+        float pointHeight = cb.Height;
+        float averageSurrounding = 0;
+        //iterte each surrounding height sum, and divide by 31 to find average height in each direction
+        for (int j = 0; j < 8; j++)
+        {
+            sumSurroundingHeight[j] /= 31f;
+
+            //If the height is lower, we increase 'averageSurrounding' by the height difference
+            if (sumSurroundingHeight[j] + 1 < pointHeight)
+                averageSurrounding += pointHeight - sumSurroundingHeight[j];
+            else if (sumSurroundingHeight[j] - 1 > pointHeight)
+            {
+                averageSurrounding += pointHeight - sumSurroundingHeight[j];
+            }
+        }
+        float des = 5 + (onRiver ? 4f : 0) + (onCoast ? 3f : 0) - (onLake ? 2f : 0) + (onBorder ? 10 : 0) + (onHill ? 6 : 0);
+        return des;
+    }
+    /// <summary>
+    /// Struct holding the total maximum number of towers and fort a kingdom should have
+    /// </summary>
+    private struct KingdomTotalTactialLocations
+    {
+        public int TowerCount;
+        public int FortCount;
+    }
+    /// <summary>
+    /// Calculates the total number of towers and forts a kingdom should have, based
+    /// on its size and aggression
+    /// </summary>
+    /// <param name="k"></param>
+    /// <returns></returns>
+    private KingdomTotalTactialLocations CalculateTacticalLocationCount(Kingdom k)
+    {
+        //In the region of 200,000
+        int kingdomSize = k.ClaimedChunks.Count;
+        int relSize = Mathf.CeilToInt(kingdomSize / 80000f);
+
+        int towerCount = (int)(Mathf.Exp(k.Aggresion * 1f) * (relSize + 2));
+        int fortCount = (int)(Mathf.Exp((1 - k.Aggresion) * 1f) * (relSize + 2));
+        KingdomTotalTactialLocations kttl = new KingdomTotalTactialLocations();
+        kttl.TowerCount = towerCount;
+        kttl.FortCount = fortCount;
+        return kttl;
+    }
+
+
+    private struct TacticalLocationPlacement
+    {
+        public GridPoint GridPoint;
+        public TacLocType Type;
+    }
+    /// <summary>
+    /// Decides the placement of all tactical locations
+    /// </summary>
+    /// <param name="ktl"></param>
+    private Dictionary<int, Dictionary<TacLocType, List<TacticalLocationShell>>> DecideAllTacticalLocationPlacements(Dictionary<int, KingdomTotalTactialLocations> ktl)
+    {
+        Dictionary<int, Dictionary<TacLocType, List<TacticalLocationShell>>> tactPlace = new Dictionary<int, Dictionary<TacLocType, List<TacticalLocationShell>>>();
+        //Create data structure to hold tactical locations
+        foreach (Kingdom k in GameGen.KingdomGen.Kingdoms)
+        {
+            tactPlace.Add(k.KingdomID, new Dictionary<TacLocType, List<TacticalLocationShell>>());
+            tactPlace[k.KingdomID].Add(TacLocType.fort, new List<TacticalLocationShell>());
+            tactPlace[k.KingdomID].Add(TacLocType.tower, new List<TacticalLocationShell>());
+        }
+
+        bool shouldContinue = true;
+        while (shouldContinue)
+        {
+            Debug.Log("doing");
+            //if no points remain, we break
+            if (DesireWeightedGridpoints.Count == 0)
+            {
+                shouldContinue = false;
+                break;
+            }
+            //We a random point
+            GridPoint gp = DesireWeightedGridpoints.GetRandom(true);
+            Debug.Log(gp);
+            ChunkBase2 cb = GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z];
+            int kingdomID = cb.KingdomID;
+            if (kingdomID == -1)
+            {
+                Debug.Log("no king");
+                continue;
+            }
+
+            //We have now got to a valid settlement point so we check what type of settlement we need;
+
+            TacLocType tactType = TacLocType.fort;
+            if (tactPlace[kingdomID][TacLocType.fort].Count < ktl[kingdomID].FortCount)
+                tactType = TacLocType.fort;
+            else if (tactPlace[kingdomID][TacLocType.tower].Count < ktl[kingdomID].TowerCount)
+                tactType = TacLocType.tower;
+            else
+            {
+                Debug.Log("Already completed set placement for " + kingdomID);
+                continue;
+            }
+
+            //Find the shorest distance 
+            int distSqr = FindShortestSquareDistance(tactPlace[kingdomID], gp);
+            //the maximum distance
+            int minDistSqr = GridPlacement.GridPointSize * GridPlacement.GridPointSize * 4;
+            if (distSqr >= minDistSqr || distSqr < 0)
+            {
+                gp.HasTacLoc = true;
+                gp.TACTYPE = tactType;
+                TacticalLocationShell tls = new TacticalLocationShell(gp, kingdomID);
+               
+                tactPlace[kingdomID][tactType].Add(tls);
+            }
+        }
+
+        return tactPlace;
+
+
+    }
+
+    /// <summary>
+    /// Finds the shortest distance (in chunk coords) between the chunk pos at the gridpoint gp, and each of the settlements
+    /// </summary>
+    /// <param name="toSearch"></param>
+    /// <param name="gp"></param>
+    /// <returns></returns>
+    private int FindShortestSquareDistance(Dictionary<TacLocType, List<TacticalLocationShell>> toSearch, GridPoint gp)
+    {
+        int minDist = -1;
+
+        foreach (TacLocType tp in MiscUtils.GetValues<TacLocType>())
+        {
+            if(toSearch.TryGetValue(tp, out List<TacticalLocationShell> tacLocs))
+            {
+                foreach (TacticalLocationShell tac in tacLocs)
+                {
+                    int sqrDist = tac.GridPoint.ChunkPos.QuickDistance(gp.ChunkPos);
+                    if (minDist < 0 || sqrDist < minDist)
+                        minDist = sqrDist;
+                }
+            }
+
+        }
+
+
+        return minDist;
+    }
+    #endregion
+    #region location_surroundings
+
+    /// <summary>
+    /// struct containing data for a settlement/tactical location
+    /// </summary>
+    public struct LocationData
+    {
+        public bool OnLake;
+        public bool OnRiver;
+        public bool OnCoast;
+        public bool OnBorder;
+    }
+
+    /// <summary>
+    /// Iterates through each location shell in <see cref="SetAndTactShells"/>, and 
+    /// gathers/generated info about surrounding area, such as near locations, rivers, etc
+    /// </summary>
+    public void CalculateTactialAndSettlementData()
+    {
+        foreach(Shell s in SetAndTactShells)
+        {
+            GenerateLocationData(s);
+        }
+      
+    }
+    /// <summary>
+    ///  Calculates the location data for the supplied shell
+    /// </summary>
+    /// <param name="shell">The shell to generate and store data to</param>
+
+    private void GenerateLocationData(Shell shell)
+    {
+        GridPoint gp = shell.GridPoint;
+
+        bool onBorder = false;
+        bool onRiver = false;
+        bool onCoast = false;
+        bool onLake = false;
+        //Get the chunk this grid point is on
+        ChunkBase2 cb = GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z];
+
+        int kingdomID = cb.KingdomID;
+        if(kingdomID == -1)
+        {
+            Debug.Error("Shell " + shell + " lays on unclaimed territory - not valid");
+        }
+        //iterate away from search point
+        for (int i = 1; i < GridPlacement.GridPointSize; i++)
+        {
+            //Search in 4 directions
+            foreach (Vec2i v in Vec2i.OCT_DIRDIR)
+            {
+                //Find the point in this direction
+                Vec2i p = cb.Pos + v * i;
+                //Ensure in world bounds
+                if (GameGenerator2.InBounds(p))
+                {
+                    //Get chunk here
+                    ChunkBase2 cb_p = GameGen.TerGen.ChunkBases[p.x, p.z];
+                    if (cb_p.Biome == ChunkBiome.ocean)
+                        onCoast = true;
+                    if (cb_p.KingdomID != -1 && cb_p.KingdomID != kingdomID)
+                        onBorder = true;
+                    if (cb_p.ChunkFeature is ChunkRiverNode)
+                        onRiver = true;
+                }
+
+            }
+        }
+        LocationData ld = new LocationData() { OnCoast = true, OnLake = true, OnRiver = false, OnBorder = false };
+        Debug.Log(ld.OnCoast + "_" + ld.OnLake + "_" + ld.OnRiver + "_" + ld.OnBorder);
+        shell.SetLocationData(ld);
+
+    }
+
+
+
+    #endregion
     public void GenerateAllSettlements(Kingdom[] kingdoms)
     {
         //We decide the placement (an economies) of each settlement.

@@ -9,12 +9,14 @@ public class GridPointTest : MonoBehaviour
     private GridPoint p;
     public void SetPoint(GridPoint p)
     {
+
+        bool isActive = false;
         this.p = p;
         Text = GetComponentInChildren<Text>();
         if (p.HasSettlement)
         {
             Button = GetComponent<Button>();
-
+            isActive = true;
             ColorBlock b = Button.colors;
             
 
@@ -37,7 +39,7 @@ public class GridPointTest : MonoBehaviour
 
             ColorBlock b = Button.colors;
 
-
+            isActive = true;
             Color c = Color.magenta;
             if (p.ChunkStructure is BanditCamp)
             {
@@ -50,8 +52,96 @@ public class GridPointTest : MonoBehaviour
         }
         else
         {
-            this.gameObject.SetActive(false);
+           // this.gameObject.SetActive(false);
         }
+
+        if (p.HasSet)
+        {
+            isActive = true;
+            Button = GetComponent<Button>();
+
+            ColorBlock b = Button.colors;
+
+
+            Color c = Color.magenta;
+            if (p.SETYPE == SettlementType.CITY)
+                c = Color.red;
+            else if (p.SETYPE == SettlementType.TOWN)
+                c = Color.green;
+            else if (p.SETYPE == SettlementType.VILLAGE)
+                c = Color.yellow;
+
+            //Text.text = p.SettlementShell.Type.ToString();
+
+            b.normalColor = c;
+            Button.colors = b;
+        }
+        if (p.HasTacLoc)
+        {
+            isActive = true;
+            Button = GetComponent<Button>();
+
+            ColorBlock b = Button.colors;
+
+
+            Color c = Color.magenta;
+            if (p.TACTYPE == TacLocType.fort)
+            {
+                c = Color.blue;
+                Text.text = "FORT";
+            }else if (p.TACTYPE == TacLocType.tower)
+            {
+                c = new Color(0.5f, 0, 0.5f);
+                Text.text = "TOWER";
+            }
+
+            //Text.text = p.SettlementShell.Type.ToString();
+
+            b.normalColor = c;
+            Button.colors = b;
+        }
+       /*
+        if(p.Desirability > 0.1f)
+        {
+            Button = GetComponent<Button>();
+
+            ColorBlock b = Button.colors;
+
+            float r = p.Desirability / 2f;
+            Color c = FromDes(p.Desirability);
+
+  
+
+
+            b.normalColor = c;
+            Button.colors = b;
+        }*/
+        if (p.IsCapital)
+        {
+            isActive = true;
+            Button = GetComponent<Button>();
+
+            ColorBlock b = Button.colors;
+
+
+            Color c = Color.yellow;
+
+            Text.text = "Cap";
+
+
+            b.normalColor = c;
+            Button.colors = b;
+        }
+        this.gameObject.SetActive(isActive);
+    }
+
+    private Color FromDes(float des)
+    {
+        if (des < 1)
+            return Color.red;
+        if (des < 2)
+            return Color.blue;
+        return Color.yellow;
     }
 
     public void OnClick()

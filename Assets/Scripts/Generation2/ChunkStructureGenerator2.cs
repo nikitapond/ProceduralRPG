@@ -10,6 +10,9 @@ public class ChunkStructureGenerator2
 
     public List<ChunkStructure> ChunkStructures;
     private List<ChunkStructureBuilder> Builders;
+
+    private WeightRandomList<GridPoint> DesireWeightedGridpoints;
+
     public ChunkStructureGenerator2(GameGenerator2 gameGen)
     {
         GameGen = gameGen;
@@ -27,6 +30,10 @@ public class ChunkStructureGenerator2
         GenerateBanditCamps(6);
         GenerateAllChunkStructures();
     }
+
+    
+
+
 
     private void GenerateBanditCamps(int count)
     {

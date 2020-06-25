@@ -20,6 +20,8 @@ public class EconomyTest : MonoBehaviour
     Dictionary<EntityGroup, GameObject> Caravans;
     void Start()
     {
+
+        ResourceManager.LoadAllResources();
         Instance = this;
         GameGen = new GameGenerator2(0);
         GameGen.GenerateWorld();
@@ -42,6 +44,7 @@ public class EconomyTest : MonoBehaviour
             (t.GetComponent<GridPointTest>()).SetPoint(gp);
             //Gizmos.DrawCube(new Vector3(pos.x, pos.z, -1), Vector3.one);
         }
+        return;
         foreach(EntityGroup c in WorldEventManager.Instance.EntityGroups)
         {
             GameObject obj = Instantiate(Caravan);
@@ -69,7 +72,7 @@ public class EconomyTest : MonoBehaviour
     {
         GameObject obj = Caravans[g];
         Caravans.Remove(g);
-        Destroy(obj);
+        Destroy(obj.gameObject);
     }
 
 
