@@ -89,7 +89,7 @@ public class SettlementEconomy
 
             if (rem < 0)
             {
-                Debug.Log(World.Instance.GetSettlement(SettlementID).ToString() + " has run out of " +  kvp.Key);
+               // Debug.Log(World.Instance.GetSettlement(SettlementID).ToString() + " has run out of " +  kvp.Key);
                // Debug.Log("RUN OUT OF " + kvp.Key);
             }
         }

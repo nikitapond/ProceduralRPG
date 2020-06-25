@@ -133,7 +133,7 @@ public class World
 
     public int AddKingdom(Kingdom kingdom)
     {
-        int place = WorldKingdoms.Count;
+        int place = WorldKingdoms.Count + 1;
         WorldKingdoms.Add(place, kingdom);
         kingdom.SetKingdomID(place);
         return place;

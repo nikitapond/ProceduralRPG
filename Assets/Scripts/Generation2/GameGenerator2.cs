@@ -1,8 +1,10 @@
 ﻿using UnityEngine;
 using UnityEditor;
-
+using System.Collections.Generic;
 public class GameGenerator2
 {
+
+
 
     public int Seed { get; private set; }
 
@@ -12,6 +14,7 @@ public class GameGenerator2
     public SettlementGenerator2 SettlementGen;
     public ChunkStructureGenerator2 StructureGen;
 
+    private List<IWorldEventLocation> WorldEventLocations;
 
     public World World;
 
@@ -19,42 +22,65 @@ public class GameGenerator2
     {
         Seed = seed;
         World = new World();
+        WorldEventLocations = new List<IWorldEventLocation>();
     }
 
 
     public void GenerateWorld()
     {
-        Debug.BeginDeepProfile("TerGen");
+        //We start by generating terrain
+        //This generates all height map, ocean, lakes, and rivers
+        //It also calculates biomes
         TerGen = new TerrainGenerator2(this, Seed);
         TerGen.Generate();
-        Debug.EndDeepProfile("TerGen");
-
-        Debug.BeginDeepProfile("GridPlacement");
         GridPlacement = new GridPlacement(this);
-        GridPlacement.Generate();
-        Debug.EndDeepProfile("GridPlacement");
+        //We generate the initial grid points
+        GridPlacement.GenerateInitialGridPoints();
 
         Debug.BeginDeepProfile("KingdomGen");
         KingdomGen = new KingdomGenerator2(this);
+        //We decide the placement of each kingdom capital, and then claim territory
         KingdomGen.ClaimKingdomChunks();
+        KingdomGen.GenerateKingdoms();
         Debug.EndDeepProfile("KingdomGen");
 
+        
         Debug.BeginDeepProfile("SettleGen");
         SettlementGen = new SettlementGenerator2(this);
-        SettlementGen.GenerateAllSettlements(KingdomGen.Kingdoms);
+        SettlementGen.GenerateAllSettlementShells();
+        SettlementGen.GenerateAllTacticalLocationShells();
+        SettlementGen.CalculateTactialAndSettlementData();
+        //SettlementGen.GenerateAllSettlements(KingdomGen.Kingdoms);
         Debug.EndDeepProfile("SettleGen");
 
-        StructureGen = new ChunkStructureGenerator2(this);
-        StructureGen.Generate();
+        
+        //StructureGen = new ChunkStructureGenerator2(this);
 
 
+        return;
+        FillWorldEventLocations();
         World.ChunkBases2 = TerGen.ChunkBases;
 
         Debug.BeginDeepProfile("WorldEventInit");
-        WorldEventManager.Instance.Init(TerGen.ChunkBases, GridPlacement, SettlementGen.Settlements, StructureGen.ChunkStructures);
+        WorldEventManager.Instance.Init(TerGen.ChunkBases, GridPlacement, WorldEventLocations);
         Debug.EndDeepProfile("WorldEventInit");
     }
-
+    /// <summary>
+    /// Iterates all settlements and chunk structures, adding them
+    /// to the list <see cref="WorldEventLocations"/>
+    /// </summary>
+    private void FillWorldEventLocations()
+    {
+        foreach(Settlement s in SettlementGen.Settlements)
+        {
+            WorldEventLocations.Add(s);
+        }
+        foreach(ChunkStructure cs in StructureGen.ChunkStructures)
+        {
+            if(cs is IWorldEventLocation)
+                WorldEventLocations.Add(cs);
+        }
+    }
 
     public static bool InBounds(Vec2i v)
     {

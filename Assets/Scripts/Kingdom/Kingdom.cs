@@ -17,11 +17,15 @@ public class Kingdom
     public int KingdomID { get; private set; }
 
     public Vec2i CapitalChunk { get; private set; } //The chunk the capital is centred on.
-    
-    public List<Vec2i> ClaimedChunks { get; private set; }
+
+    public List<Vec2i> ClaimedChunks;
     public List<Settlement> Settlements { get; private set; }
 
     public List<int> SettlementIDs;
+
+    public float Aggresion { get; private set; }
+
+
     public Kingdom(string name, Vec2i capitalChunk)
     {
         Name = name;
@@ -37,14 +41,12 @@ public class Kingdom
         KingdomID = id;
     }
 
-    /// <summary>
-    /// Removes any duplicates
-    /// </summary>
-    public void CleanupTerritory()
+    public void SetAggression(float aggr)
     {
-        ClaimedChunks = this.ClaimedChunks.Distinct<Vec2i>().ToList<Vec2i>();
-
+        Aggresion = aggr;
     }
+  
+    
 
     public void AddSettlement(Settlement set)
     {

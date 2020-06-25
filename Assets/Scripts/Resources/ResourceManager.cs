@@ -21,6 +21,8 @@ public class ResourceManager
     private static Dictionary<string, GameObject> MiscPrefabs;
 
     private static Dictionary<Voxel, Material> VoxelMaterials;
+
+    private static Dictionary<string, ComputeShader> ComputeShaders;
     public static void LoadAllResources()
     {
         LoadShaders();
@@ -34,8 +36,13 @@ public class ResourceManager
         LoadBeamObjects();
         LoadMiscPrefabs();
         LoadVoxelMaterials();
+        LoadComputeShaders();
     }
-
+    private static void LoadComputeShaders()
+    {
+        ComputeShaders = new Dictionary<string, ComputeShader>();
+        ComputeShaders.Add("erosion", Resources.Load<ComputeShader>("ComputeShaders/Erosion"));
+    }
     private static void LoadVoxelMaterials()
     {
         VoxelMaterials = new Dictionary<Voxel, Material>();
@@ -183,6 +190,15 @@ public class ResourceManager
         MiscPrefabs = new Dictionary<string, GameObject>();
         MiscPrefabs.Add("march_sone_wall", Resources.Load<GameObject>("Misc/MarchStoneWall"));
     }
+
+    public static ComputeShader GetComputeShader(string name)
+    {
+        if (ComputeShaders.TryGetValue(name, out ComputeShader v))
+            return v;
+        Debug.LogError("Compute shader " + name + " not found");
+        return null;
+    }
+
     public static Material GetVoxelMaterial(Voxel vox)
     {
     

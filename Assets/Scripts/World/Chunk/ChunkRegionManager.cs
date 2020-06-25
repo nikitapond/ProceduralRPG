@@ -149,14 +149,13 @@ public class ChunkRegionManager : MonoBehaviour
         //Debug.BeginDeepProfile("get_chunk");
         //Find region of chunk and check if valid within bounds
         Vec2i r = World.GetRegionCoordFromChunkCoord(v);
-        //Debug.Log("Chunk " + v + " in region " + r);
         if (r.x >= World.RegionCount || r.z >= World.RegionCount || r.x < 0 || r.z < 0)
         {
-           // Debug.Log("Region " + r + " out of bounds");
-            //Debug.EndDeepProfile("get_chunk");
+
 
             return null;
         }
+        //Check loaded regions for this region
         ChunkRegion cr;
         lock (ThreadSafe)
         {
@@ -295,16 +294,18 @@ public class ChunkRegionManager : MonoBehaviour
                 if (!currentlyLoadedH.Contains(posHash))
                 {
 
-
+                    //Attempt to get the chunk data
                     ChunkData cd = GetChunk(pos);
                     if (cd == null)
                     {
                         Debug.Log("Chunk at " + pos + " was null");
                         continue;
                     }
+                    //Get free object instance and add to list of chunks
                     LoadedChunks.Add(pos, ChunkLoader.GetLoadedChunk(cd, lod));
                     
-
+                    //Load the entities for this chunk
+                    //TODO - check this doesn't cause issues with entities loading before chunks?
                     GameManager.EntityManager.LoadChunk(pos);
 
                     //ChunkLoader.LoadChunk(cd);

@@ -30,7 +30,6 @@ public class GameGenerator
 
     //All chunks that are generated outside of the main chunk generator
     private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
-
     /// <summary>
     /// Initiates the GameGenerator with the specified seed
     /// </summary>
@@ -118,6 +117,8 @@ public class GameGenerator
         Debug.EndDeepProfile("terrain_map_gen");
         
     }
+
+    
 
     /// <summary>
     /// Starts the generation of chunk regions for the world.

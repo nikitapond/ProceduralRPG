@@ -29,7 +29,6 @@ public class BanditCamp : ChunkStructure
 
     private void SpawnPatrol()
     {
-        return;
         Debug.Log("[WorldEvent] Bandit Patrol spawned from " + Position);
         TicksWithoutPatrol = 0;
         CurrentEntityGroup = WorldEventManager.Instance.SpawnBanditPatrol(this, null);
