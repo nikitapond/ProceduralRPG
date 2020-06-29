@@ -23,7 +23,7 @@ public abstract class BuilderBase
     private int[,][,] TileMaps;
     private List<WorldObjectData>[,] ObjectMaps;
 
-    public delegate float HeightFunction(int x, int z);
+    public delegate float HeightFunction(float x, float z);
 
     public BuilderBase(Vec2i baseChunk, Vec2i chunkSize, HeightFunction heightFunc) {
 

@@ -21,7 +21,7 @@ public class SettlementGenerator
         
         Dictionary<Settlement, Dictionary<Vec2i, ChunkData>> setChunks = new Dictionary<Settlement, Dictionary<Vec2i, ChunkData>>(Settlements.Count);
 
-        
+        /*
         foreach (SettlementBase b in Settlements)
         {
 
@@ -39,7 +39,7 @@ public class SettlementGenerator
 
             //Debug.EndProfile();
 
-        }
+        }*/
         
         return setChunks;
     }

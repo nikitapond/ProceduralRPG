@@ -49,6 +49,11 @@ public class ChunkBase2
         EntityGroups?.Clear();
     }
 
+    public void SetHeight(float height)
+    {
+        Height = height;
+    }
+
     public bool ProducesResource(ChunkResource res)
     {
         return ResourceAmounts.ContainsKey(res) && ResourceAmounts[res] != 0;
@@ -90,6 +95,9 @@ public class ChunkBase2
                     return new Color(165f / 255f, 42f / 255f, 42f / 255f);
                 //Debug.Log("road at " + Pos);
                 return Color.grey;
+            }else if(ChunkFeature is ChunkLake)
+            {
+                return Color.blue;
             }
         }
         return biomeCol;

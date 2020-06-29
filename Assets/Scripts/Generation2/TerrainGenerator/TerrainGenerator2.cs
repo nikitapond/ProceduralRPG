@@ -436,7 +436,7 @@ public class TerrainGenerator2
     /// <returns></returns>
     private Vec2i GetNearestRiverEnd(Vec2i source, List<RiverStartEnd> currentRivers = null, int minDistSep = 64)
     {
-
+        float sourceHeight = ChunkBases[source.x, source.z].Height;
 
         bool[] octDirIgnore = new bool[8];
         //We check distances from point - TODO bisect function might be faster?
@@ -464,6 +464,9 @@ public class TerrainGenerator2
                     //We find the smallest seperation between this point and the others
                     int minSep = -1;
 
+                    if (ChunkBases[p.x, p.z].Height > sourceHeight)
+                        continue;
+
                     foreach (RiverStartEnd rse in currentRivers)
                     {
                         int sqrDist = rse.End.QuickDistance(p);
@@ -485,34 +488,9 @@ public class TerrainGenerator2
         return null;
 
     }
-    private void RiverFlow(Vec2i source)
-    {
-
-        bool canEnd = false;
-        Vector2 fullCurrent = source.AsVector2();
-        Vec2i current = source;
-        while (!canEnd)
-        {
-            ChunkBases[current.x, current.z].SetChunkFeature(new ChunkRiverNode());
-            Vector2 grad = FlowField[current.x, current.z].normalized;
-            fullCurrent = fullCurrent + grad;
-            current = Vec2i.FromVector2(fullCurrent);
-            if(ChunkBases[current.x, current.z].Biome == ChunkBiome.ocean)
-            {
-                canEnd = true;
-            }
-        }
 
 
-    }
 
-    
-
-
-    private void LTree(Vec2i start, Vector2 direction, string tree)
-    {
-
-    }
 
     private Vec2i CalcDir(Vec2i a, Vec2i b)
     {
@@ -529,10 +507,11 @@ public class TerrainGenerator2
             dz = 1;
         return new Vec2i(dx, dz);
     }
-    private void FromRiverSource(Vec2i source, Vec2i end, int distSinceFork=0, bool riverRaySearch=true)
+    private void FromRiverSource(Vec2i source, Vec2i end, float startHeight=-1, int distSinceFork=0, bool riverRaySearch=true)
     {
         int i = 0;
-
+        if (startHeight < 0)
+            startHeight = ChunkBases[source.x, source.z].Height;
 
         i = 0;
 
@@ -547,7 +526,7 @@ public class TerrainGenerator2
         Vector2 exactCurrent = current.AsVector2();
 
         List<RiverPoint> river = new List<RiverPoint>();
-
+        ChunkRiverNode previousNode = null;
         while (!isDone)
         {
 
@@ -590,7 +569,7 @@ public class TerrainGenerator2
 
             float targetFlowMult = distToEnd < 400 ? 4 * Mathf.Exp((400f - distToEnd) / 200f) : 4;
 
-            Vector2 flow = (noiseFlow + targetFlowMult * targetFlow + 3 * flowField).normalized;
+            Vector2 flow = (noiseFlow + targetFlowMult * targetFlow + 3.5f * flowField).normalized;
             exactCurrent += flow;
             current = Vec2i.FromVector2(exactCurrent);
             int check = Mathf.Min(river.Count, 5);
@@ -607,19 +586,55 @@ public class TerrainGenerator2
             }
 
 
-            if (ChunkBases[current.x, current.z].Biome == ChunkBiome.ocean || ChunkBases[current.x, current.z].ChunkFeature is ChunkRiverNode)
+            if (ChunkBases[current.x, current.z].Biome == ChunkBiome.ocean)
                 isDone = true;
+            if (ChunkBases[current.x, current.z].ChunkFeature is ChunkRiverNode)
+            {
+                isDone = true;
+                //Shouldn't be null, but lets do a check anyway
+                if(previousNode != null)
+                {
+                    //Get the river node
+                    ChunkRiverNode endNode = ChunkBases[current.x, current.z].ChunkFeature as ChunkRiverNode;
+                    //Inform river nodes of flow
+                    endNode.FlowIn.Add(previousNode);
+                    previousNode.FlowOut.Add(endNode);
+                    ModifyRiverHeight(endNode);
+                }
+                if(GenRan.Random() < 0.5f)
+                {
+                    PlaceLake(current, 8);
+                }
+            }
             if (current == end)
                 isDone = true;
-            ChunkBases[current.x, current.z].SetChunkFeature(new ChunkRiverNode());
-
+            ChunkRiverNode nextNode = new ChunkRiverNode(current);
+            ChunkBases[current.x, current.z].SetChunkFeature(nextNode);
+            if(previousNode != null)
+            {
+                nextNode.FlowIn.Add(previousNode);
+                previousNode.FlowOut.Add(nextNode);
+            }
+            previousNode = nextNode;
+            //If this chunk is too high, we modify it and the surrounding area
+            if(ChunkBases[current.x, current.z].Height > startHeight)
+            {
+                ModifyRiverValleyHeight(current, startHeight);
+            }else if(ChunkBases[current.x, current.z].Height < startHeight)
+            {
+                startHeight = ChunkBases[current.x, current.z].Height;
+            }
             RiverPoint rp = new RiverPoint();
             rp.Pos = current;
             rp.Flow = flow;
 
             river.Add(rp);
             if (i > 4096)
+            {
+                PlaceLake(current, 12);
                 return;
+            }
+                
 
             /*
             distSinceFork++;
@@ -672,15 +687,78 @@ public class TerrainGenerator2
 
 
         }
-
-
     }
+
+    private void PlaceLake(Vec2i v, int radius)
+    {
+        for(int x=-radius; x<= radius; x++)
+        {
+            for (int z = -radius; z <= radius; z++)
+            {
+                float noiseRad = radius * 0.5f + 0.5f * radius * PerlinNoise(x, z, 94869);
+                if(x*x+z*z < noiseRad * noiseRad)
+                {
+                    ChunkBases[x + v.x, z + v.z].SetChunkFeature(new ChunkLake(v + new Vec2i(x, z)));
+                }
+            }
+        }
+    }
+
+    private void ModifyRiverHeight(ChunkRiverNode crn)
+    {
+        float height = ChunkBases[crn.Pos.x, crn.Pos.z].Height;
+        foreach(ChunkRiverNode crn1 in crn.FlowOut)
+        {
+            ChunkBase2 cb = ChunkBases[crn1.Pos.x, crn1.Pos.z];
+            if(cb.Height < height)
+            {
+                height = cb.Height;
+                ModifyRiverValleyHeight(crn1.Pos, height);
+
+            }
+        }
+    }
+
 
     private struct RiverPoint
     {
         public Vec2i Pos;
         public Vector2 Flow;
     }
+    /// <summary>
+    /// Modifies the height of the supplied chunk to the paramater <paramref name="height"/>, and then 
+    /// further modifies the heights of near chunks that are heigher than this one
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="height"></param>
+    private void ModifyRiverValleyHeight(Vec2i position, float height, int smoothRad = 32, float smoothAmount=16)
+    {
+        ChunkBases[position.x, position.z].SetHeight(height);
+        //iterate all points in a circle
+        for(int x=-smoothRad; x<=smoothRad; x++)
+        {
+            for(int z=-smoothRad; z<=smoothRad; z++)
+            {
+                if(x*x + z*z < smoothRad * smoothRad)
+                {
+                    //Get chunk at this position
+                    Vec2i pos = position + new Vec2i(x, z);
+                    ChunkBase2 cb = ChunkBases[pos.x, pos.z];
+                    //if this chunk is of valid height, we ignore it
+                    if (cb.Height <= height)
+                        continue;
+
+                    float deltaHeight = cb.Height - height;
+                    //Calculate new height 
+                    float nHeight = cb.Height - Mathf.Exp(-(x * x + z * z) / (smoothAmount* smoothAmount)) * deltaHeight;
+                    cb.SetHeight(nHeight);
+                }
+            }
+        }
+
+    }
+
+
     /*
     private void FromRiverSource(Vec2i source, Vec2i mainDir)
     {
@@ -781,7 +859,7 @@ public class TerrainGenerator2
             }
 
             //Add a river node here
-            ChunkBases[current.x, current.z].SetChunkFeature(new ChunkRiverNode());
+            ChunkBases[current.x, current.z].SetChunkFeature(new ChunkRiverNode(current));
 
             //We iterate each of the near chunks
             foreach(Vec2i v in Vec2i.OCT_DIRDIR)
@@ -899,7 +977,7 @@ public class TerrainGenerator2
         {
             for (int z = 0; z < World.WorldSize; z++)
             {
-                float height = GetHeightAt(x, z);
+                float height = GetChunkHeightAt(x, z);
                 int eqDist = Mathf.Abs(z - (World.WorldSize / 2));
                 float temp = Mathf.Exp(-eqDist/100f)*2f - height/256f;
                 float hum = PerlinNoise(x, z, 2);
@@ -956,45 +1034,7 @@ public class TerrainGenerator2
         }
     }
 
-    private void CellularRiver(int x, int z)
-    {
-
-        bool shouldRun = true;
-
-        Vec2i current = new Vec2i(x, z);
-        while (shouldRun)
-        {
-
-            Debug.Log("River at " + current);
-            ChunkBases[current.x, current.z].SetChunkFeature(new ChunkRiverNode());
-
-            float lowest = 0;
-            Vec2i lowestCoord = null;
-
-            foreach(Vec2i v in Vec2i.QUAD_DIR)
-            {
-                if(lowestCoord == null)
-                {
-                    lowestCoord = v;
-                    lowest = HeightMap[v.x + current.x, v.z + current.z];
-                }
-                else if (HeightMap[v.x + current.x, v.z + current.z] < lowest)
-                {
-                    lowest = HeightMap[v.x + current.x, v.z + current.z];
-                    lowestCoord = v;
-                }
-            }
-            current = lowestCoord;
-            if(HeightMap[current.x, current.z] < WaterHeight)
-            {
-                shouldRun = false;
-                Debug.Log("River end at " + current);
-            }
-
-        }
-
-
-    }
+  
 
     private Vector2[,] FlowField;
     private void CalcualteFlowField()
@@ -1042,15 +1082,19 @@ public class TerrainGenerator2
 
     }
 
+
+    public float GetWorldHeightAt(float x, float z)
+    {
+        return GetChunkHeightAt(x / World.ChunkSize, z / World.ChunkSize);
+    }
     /// <summary>
     /// Calculates the height at a specified chunk coordinate
     /// by interpolating between near values in <see cref="HeightMap"/>
-
     /// </summary>
     /// <param name="x"></param>
     /// <param name="z"></param>
     /// <returns></returns>
-    public float GetHeightAt(float x, float z)
+    public float GetChunkHeightAt(float x, float z)
     {
     
         int minX = Mathf.FloorToInt(x);
@@ -1095,7 +1139,7 @@ public class TerrainGenerator2
         int cz = Mathf.FloorToInt((float)z / World.ChunkSize);
         float px = ((float)(x % World.ChunkSize)) / World.ChunkSize;
         float pz = ((float)(z % World.ChunkSize)) / World.ChunkSize;
-        return GetHeightAt(cx + px, cz + pz);
+        return GetChunkHeightAt(cx + px, cz + pz);
     }
 
 
@@ -1111,6 +1155,30 @@ public class TerrainGenerator2
         }
         tex.Apply();
         return tex;
+    }
+
+    public Texture2D DrawContours()
+    {
+        Texture2D tex = new Texture2D(World.WorldSize, World.WorldSize);
+
+        for (int x = 0; x < World.WorldSize; x++)
+        {
+            for (int z = 0; z < World.WorldSize; z++)
+            {
+                int height = (int)(ChunkBases[x, z].Height*5);
+                if (height % 25 == 0)
+                {
+                    tex.SetPixel(x, z, Color.red);
+                }
+                else
+                {
+                    tex.SetPixel(x, z, new Color(0, 0, 0, 0));
+                }
+            }
+        }
+        tex.Apply();
+        return tex;
+
     }
 
 

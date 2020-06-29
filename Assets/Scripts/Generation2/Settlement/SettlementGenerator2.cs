@@ -11,7 +11,6 @@ public class SettlementGenerator2
         GameGen = gameGen;
         GenRan = new GenerationRandom(gameGen.Seed);
     }
-    private Dictionary<SettlementShell, SettlementEconomy> SettlementEconomies;
 
     public List<Settlement> Settlements;
     public Object LOCK = new Object();
@@ -25,12 +24,22 @@ public class SettlementGenerator2
     /// <summary>
     /// A weighted random list of grid points
     /// </summary>
-    private WeightRandomList<GridPoint> DesireWeightedGridpoints;
+    private WeightedRandomList<GridPoint> DesireWeightedGridpoints;
     /// <summary>
     /// List containing all tactical location shells, and all settlement shells
     /// </summary>
     public List<Shell> SetAndTactShells;
-
+    /// <summary>
+    /// Generates all settlement shells, and tactical location shells, as well
+    /// as generating roads connecting them
+    /// TODO - include settlement economoy generation stored in shells
+    /// </summary>
+    public void GenerateAllShells()
+    {
+        GenerateAllSettlementShells();
+        GenerateAllTacticalLocationShells();
+        CalculateTactialAndSettlementData();
+    }
 
     #region generate_settlement_shells
     /// <summary>
@@ -45,23 +54,40 @@ public class SettlementGenerator2
             //Calculate the maximum number of settlements each kingdom should have
             KTS.Add(k.KingdomID, CalculateSettlementCount(k));
         }
-        //Create weighted random list for possible settlement placements
-        FindGridPointsSettlementDesirability();
-        //Decide the placement of all settlements
-        Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>>  setPlace = DecideSettlementPlacements(KTS);
+        
+      
        
         SetAndTactShells = new List<Shell>();
 
-        foreach (KeyValuePair<int, Dictionary<SettlementType, List<SettlementShell2>>> kingdomSets in setPlace){
+        //Add settlement shells for kingdom capitals
+        foreach (Kingdom king in GameGen.KingdomGen.Kingdoms)
+        {
+            GridPoint gp = GameGen.GridPlacement.GetNearestPoint(king.CapitalChunk);
+            SettlementShell cap = new SettlementShell(gp, king.KingdomID, SettlementType.CAPITAL);
+            SetAndTactShells.Add(cap);
+            gp.Shell = cap;
+        }
 
-            foreach(KeyValuePair<SettlementType, List<SettlementShell2>> setTypes in kingdomSets.Value)
+        //Create weighted random list for possible settlement placements
+        FindGridPointsSettlementDesirability();
+
+        //Decide the placement of all settlements
+        Dictionary<int, Dictionary<SettlementType, List<SettlementShell>>> setPlace = DecideSettlementPlacements(KTS);
+
+
+        foreach (KeyValuePair<int, Dictionary<SettlementType, List<SettlementShell>>> kingdomSets in setPlace){
+
+            foreach(KeyValuePair<SettlementType, List<SettlementShell>> setTypes in kingdomSets.Value)
             {
-                foreach(SettlementShell2 ss in setTypes.Value)
+                foreach(SettlementShell ss in setTypes.Value)
                 {
+                    CalculateSettlementEconomy(ss);
                     SetAndTactShells.Add(ss);
                 }
             }
         }
+
+        
 
     }
     /// <summary>
@@ -105,7 +131,7 @@ public class SettlementGenerator2
     /// </summary>
     private void FindGridPointsSettlementDesirability()
     {
-        DesireWeightedGridpoints = new WeightRandomList<GridPoint>(GameGen.Seed);
+        DesireWeightedGridpoints = new WeightedRandomList<GridPoint>(GameGen.Seed);
         for (int x=0; x<GridPlacement.GridSize; x++)
         {
             for (int z = 0; z < GridPlacement.GridSize; z++)
@@ -143,6 +169,15 @@ public class SettlementGenerator2
         //If this chunk is not claimed, then we don't use it
         if (kingdomID == -1)
             return -1;
+
+        if (cb.Pos.QuickDistance(GameGen.TerGen.EvilDragonMountainPeak) < 128 * 128)
+            return -1;
+        if (cb.Pos.QuickDistance(GameGen.TerGen.GoodDragonMountainPeak) < 64 * 64)
+            return -1;
+
+
+        if (gp.Shell != null)
+            return -1;
         //iterate away from search point
         for (int i = 1; i < GridPlacement.GridPointSize; i++)
         {
@@ -166,6 +201,14 @@ public class SettlementGenerator2
 
             }
         }
+
+        float xGradient = Mathf.Abs(GameGen.TerGen.ChunkBases[gp.ChunkPos.x + 1, gp.ChunkPos.z].Height - GameGen.TerGen.ChunkBases[gp.ChunkPos.x - 1, gp.ChunkPos.z].Height);
+        float zGradient = Mathf.Abs(GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z + 1].Height - GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z - 1].Height);
+        if(xGradient > 3 || zGradient > 3 || xGradient+zGradient > 5)
+        {
+            return -1;
+        }
+
 
         float des = 5 + (onRiver ? 5f : 0) + (onCoast ? 8f : 0) + (onLake ? 3f : 0) - (onBorder ? 4 : 0) + GenRan.Random();
         return des;
@@ -196,24 +239,24 @@ public class SettlementGenerator2
     /// </list>
     /// </summary>
     /// <param name="kts"></param>
-    private Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>> DecideSettlementPlacements(Dictionary<int, KingdomTotalSettlements> kts)
+    private Dictionary<int, Dictionary<SettlementType, List<SettlementShell>>> DecideSettlementPlacements(Dictionary<int, KingdomTotalSettlements> kts)
     {
         
         //Key = kingdom ID
         //Value[0] = Dictionary ordered by settlement type, containing values representing the desired settlement placement
-        Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>> setPlace = new Dictionary<int, Dictionary<SettlementType, List<SettlementShell2>>>();
+        Dictionary<int, Dictionary<SettlementType, List<SettlementShell>>> setPlace = new Dictionary<int, Dictionary<SettlementType, List<SettlementShell>>>();
         //We create a data structure to hold each settlement
         foreach(Kingdom k in GameGen.KingdomGen.Kingdoms)
         {
-            setPlace.Add(k.KingdomID, new Dictionary<SettlementType, List<SettlementShell2>>());
-            setPlace[k.KingdomID].Add(SettlementType.CITY, new List<SettlementShell2>());
-            setPlace[k.KingdomID].Add(SettlementType.TOWN, new List<SettlementShell2>());
-            setPlace[k.KingdomID].Add(SettlementType.VILLAGE, new List<SettlementShell2>());
+            setPlace.Add(k.KingdomID, new Dictionary<SettlementType, List<SettlementShell>>());
+            setPlace[k.KingdomID].Add(SettlementType.CITY, new List<SettlementShell>());
+            setPlace[k.KingdomID].Add(SettlementType.TOWN, new List<SettlementShell>());
+            setPlace[k.KingdomID].Add(SettlementType.VILLAGE, new List<SettlementShell>());
         }
         bool shouldContinue = true;
         while (shouldContinue)
         {
-            Debug.Log("doing");
+
             //if no points remain, we break
             if (DesireWeightedGridpoints.Count == 0)
             {
@@ -222,12 +265,11 @@ public class SettlementGenerator2
             }
             //We a random point
             GridPoint gp = DesireWeightedGridpoints.GetRandom(true);
-            Debug.Log(gp);
+
             ChunkBase2 cb = GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z];
             int kingdomID = cb.KingdomID;
             if (kingdomID == -1)
             {
-                Debug.Log("no king");
                 continue;
             }
                 
@@ -249,13 +291,13 @@ public class SettlementGenerator2
             //Find the shorest distance 
             int distSqr = FindShortestSquareDistance(setPlace[kingdomID], gp);
             //the maximum distance
-            int minDistSqr = GridPlacement.GridPointSize * GridPlacement.GridPointSize * 4;
+            int minDistSqr = GridPlacement.GridPointSize * GridPlacement.GridPointSize * 5;
             if (distSqr >= minDistSqr || distSqr < 0)
             {
                 gp.HasSet = true;
                 gp.SETYPE = setType;
-                SettlementShell2 sp = new SettlementShell2(gp, kingdomID, setType);
-        
+                SettlementShell sp = new SettlementShell(gp, kingdomID, setType);
+                gp.Shell = sp;
                 setPlace[kingdomID][setType].Add(sp);
             }
         }
@@ -267,15 +309,15 @@ public class SettlementGenerator2
     /// <param name="toSearch"></param>
     /// <param name="gp"></param>
     /// <returns></returns>
-    private int FindShortestSquareDistance(Dictionary<SettlementType, List<SettlementShell2>> toSearch, GridPoint gp)
+    private int FindShortestSquareDistance(Dictionary<SettlementType, List<SettlementShell>> toSearch, GridPoint gp)
     {
         int minDist = -1;
 
         foreach(SettlementType setType in MiscUtils.GetValues<SettlementType>())
         {
-            if(toSearch.TryGetValue(setType, out List<SettlementShell2> settlements))
+            if(toSearch.TryGetValue(setType, out List<SettlementShell> settlements))
             {
-                foreach (SettlementShell2 ss in settlements)
+                foreach (SettlementShell ss in settlements)
                 {
                     int sqrDist = ss.GridPoint.ChunkPos.QuickDistance(gp.ChunkPos);
                     if (minDist < 0 || sqrDist < minDist)
@@ -328,7 +370,7 @@ public class SettlementGenerator2
     /// </summary>
     private void FindGridPointsTacticalDesirability()
     {
-        DesireWeightedGridpoints = new WeightRandomList<GridPoint>(GameGen.Seed);
+        DesireWeightedGridpoints = new WeightedRandomList<GridPoint>(GameGen.Seed);
 
         for (int x = 0; x < GridPlacement.GridSize; x++)
         {
@@ -369,7 +411,12 @@ public class SettlementGenerator2
         if (cb.Biome == ChunkBiome.ocean || gp.HasSet || kingdomID == -1)
             return -1;
 
-
+        if (cb.Pos.QuickDistance(GameGen.TerGen.EvilDragonMountainPeak) < 128 * 128)
+            return -1;
+        if (cb.Pos.QuickDistance(GameGen.TerGen.GoodDragonMountainPeak) < 64 * 64)
+            return -1;
+        if (gp.Shell != null)
+            return -1;
         //we create an array, which holds the sum of all points, for each line in the 8 octangonal directions
         float[] sumSurroundingHeight = new float[8];
         //iterate away from search point
@@ -470,7 +517,6 @@ public class SettlementGenerator2
         bool shouldContinue = true;
         while (shouldContinue)
         {
-            Debug.Log("doing");
             //if no points remain, we break
             if (DesireWeightedGridpoints.Count == 0)
             {
@@ -479,12 +525,10 @@ public class SettlementGenerator2
             }
             //We a random point
             GridPoint gp = DesireWeightedGridpoints.GetRandom(true);
-            Debug.Log(gp);
             ChunkBase2 cb = GameGen.TerGen.ChunkBases[gp.ChunkPos.x, gp.ChunkPos.z];
             int kingdomID = cb.KingdomID;
             if (kingdomID == -1)
             {
-                Debug.Log("no king");
                 continue;
             }
 
@@ -509,8 +553,9 @@ public class SettlementGenerator2
             {
                 gp.HasTacLoc = true;
                 gp.TACTYPE = tactType;
-                TacticalLocationShell tls = new TacticalLocationShell(gp, kingdomID);
-               
+                TacticalLocationShell tls = new TacticalLocationShell(gp, kingdomID, tactType);
+                gp.Shell = tls;
+
                 tactPlace[kingdomID][tactType].Add(tls);
             }
         }
@@ -571,13 +616,12 @@ public class SettlementGenerator2
         {
             GenerateLocationData(s);
         }
-      
+        GenerateRoads();
     }
     /// <summary>
     ///  Calculates the location data for the supplied shell
     /// </summary>
     /// <param name="shell">The shell to generate and store data to</param>
-
     private void GenerateLocationData(Shell shell)
     {
         GridPoint gp = shell.GridPoint;
@@ -618,298 +662,126 @@ public class SettlementGenerator2
             }
         }
         LocationData ld = new LocationData() { OnCoast = true, OnLake = true, OnRiver = false, OnBorder = false };
-        Debug.Log(ld.OnCoast + "_" + ld.OnLake + "_" + ld.OnRiver + "_" + ld.OnBorder);
         shell.SetLocationData(ld);
 
     }
+    /// <summary>
+    /// Generates all roads in the game
+    /// We do this by first starting at each kingdom capital, and iterativly searching 
+    /// near grid points to find near by settlements and tactical locations.
+    /// We then build roads to these locations, 
+    /// </summary>
+    public void GenerateRoads()
+    {
 
+        Dictionary<int, Shell> kingdomCapitals = new Dictionary<int, Shell>();
+
+        //iterate each shell to find all kingdoms
+        foreach(Shell s in SetAndTactShells)
+        {
+            Kingdom king = s.GetKingdom();            
+            if(s is SettlementShell && (s as SettlementShell).Type == SettlementType.CAPITAL)
+            {                
+                //Capitals are added to SetAndTacShells first, so should all be at start
+                kingdomCapitals.Add(king.KingdomID, s);                 
+            }        
+        }
+
+        //Iterate each set of capitals and ensure there is a road conenction
+        foreach (KeyValuePair<int, Shell> kvp1 in kingdomCapitals)
+        {
+            foreach (KeyValuePair<int, Shell> kvp2 in kingdomCapitals)
+            {
+                if (kvp1.Key == kvp2.Key)
+                    continue;
+                BuildRoad(kvp1.Value.GridPoint, kvp2.Value.GridPoint);
+            }
+        }
+
+        foreach (Shell s in SetAndTactShells)
+        {
+            int king = s.KingdomID;
+            if (s is SettlementShell)
+            {
+                SettlementShell ss = s as SettlementShell;
+                if (ss.Type == SettlementType.CAPITAL)
+                    continue;
+                BuildRoad(ss.GridPoint, kingdomCapitals[king].GridPoint);
+            }
+            else if(s is TacticalLocationShell)
+            {
+                TacticalLocationShell tls = s as TacticalLocationShell;
+                BuildRoad(tls.GridPoint, kingdomCapitals[king].GridPoint);
+            }
+        }
+    }
+
+
+    private void BuildRoad(GridPoint a, GridPoint b)
+    {
+        List<GridPoint> path = new List<GridPoint>(50);
+        path.Add(a);
+        path.AddRange(GameGen.GridPlacement.ConnectPoints(a, b));
+        //List<GridPoint> path = GameGen.GridPlacement.ConnectPoints(a, b);
+
+        //path[path.Count - 1].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
+        GameGen.GridPlacement.GridPoints[path[path.Count - 1].GridPos.x, path[path.Count - 1].GridPos.z].ChunkRoad = new ChunkRoad(path[path.Count - 1].ChunkPos, ChunkRoad.RoadType.Paved);
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            path[i].ChunkRoad = new ChunkRoad(path[i].ChunkPos, ChunkRoad.RoadType.Paved);
+            GameGen.GridPlacement.GridPoints[path[i].GridPos.x, path[i].GridPos.z].ChunkRoad = new ChunkRoad(path[i].ChunkPos, ChunkRoad.RoadType.Paved);
+            Vec2i v1 = path[i].ChunkPos;
+            Vec2i v2 = path[i + 1].ChunkPos;
+            LineI li = new LineI(v1, v2);
+            foreach (Vec2i v in li.ConnectPoints())
+            {
+
+                if(GameGen.TerGen.ChunkBases[v.x, v.z].ChunkFeature is ChunkRiverNode)
+                {
+                    GameGen.TerGen.ChunkBases[v.x, v.z].SetChunkFeature(new ChunkRiverBridge(v));
+                }
+
+                GameGen.TerGen.ChunkBases[v.x, v.z].SetChunkFeature(new ChunkRoad(v, ChunkRoad.RoadType.Paved));
+            }
+        }
+
+
+    }
+
+    /// <summary>
+    /// Finds all shells near a shell
+    /// </summary>
+    /// <returns></returns>
+    private Dictionary<Shell, List<Shell>> FindNearestNeihbours()
+    {
+        Dictionary<Shell, List<Shell>> nearest = new Dictionary<Shell, List<Shell>>();
+        foreach(Shell shell in SetAndTactShells)
+        {
+            nearest.Add(shell, new List<Shell>());
+
+            GridPoint gp = shell.GridPoint;
+            //The search radius for this iteration
+            int r = 1;
+            //keep searching at larger radii until at least 2 connections are found
+            while(nearest[shell].Count < 2)
+            {
+
+            }
+
+
+        }
+        return nearest;
+    }
 
 
     #endregion
-    public void GenerateAllSettlements(Kingdom[] kingdoms)
-    {
-        //We decide the placement (an economies) of each settlement.
-        //This also dictates information about the sort of buildings to be generated in the settlement
-        Debug.BeginDeepProfile("SettlementPlacement");
-        Dictionary<Kingdom, List<SettlementShell>> kingdomSets = DecideSettlementPlacement(kingdoms);
-        List<Thread> threads = new List<Thread>(4);
-        Debug.EndDeepProfile("SettlementPlacement");
-        Settlements = new List<Settlement>(60);
-        Debug.BeginDeepProfile("SettlementGeneration"); 
-        foreach (KeyValuePair<Kingdom, List<SettlementShell>> kvp in kingdomSets)
-        {
-            threads.Add(ThreadGenerateSettlements(kvp.Key, kvp.Value));
-            //GenerateSettlements(kvp.Key, kvp.Value);
-        }
-        Debug.EndDeepProfile("SettlementGeneration");
-        foreach (Thread t in threads)
-        {
-            t.Join();
-        }
-        Debug.BeginDeepProfile("CalcNearSets");
-        CalculateNearSettlements();
-        Debug.EndDeepProfile("CalcNearSets");
-    }
-
-    private void GenerateSettlements(Kingdom k, List<SettlementShell> toGen)
-    {
-        List<Settlement> sets = new List<Settlement>(toGen.Count);
-
-        foreach (SettlementShell s in toGen)
-        {
-            Vec2i midPos = s.ChunkPos + new Vec2i(s.Type.GetSize(), s.Type.GetSize()) / 2;
-            SettlementBase setBase = new SettlementBase(midPos, s.Type.GetSize(), s.Type);
-            SettlementBuilder builder = new SettlementBuilder(GameGen.TerGen.HeightFunction, setBase);
-            Settlement set = new Settlement(k, "Set", builder);
-            set.GridPointPosition = s.GridPointPlacement;
-
-
-
-            if (SettlementEconomies.TryGetValue(s, out SettlementEconomy econ))
-            {
-                set.SetEconomy(econ);
-            }
-            else
-            {
-                Debug.Log("No economy found for settlement " + s);
-            }
-            sets.Add(set);
-            // GameGen.World.AddSettlement(set);
-        }
-        lock (LOCK)
-        {
-            Settlements.AddRange(sets);
-        }
-        GameGen.World.AddSettlementRange(sets);
-    }
-
-    private Thread ThreadGenerateSettlements(Kingdom k, List<SettlementShell> toGen)
-    {
-        Thread thread = new Thread(() => GenerateSettlements(k, toGen));
-        thread.Start();
-        return thread;
-    }
+    #region generated_set_economoy
 
     /// <summary>
-    /// Calculates the nearest settlements of each settlement by searching grid points near to it
+    /// Finds the type of resources near the supplied settlement, and then generates an economy based
+    /// onthis
     /// </summary>
-    private void CalculateNearSettlements()
-    {
-        int checkR = 8;
-        List<int> nearEconIDs = new List<int>(20);
-        foreach(Settlement  thisSet in Settlements)
-        {
-            nearEconIDs.Clear();
-            Vec2i gridPos = thisSet.GridPointPosition;
-
-            for(int x=-checkR; x<=checkR; x++)
-            {
-                for(int z=-checkR; z<=checkR; z++)
-                {
-                    //If we are at THIS grid point, then it is this settlement, so we don't check
-                    if (x == 0 && z == 0)
-                        continue;
-                    Vec2i v = gridPos + new Vec2i(x, z);
-                   
-                    if(GridPlacement.InGridBounds(v) && GameGen.GridPlacement.GridPoints[v.x, v.z] != null && GameGen.GridPlacement.GridPoints[v.x, v.z].Economy != null)
-                    {
-                        SettlementEconomy econ = GameGen.GridPlacement.GridPoints[v.x, v.z].Economy;
-                       // Debug.Log("Settlement " + thisSet + " has near settlement with ID " + econ.SettlementID);
-                        nearEconIDs.Add(econ.SettlementID);
-                    }
-                }
-            }
-            thisSet.Economy.NearSettlementsIDs = nearEconIDs.ToArray();
-
-
-        }
-    }
-
-
-    /// <summary>
-    /// Decides the placement for each settlement of each kingdom.
-    /// We then generate the settlement shell via <see cref="GenerateSettlementShells(Kingdom, List{GridPoint})"/>
-    /// </summary>
-    /// <param name="kingdoms">The kingdoms that this world has</param>
-    /// <returns></returns>
-    private Dictionary<Kingdom, List<SettlementShell>> DecideSettlementPlacement(Kingdom[] kingdoms)
-    {
-        
-        Dictionary<Kingdom, List<GridPoint>> freePoints = new Dictionary<Kingdom, List<GridPoint>>();
-
-        Dictionary<Kingdom, List<SettlementShell>> kingdomSets = new Dictionary<Kingdom, List<SettlementShell>>();
-
-
-        foreach (Kingdom k in kingdoms)
-            freePoints.Add(k, new List<GridPoint>());
-        //List<GridPoint> freePoints = new List<GridPoint>();
-        for(int x=0; x<GridPlacement.GridSize; x++)
-        {
-            for(int z=0; z<GridPlacement.GridSize; z++)
-            {
-                GridPoint gp = GameGen.GridPlacement.GridPoints[x, z];
-                if(gp != null && gp.IsValid && !gp.HasSettlement)
-                {
-                    freePoints[gp.Kingdom].Add(gp);
-                }
-            }
-        }
-
-        SettlementEconomies = new Dictionary<SettlementShell, SettlementEconomy>(150);
-
-
-        foreach (Kingdom k in kingdoms)
-        {
-            kingdomSets.Add(k, GenerateSettlementShells(k, freePoints[k]));
-        }
-
-        //WorldEventManager.Instance.SetEconomies(SetEcon);
-        return kingdomSets;
-    }
-
-    private List<SettlementShell>  GenerateSettlementShells(Kingdom k, List<GridPoint> freePoints)
-    {
-        List<SettlementShell> shells = new List<SettlementShell>(3 + 6 + 10);
-        GridPoint capitalPoint = GameGen.GridPlacement.GetNearestPoint(k.CapitalChunk);
-        Vec2i capP = capitalPoint.GridPos;
-        SettlementShell cap = new SettlementShell(SettlementType.CAPITAL, capitalPoint);
-        capitalPoint.SettlementShell = cap;
-        shells.Add(cap);
-        GameGen.GridPlacement.GridPoints[capP.x, capP.z].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
-
-        int desCityCount = GenRan.RandomInt(2, 3);
-        int minCityClear = 130;
-        int desTownCount = GenRan.RandomInt(5, 6);
-        int minTownClear = 80;
-        
-        int desVilCount = GenRan.RandomInt(8, 10);
-        int minVilClear = 50;
-
-        int attempts = 20;
-        for(int i=0; i<desCityCount; i++)
-        {
-            for(int j=0; j<attempts; j++)
-            {
-                //Take a random point
-                GridPoint gp = GenRan.RandomFromList(freePoints);
-
-                if (gp.EnclosedBiomes[14].Contains(ChunkBiome.mountain))
-                    continue;
-
-                //freePoints.Remove(gp);
-
-                int minDist = -1;
-                foreach (SettlementShell s in shells)
-                {
-                    int dist = Vec2i.QuickDistance(s.ChunkPos, gp.ChunkPos);
-                    if (minDist == -1 || dist < minDist)
-                    {
-                        minDist = dist;
-                    }
-                }
-
-                if (Mathf.Sqrt(minDist) > minCityClear)
-                {
-                    SettlementShell shell = new SettlementShell(SettlementType.CITY, gp);
-                    shells.Add(shell);
-                    gp.SettlementShell = shell;
-                    freePoints.Remove(gp);
-                    break;
-                    Debug.Log(string.Format("City placed at grid point {0} - chunk {1} for kingdom {2}", gp.GridPos, gp.ChunkPos, k.Name));
-                }
-            }    
-        }
-
-        for (int i = 0; i < desTownCount; i++)
-        {
-            for (int j = 0; j < attempts; j++)
-            {
-                //Take a random point
-                GridPoint gp = GenRan.RandomFromList(freePoints);
-                
-
-                //freePoints.Remove(gp);
-
-                int minDist = -1;
-                foreach (SettlementShell s in shells)
-                {
-                    int dist = Vec2i.QuickDistance(s.ChunkPos, gp.ChunkPos);
-                    if (minDist == -1 || dist < minDist)
-                    {
-                        minDist = dist;
-                    }
-                }
-
-                if (Mathf.Sqrt(minDist) > minTownClear)
-                {
-                    SettlementShell shell = new SettlementShell(SettlementType.TOWN, gp);
-                    shells.Add(shell);
-                    gp.SettlementShell = shell;
-                    freePoints.Remove(gp);
-
-                    break;
-                }
-            }
-        }
-        for (int i = 0; i < desVilCount; i++)
-        {
-            for (int j = 0; j < attempts; j++)
-            {
-                //Take a random point
-                GridPoint gp = GenRan.RandomFromList(freePoints);
-                //freePoints.Remove(gp);
-
-                int minDist = -1;
-                foreach (SettlementShell s in shells)
-                {
-                    int dist = Vec2i.QuickDistance(s.ChunkPos, gp.ChunkPos);
-                    if (minDist == -1 || dist < minDist)
-                    {
-                        minDist = dist;
-                    }
-                }
-
-                if (Mathf.Sqrt(minDist) > minVilClear)
-                {
-                    SettlementShell shell = new SettlementShell(SettlementType.VILLAGE, gp);
-                    shells.Add(shell);
-                    gp.SettlementShell = shell;
-                    freePoints.Remove(gp);
-                    break;
-                }
-            }
-        }
-        for(int i=1; i<shells.Count; i++)
-        {
-            Vec2i v = shells[i].GridPointPlacement;
-            GameGen.KingdomGen.BuildRoad(GameGen.GridPlacement.GridPoints[capP.x, capP.z], GameGen.GridPlacement.GridPoints[v.x, v.z]);
-
-        }
-
-        foreach (SettlementShell s in shells)
-        {
-
-            for(int x=0; x<s.Type.GetSize(); x++)
-            {
-                for(int z=0; z<s.Type.GetSize(); z++)
-                {
-                    GameGen.TerGen.ChunkBases[x, z].HasSettlement = true;
-                }
-            }
-
-            CalculateSettlementEconomies(s);
-            SettlementEconomies.Add(s, s.Economy);
-            //SetEcon.Add(s.Economy);
-        }
-
-        return shells;
-    }
-
-
-    /// <summary>
-    /// Calculates the total produce and demand per tick for a settlement
-    /// </summary>
-    private void CalculateSettlementEconomies(SettlementShell shell)
+    private void CalculateSettlementEconomy(SettlementShell shell)
     {
 
         int size = shell.Type == SettlementType.CAPITAL ? 16 : shell.Type == SettlementType.CITY ? 14 : shell.Type == SettlementType.TOWN ? 10 : 8;
@@ -917,7 +789,7 @@ public class SettlementGenerator2
         //The total amount of resources within the settlement bounds
         Dictionary<ChunkResource, float> settlementResources = new Dictionary<ChunkResource, float>();
 
-        Vec2i baseChunk = shell.ChunkPos;
+        Vec2i baseChunk = shell.ChunkPosition;
         //We iterate every chunk within this settlement
         for(int x=0; x<size; x++)
         {
@@ -1076,14 +948,18 @@ public class SettlementGenerator2
             economicInventory.AddItem(kvp.Key, DesiredInventoryAmounts[kvp.Key]);
         }
         shell.RequiredBuildings = reqBuildings;
-        shell.StartInventory = economicInventory;
-        shell.UsePerTick = usePerTick;
-        shell.RawProductionPerTick = producePerTick;
-        shell.DesiredStock = DesiredInventoryAmounts;
-        shell.EconomicProduction = new Dictionary<EconomicProduction, int>();
-        SettlementEconomy econ = new SettlementEconomy(shell);
-        //Set the economy
-        GameGen.GridPlacement.GridPoints[shell.GridPointPlacement.x, shell.GridPointPlacement.z].Economy = econ;
+
+
+        EconomyData data = new EconomyData();
+        data.Inventory = economicInventory;
+        data.UsePerTick = usePerTick;
+        data.RawProductionPerTick = producePerTick;
+        data.DesiredItemStock = DesiredInventoryAmounts;
+        data.EconomicProduction = new Dictionary<EconomicProduction, int>();
+
+        SettlementEconomy econ = new SettlementEconomy(shell, data);
+
+
 
     }
 
@@ -1176,40 +1052,130 @@ public class SettlementGenerator2
             desiredStock.Add(kvp.Key, amount);
             economicInventory.AddItem(kvp.Key, amount);
         }
+
+        EconomyData data = new EconomyData();
+        data.Inventory = economicInventory;
+        data.UsePerTick = usePerTick;
+        data.RawProductionPerTick = rawProductionPerTick;
+        data.DesiredItemStock = desiredStock;
+        data.EconomicProduction = new Dictionary<EconomicProduction, int>();
+        data.ProductionAbility = productionAbility;
+
+        SettlementEconomy econ = new SettlementEconomy(shell, data);
+
         shell.RequiredBuildings = reqBuildings;
-        shell.StartInventory = economicInventory;
-        shell.UsePerTick = usePerTick;
-        shell.RawProductionPerTick = rawProductionPerTick;
-        shell.DesiredStock = desiredStock;
-        shell.EconomicProduction = productionPerTick;
-        shell.ProductionAbility = productionAbility;
-        SettlementEconomy econ = new SettlementEconomy(shell);
+
         //Set the economy
-        GameGen.GridPlacement.GridPoints[shell.GridPointPlacement.x, shell.GridPointPlacement.z].Economy = econ;
     }
 
+    #endregion
 
-    public class SettlementShell
+    #region generate_settlement
+
+
+    private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
+    private Object ChunkLock = new Object();
+    /// <summary>
+    /// Takes all settlement and tactical location shells and generates them,
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    public Dictionary<Vec2i, ChunkData> GenerateAllSettlementChunks(int threadCount=-1)
     {
-        public SettlementType Type;
-        public Vec2i GridPointPlacement;
-        public Vec2i ChunkPos;
 
-        public SettlementEconomy Economy;
 
-        public List<BuildingPlan> RequiredBuildings;
-        public EconomicInventory StartInventory;
-        public Dictionary<EconomicItem, int> UsePerTick;
-        public Dictionary<EconomicItem, int> RawProductionPerTick;
-        public Dictionary<EconomicItem, int> DesiredStock;
-        public Dictionary<EconomicProduction, int> EconomicProduction;
-        public SettlementProductionAbility ProductionAbility;
-        public SettlementShell(SettlementType type, GridPoint gridPoint)
+
+
+        PreGeneratedChunks = new Dictionary<Vec2i, ChunkData>(SetAndTactShells.Count * 16 * 16); ;
+
+        //If thread count is not specified, we find optimum amount and share between all
+        if (threadCount < 0)
+            threadCount = System.Environment.ProcessorCount;
+        //Calculate number of items per thread
+        int itemsPerThread = Mathf.CeilToInt((float)SetAndTactShells.Count / threadCount);
+        Debug.Log("Generating " + SetAndTactShells.Count + " sets and tact locs on " + threadCount + " threads");
+        List<Thread> generationThreads = new List<Thread>(threadCount);
+        //iterate all items
+        for(int index=0, i=0; i< threadCount; i++)
         {
-            Type = type;
-            GridPointPlacement = gridPoint.GridPos;
-            ChunkPos = gridPoint.ChunkPos;
-           
+            //Create list for current thread to generate
+            List<Shell> toGen = new List<Shell>(itemsPerThread);
+            for(int j=0; j<itemsPerThread; j++)
+            {
+                if (index >= SetAndTactShells.Count)
+                    break;
+                else
+                    toGen.Add(SetAndTactShells[index]);
+                index++;
+            }
+            Debug.Log("Starting thread " + i);
+            //Begin thread generation
+            generationThreads.Add(StartSetAndTacGeneration(toGen, i));
         }
+        //Wait for all thread completion
+        foreach (Thread t in generationThreads)
+            t.Join();
+
+        return PreGeneratedChunks;
     }
+
+
+    
+
+    private Thread StartSetAndTacGeneration(List<Shell> toGen, int threadID)
+    {
+        float t = System.DateTime.Now.Millisecond;
+        Thread thread = new Thread(()=> {
+            List<WorldLocation> locations = new List<WorldLocation>(toGen.Count);
+
+            foreach(Shell shell in toGen)
+            {
+
+                if(shell is SettlementShell)
+                {
+                    locations.Add(GenerateSettlement(shell as SettlementShell));
+                }
+                else if(shell is TacticalLocationShell)
+                {
+                   // locations.Add(GenerateTactLoc(shell as TacticalLocationShell));
+                }
+            }
+
+            World.Instance.AddLocationRange(locations);
+
+            Debug.Log("Thread finished " + toGen.Count + " items in " + (System.DateTime.Now.Millisecond - t) + "ms");
+        });
+
+        thread.Start();
+        return thread;
+    }
+
+    private Settlement GenerateSettlement(SettlementShell ss)
+    {
+        SettlementBuilder builder = new SettlementBuilder(GameGen.TerGen, ss);
+        GenerationRandom genRan = new GenerationRandom(GameGen.Seed + ss.ChunkPosition.GetHashCode());
+        builder.Generate(genRan);
+
+        
+        List<ChunkData> data = builder.ToChunkData();
+        lock (ChunkLock)
+        {
+            foreach(ChunkData cd in data)
+            {
+                PreGeneratedChunks.Add(cd.Position, cd);
+            }
+        }
+
+        Settlement set = new Settlement(ss.GetKingdom(), "test set", builder);
+        return set;
+    }
+    private TacticalLocation GenerateTactLoc(TacticalLocationShell tls)
+    {
+        return null;
+    }
+
+
+
+
+    #endregion
 }

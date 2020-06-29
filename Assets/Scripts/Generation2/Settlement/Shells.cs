@@ -17,6 +17,7 @@ public abstract class Shell
     public Shell(GridPoint gp, int kingdomID)
     {
         GridPoint = gp;
+        gp.Shell = this;
         KingdomID = kingdomID;
     }
 
@@ -35,17 +36,23 @@ public abstract class Shell
 /// Contains all generation information for a settlement, except chunk data and entities
 /// Used to contain this chunk information until the settlement has been generated fully
 /// </summary>
-public class SettlementShell2 : Shell
+public class SettlementShell : Shell
 {
     public SettlementType Type { get; private set; }
-    public SettlementShell2(GridPoint gp, int kingdomID, SettlementType type) : base(gp, kingdomID) {
+    public List<BuildingPlan> RequiredBuildings;
+
+    public SettlementEconomy Economy;
+
+    public SettlementShell(GridPoint gp, int kingdomID, SettlementType type) : base(gp, kingdomID) {
         Type = type;
     }
+
    
 
 }
 public class TacticalLocationShell : Shell
 {
-    public TacticalLocationShell(GridPoint gp, int kingdomID) : base(gp, kingdomID) { }
+    public TacLocType Type { get; private set; }
+    public TacticalLocationShell(GridPoint gp, int kingdomID, TacLocType tacType) : base(gp, kingdomID) { Type = tacType; }
   
 }

@@ -39,8 +39,6 @@ public class SettlementBuilder : BuilderBase
     private Vec2i MidTile { get; }
     //The chunk coordinate at the centre of the settlement, defines its position in the world
 
-    //An array of all the chunks that this settelment contains/belongs to.
-    public Vec2i[] SettlementChunks { get; private set; }
 
     //Array that holds all WorkObjects that will exist in this settlement
     //public WorldObjectData[,] SettlementObjects { get; set; }
@@ -67,15 +65,13 @@ public class SettlementBuilder : BuilderBase
     public SettlementPathFinder SettlementPathFinder;
     public Tile PathTile { get; private set; }
 
-    //public float AverageHeight = 5;
+    //public floazt AverageHeight = 5;
 
 
-    public SettlementBuilder(HeightFunction heightFunc, SettlementBase set) : base(set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize), heightFunc)
+    public SettlementBuilder(TerrainGenerator2 terGen, SettlementShell shell) : base(shell.ChunkPosition, new Vec2i(1,1)*shell.Type.GetSize(), terGen.GetWorldHeightAt)
     {
-       
         GenerationRandom = new GenerationRandom(0);
-        SettlementChunks = set.SettlementChunks;
-        TileSize = set.TileSize;
+        TileSize = shell.Type.GetSize() * World.ChunkSize;
         PathTile = Tile.STONE_PATH;
         MidTile = new Vec2i(TileSize / 2, TileSize / 2);
         //Tiles = new Tile[TileSize, TileSize];
@@ -83,7 +79,7 @@ public class SettlementBuilder : BuilderBase
         Buildings = new List<Building>();
         //PathNodes = new List<Vec2i>();
         BuildingPlots = new List<Recti>();
-        SettlementType = set.SettlementType;
+        SettlementType = shell.Type;
 
         // Heights = new float[TileSize, TileSize];
 
@@ -95,47 +91,10 @@ public class SettlementBuilder : BuilderBase
         PathNodes = new float[TileSize / NODE_RES, TileSize / NODE_RES];
         PNSize = TileSize / PathNodeRes;
 
-        //AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
-
-
-        // Voxels = new Voxel[(TileSize) * TileSize * World.ChunkHeight];
     }
 
-    public SettlementBuilder(GameGenerator gameGen, SettlementBase set) : base (set.BaseChunk, new Vec2i(set.ChunkSize, set.ChunkSize), gameGen)
-    {
-        GameGenerator = gameGen;
-        if(gameGen != null)
-            GenerationRandom = new GenerationRandom(gameGen.Seed);
-        else
-            GenerationRandom = new GenerationRandom(0);
-        SettlementChunks = set.SettlementChunks;
-        TileSize = set.TileSize;
-        PathTile = Tile.STONE_PATH;
-        MidTile = new Vec2i(TileSize / 2, TileSize / 2);
-        //Tiles = new Tile[TileSize, TileSize];
-        //SettlementObjects = new WorldObjectData[TileSize, TileSize];
-        Buildings = new List<Building>();
-        //PathNodes = new List<Vec2i>();
-        BuildingPlots = new List<Recti>();
-        SettlementType = set.SettlementType;
 
-       // Heights = new float[TileSize, TileSize];
-        
-
-        //TestNodes = new List<SettlementPathNode>();
-
-        //Defines a path node to be once every chunk
-        PathNodeRes = World.ChunkSize; 
-        PathNodes = new float[TileSize / NODE_RES, TileSize / NODE_RES];
-        PNSize = TileSize / PathNodeRes;
-
-        FlattenBase(5);
-        //AverageHeight = gameGen.TerrainGenerator.ChunkBases[Centre.x, Centre.z].BaseHeight;
-
-
-       // Voxels = new Voxel[(TileSize) * TileSize * World.ChunkHeight];
-    }
-
+    
 
     public override void Generate(GenerationRandom genRan)
     {

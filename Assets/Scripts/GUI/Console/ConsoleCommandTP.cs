@@ -30,6 +30,8 @@ public class ConsoleCommandTP : ConsoleCommand
 
     private string TeleportToSettlements(string[] args)
     {
+        if (args.Length < 2)
+            return "Specify which settlement";
         if(int.TryParse(args[1], out int setID)){
 
             Settlement set = GameManager.WorldManager.World.GetSettlement(setID);

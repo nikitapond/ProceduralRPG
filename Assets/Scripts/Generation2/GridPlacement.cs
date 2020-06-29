@@ -254,6 +254,10 @@ public class GridPlacement
 }
 public class GridPoint
 {
+    public Shell Shell;
+
+
+
     public SettlementType SETYPE;
     public bool HasSet;
 
@@ -276,15 +280,14 @@ public class GridPoint
     public ChunkRoad ChunkRoad;
     public bool HasRoad { get { return ChunkRoad != null; } }
 
-    public Kingdom Kingdom;
+    public Kingdom Kingdom { get; private set; }
 
-    public SettlementGenerator2.SettlementShell SettlementShell;
 
     public ChunkStructure ChunkStructure;
     public SettlementEconomy Economy;
 
     //public SettlementType SetType;
-    public bool HasSettlement { get { return SettlementShell != null; } }
+    public bool HasSettlement { get { return Shell != null && Shell is SettlementShell; } }
     public GridPoint(Vec2i gridPos, Vec2i cPos)
     {
         GridPos = gridPos;
@@ -444,10 +447,10 @@ public class GridPathFinder
             }
             else
             {
-                return 10;
+                return 0;
             }
         }
-        return 5000;
+        return 50000;
 
     }
 
@@ -468,7 +471,7 @@ public class GridPathFinder
     {
         if (Heuristic(a, b) == 2f)
         {
-            return (float)NodeValue(b) * Mathf.Sqrt(2f);
+            return (float)NodeValue(b) * 2;
         }
         return (float)NodeValue(b);
     }

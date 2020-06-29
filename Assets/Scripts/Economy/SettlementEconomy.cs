@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+
 /// <summary>
 /// A settlement economy is always loaded, even if the settlement is not.
 /// It contain
@@ -49,15 +50,15 @@ public class SettlementEconomy
 
 
 
-    public SettlementEconomy(SettlementGenerator2.SettlementShell shell)
+    public SettlementEconomy(SettlementShell shell, EconomyData data)
     {
         shell.Economy = this;
-        Inventory = shell.StartInventory;
-        UsePerTick = shell.UsePerTick;
-        RawProductionPerTick = shell.RawProductionPerTick;
-        ProductionAbility = shell.ProductionAbility;
-        DesiredItemStock = shell.DesiredStock;
-        EconomicProduction = shell.EconomicProduction;
+        Inventory = data.Inventory;
+        UsePerTick = data.UsePerTick;
+        RawProductionPerTick = data.RawProductionPerTick;
+        ProductionAbility = data.ProductionAbility;
+        DesiredItemStock = data.DesiredItemStock;
+        EconomicProduction = data.EconomicProduction;
 
         RequiredImports = new Dictionary<EconomicItem, int>();
        // DesiredImports = new Dictionary<EconomicItem, int>();
@@ -499,6 +500,26 @@ public class SettlementEconomy
 
 
 
+}
+
+public struct EconomyData
+{
+    //Each economic production that occurs per tick
+    public Dictionary<EconomicProduction, int> EconomicProduction;
+
+    public SettlementProductionAbility ProductionAbility;
+
+    //The amount of each resource used per tick
+
+    //Inventory holds all of a settlements economic items until use
+    public EconomicInventory Inventory;
+    //The amount of resources required per tick - food, 
+    public Dictionary<EconomicItem, int> UsePerTick;
+    //The amount of raw resources produced per tick 
+    public Dictionary<EconomicItem, int> RawProductionPerTick;
+
+    //The desired amount of required (food etc) stock kept in the inventory
+    public Dictionary<EconomicItem, int> DesiredItemStock;
 }
 
 public struct SettlementProductionAbility

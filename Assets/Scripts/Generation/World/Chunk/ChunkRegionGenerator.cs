@@ -10,7 +10,7 @@ public class ChunkRegionGenerator
     public static List<ChunkRegion> KeptRegions;
 
     private Object LOCK_OBJ;
-    private GameGenerator GameGenerator;
+    private GameGenerator2 GameGenerator;
     private ChunkGenerator ChunkGenerator;
     private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
     private List<Vec2i> RegionsToGen;
@@ -20,7 +20,7 @@ public class ChunkRegionGenerator
     private int[,] OCEAN;
 
    
-    public ChunkRegionGenerator(GameGenerator gameGen, Dictionary<Vec2i, ChunkData> preGenChunks)
+    public ChunkRegionGenerator(GameGenerator2 gameGen, Dictionary<Vec2i, ChunkData> preGenChunks)
     {
         KeptRegions = new List<ChunkRegion>();
         LOCK_OBJ = new Object();

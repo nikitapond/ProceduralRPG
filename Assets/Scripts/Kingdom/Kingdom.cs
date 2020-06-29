@@ -16,7 +16,7 @@ public class Kingdom
     public string Name { get; private set; } //The name of this kingdom
     public int KingdomID { get; private set; }
 
-    public Vec2i CapitalChunk { get; private set; } //The chunk the capital is centred on.
+    public Vec2i CapitalChunk /*{ get; private set; }*/; //The chunk the capital is centred on.
 
     public List<Vec2i> ClaimedChunks;
     public List<Settlement> Settlements { get; private set; }

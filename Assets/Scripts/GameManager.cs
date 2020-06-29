@@ -29,7 +29,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public static GameManager Game { get; private set; }
 
-    public static GameGenerator GameGenerator { get; private set; }
+    public static GameGenerator2 GameGenerator { get; private set; }
     public static WorldManager WorldManager { get; private set; }
     public static EntityManager EntityManager { get; private set; }
     public static PlayerManager PlayerManager { get; private set; }
@@ -154,26 +154,27 @@ public class GameManager : MonoBehaviour
         //Initiate GameGenerator, then generate and set world
         //Debug.BeginDeepProfile("generate_world");
 
-        GameGenerator = new GameGenerator(seed);
-        GameGenerator.GenerateWorld(WorldManager);
+        GameGenerator = new GameGenerator2(seed);
+        GameGenerator.GenerateWorld();
+        //GameGenerator.GenerateWorld(WorldManager);
         /*
         GameGenerator.GenerateEntities(WorldManager.World);
         GameGenerator.GenerateDungeons();*/
-        GameGenerator.GenerateWorldMap();
+        //GameGenerator.GenerateWorldMap();
         //QuestManager.SetQuests(GameGenerator.GenerateQuests(WorldManager.World));
 
 
         //Vec2i wpos = Vec2i.FromVector2(QuestManager.Unstarted[0].Initiator.GetNPC().Position2);
         //Vec2i wpos = WorldManager.World.GetChunkStructure(0).Position * World.ChunkSize + new Vec2i(2, 2);
         Vec2i wpos = null;
-        try
+        
+        foreach(KeyValuePair<int, WorldLocation> tl in WorldManager.World.WorldLocations)
         {
-            wpos = WorldManager.World.GetSettlement(0).Centre * World.ChunkSize;
-
-        }catch(System.Exception e)
-        {
-            wpos = new Vec2i(World.WorldSize / 2, World.WorldSize / 2) * World.ChunkSize;
+            wpos = tl.Value.Position * World.ChunkSize;
+            break;
         }
+
+        
         //Vec2i wpos = new Vec2i(1, 1) * World.ChunkSize * World.WorldSize / 2;
         // Vec2i wEntr = WorldManager.World.GetSubworld(1).WorldEntrance;
         //TestSettle = QuestManager.Unstarted[0].Initiator.GetNPC().NPCKingdomData.GetSettlement();
@@ -280,10 +281,6 @@ public class GameManager : MonoBehaviour
 
     private void OnGUI()
     {
-        if(GameGenerator.MAP!= null)
-        {
-            GUI.DrawTexture(new Rect(0, 0, World.WorldSize, World.WorldSize), GameGenerator.MAP);
-        }
         for(int i=0; i< toDrawTexts.Length; i++)
         {
             if(toDraw[i] && toDrawTexts[i] != null)

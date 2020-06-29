@@ -12,18 +12,18 @@ public class ChunkGenerator
     private int[,] MOUNTAIN;
     private int[,] OCEAN;
     private float[,] OCEAN_HEIGHT;
-    private ChunkBase[,] ChunkBases;
-    private GameGenerator GameGen;
+    private ChunkBase2[,] ChunkBases;
+    private GameGenerator2 GameGen;
     private int Seed;
     /// <summary>
     /// Initiates the ChunkGenerator.
     /// 
     /// </summary>
     /// <param name="gameGen"></param>
-    public ChunkGenerator(GameGenerator gameGen)
+    public ChunkGenerator(GameGenerator2 gameGen)
     {
         GameGen = gameGen;
-        ChunkBases = gameGen.TerrainGenerator.ChunkBases;
+        ChunkBases = gameGen.TerGen.ChunkBases;
         Seed = gameGen.Seed;
         //Set up default tile arrays 
         EMPTY_PLAINS = new int[World.ChunkSize, World.ChunkSize];
@@ -58,11 +58,11 @@ public class ChunkGenerator
 
 
 
-        ChunkBase cb = ChunkBases[x, z];
+        ChunkBase2 cb = ChunkBases[x, z];
         ChunkData cd = null;
-        if (cb.Lake != null)
+        if (cb.ChunkFeature is ChunkLake)
             cd = GenerateLakeChunk(x, z, cb);
-        else if (cb.RiverNode != null)
+        else if (cb.ChunkFeature is ChunkRiverNode)
             cd = GenerateRiverChunk(x, z, cb);
         else
             cd = GenerateSimpleChunk(x, z, cb);
@@ -78,12 +78,12 @@ public class ChunkGenerator
     /// <param name="z"></param>
     /// <param name="cb"></param>
     /// <returns></returns>
-    private ChunkData GenerateSimpleChunk(int x, int z, ChunkBase cb)
+    private ChunkData GenerateSimpleChunk(int x, int z, ChunkBase2 cb)
     {
         
-        if (!cb.IsLand)
+        if (cb.Biome == ChunkBiome.ocean)
         {
-            return new ChunkData(x, z, (int[,])OCEAN.Clone(), cb.IsLand);
+            return new ChunkData(x, z, (int[,])OCEAN.Clone(), false);
         }/*
         if(cb.Biome == ChunkBiome.dessert)
         {
@@ -113,28 +113,27 @@ public class ChunkGenerator
                 {
                     //obs.Add(WorldObject.ObjectPositionHash(i, j), new Tree(new Vec2i(x * World.ChunkSize + i, z * World.ChunkSize + j)));
                 }
-                heights[i, j] = GameGen.TerrainGenerator.WorldHeight(x * World.ChunkSize + i, z * World.ChunkSize + j);
+                heights[i, j] = GameGen.TerGen.GetWorldHeightAt(x * World.ChunkSize + i, z * World.ChunkSize + j);
             }
         }
-        ChunkData cd = new ChunkData(x, z, tiles, cb.IsLand,cb.BaseHeight, heightMap: heights);
+        ChunkData cd = new ChunkData(x, z, tiles, true,cb.Height, heightMap: heights);
         return cd;
     }
 
-    private ChunkData GenerateLakeChunk(int x, int z, ChunkBase cb)
+    private ChunkData GenerateLakeChunk(int x, int z, ChunkBase2 cb)
     {
         ChunkData cd = new ChunkData(x, z, (int[,])OCEAN.Clone(), false);
         return cd;
     }
 
-    private ChunkData GenerateRiverChunk(int x, int z, ChunkBase cb)
+    private ChunkData GenerateRiverChunk(int x, int z, ChunkBase2 cb)
     {
         GenerationRandom genRan = new GenerationRandom(new Vec2i(x, z).GetHashCode() + Seed);
         int[,] tiles = new int[World.ChunkSize, World.ChunkSize];
         WorldObjectData[,] data = new WorldObjectData[World.ChunkSize, World.ChunkSize];
         float[,] heights = new float[World.ChunkSize, World.ChunkSize];
-        RiverNode rn = cb.RiverNode;
-        Vec2i exitDelta = rn.RiverExitDelta;
-        Vec2i entrDelta = rn.RiverEntranceDelta;
+        Vec2i exitDelta = new Vec2i(1,0);
+        Vec2i entrDelta = new Vec2i(-1,0);
 
         if (exitDelta == null)
         {
@@ -182,26 +181,30 @@ public class ChunkGenerator
             b = -m;
         }
 
+        int inWidth = 8;
+        int outWidth = 8;
+
+
         float dem_sqr = (a * a + b * b);
         ChunkVoxelData vox = new ChunkVoxelData();
         for (int tx = 0; tx < World.ChunkSize; tx++)
         {
             for (int tz = 0; tz < World.ChunkSize; tz++)
             {
-                float baseheight = GameGen.TerrainGenerator.WorldHeight(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
+                float baseheight = GameGen.TerGen.GetWorldHeightAt(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
 
                 float dist_sqr = ((a * tz + b * tx + c) * (a * tz + b * tx + c)) / dem_sqr;
-                if (dist_sqr < (cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) / divBy)
+                if (dist_sqr < (inWidth* inWidth) / divBy)
                 {
                     Vector2 off = new Vector2(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
                     //Debug.Log("here");
                     tiles[tx, tz] = Tile.WATER.ID;
                     //float baseheight = GameGen.TerrainGenerator.WorldHeight(x * World.ChunkSize + tx, z * World.ChunkSize + tz);
-                    float lerp = dist_sqr / ((cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) / divBy);
+                    float lerp = dist_sqr / ((inWidth* inWidth) / divBy);
 
 
                     heights[tx, tz] = Mathf.Lerp(baseheight, baseheight-5, 1/lerp);
-                    heights[tx, tz] = Mathf.Clamp(cb.BaseHeight - 5, 1, 16);
+                    heights[tx, tz] = Mathf.Clamp(cb.Height - 5, 1, 16);
                     for(int y=Mathf.FloorToInt(heights[tx,tz]); y<baseheight; y++)
                     {
                         vox.SetVoxelNode(tx, y, tz, new VoxelNode(Voxel.glass));
@@ -257,7 +260,7 @@ public class ChunkGenerator
                     }*/
 
                 }
-                else if (dist_sqr < (cb.RiverNode.EntranceWidth * cb.RiverNode.EntranceWidth) * 2 / divBy)
+                else if (dist_sqr < (inWidth * inWidth) * 2 / divBy)
                 {
                     tiles[tx, tz] = Tile.SAND.ID;
                     heights[tx, tz] = baseheight;
@@ -280,11 +283,6 @@ public class ChunkGenerator
             }
         }
 
-        if(cb.RiverNode.Bridge != null)
-        {
-            GenerateRiverBridge(cb, data);
- 
-        }
         //data[0, 0] = new Tree(new Vec2i(x * World.ChunkSize, z * World.ChunkSize));
 
         //data[2, 2] = new RockFormation(new Vec2i(x * World.ChunkSize + 2, z * World.ChunkSize + 2));
@@ -300,7 +298,7 @@ public class ChunkGenerator
                     data_.Add(WorldObject.ObjectPositionHash(i, j), data[i, j]);
             }
         }
-        ChunkData cd = new ChunkData(x, z, tiles, cb.IsLand, baseHeight: cb.BaseHeight, heightMap: heights);
+        ChunkData cd = new ChunkData(x, z, tiles, true, baseHeight: cb.Height, heightMap: heights);
         cd.SetVoxelData(vox);
         return cd;
     }

@@ -103,30 +103,13 @@ public class RiverGenerator2
             LineI i2 = new LineI(v1, v2);
             foreach(Vec2i v in i2.ConnectPoints())
             {
-                GameGen.TerGen.ChunkBases[v.x, v.z].SetChunkFeature(new ChunkRiverNode());
+                GameGen.TerGen.ChunkBases[v.x, v.z].SetChunkFeature(new ChunkRiverNode(v));
 
             }
         }
         return;
-        List<Vec2i> rNodes = GeneratePath(start, end);
-        foreach(Vec2i v in basic)
-        {
-            GameGen.TerGen.ChunkBases[v.x, v.z].SetChunkFeature(new ChunkRiverNode());
-
-        }
-        return;
-        Debug.Log(rNodes.Count);
-        for(int i=0; i<rNodes.Count - 1; i++)
-        {
-            Vec2i n1 = rNodes[i];
-            Vec2i n2 = rNodes[i + 1];
-            LineI l = new LineI(n1, n2);
-            foreach(Vec2i v in l.ConnectPoints())
-            {
-                GameGen.TerGen.ChunkBases[v.x, v.z].SetChunkFeature(new ChunkRiverNode());
-
-            }
-        }
+        
+        
 
         
     }

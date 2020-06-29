@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 [System.Serializable]
-public class Settlement : IWorldEventLocation
+public class Settlement : WorldLocation
 {
 
     public SettlementPathNode IMPORTANT;
@@ -42,7 +42,7 @@ public class Settlement : IWorldEventLocation
     public SettlementEconomy Economy { get; private set; }
 
 
-    public Settlement(Kingdom kingdom, string name, SettlementBuilder builder)
+    public Settlement(Kingdom kingdom, string name, SettlementBuilder builder) : base(builder.BaseChunk)
     {
         IMPORTANT = builder.ENTR_NODE;
         Name = name;
@@ -52,7 +52,6 @@ public class Settlement : IWorldEventLocation
         Centre = builder.BaseChunk + builder.ChunkSize/2;
         BaseCoord = builder.BaseTile;
         SettlementBounds = new Recti(BaseCoord.x, BaseCoord.z, TileSize, TileSize);
-        SettlementChunks = builder.SettlementChunks;
         Buildings = builder.Buildings;
         SettlementNPCIDs = new List<int>();
         SettlementLeaderNPCIDs = new List<int>();
@@ -128,13 +127,13 @@ public class Settlement : IWorldEventLocation
         return BaseCoord + pos * World.ChunkSize;
     }
 
-    public void Tick()
+    public override void Tick()
     {
         if (Economy != null)
             Economy.Tick();
     }
 
-    public void GroupReturn(EntityGroup group)
+    public override void GroupReturn(EntityGroup group)
     {
         Economy.EntityGroupReturn(group);
     }

@@ -12,7 +12,7 @@ public class EconomyTest : MonoBehaviour
     public GameObject GridPoint;
     public RawImage Image;
     public RawImage KingdomMap;
-
+    public RawImage ContourMap;
 
     public Text InfoText;
     GameGenerator2 GameGen;
@@ -33,6 +33,7 @@ public class EconomyTest : MonoBehaviour
         Image.texture = GameGen.TerGen.ToTexture();
         GenMeshes();
         KingdomMap.texture = GameGen.KingdomGen.ToTexture();
+        ContourMap.texture = GameGen.TerGen.DrawContours();
         foreach (GridPoint gp in GameGen.GridPlacement.GridPoints)
         {
             if (gp == null)
@@ -195,7 +196,22 @@ public class EconomyTest : MonoBehaviour
             mesh.colors = col.ToArray();
             mesh.RecalculateNormals();
         }
+        PlaceSetsAndStructures();
 
     }
-    
+
+
+    public GameObject CUBE;
+    private void PlaceSetsAndStructures()
+    {
+        foreach(Shell s in GameGen.SettlementGen.SetAndTactShells)
+        {
+            GameObject obj = Instantiate(CUBE);
+
+            obj.transform.position = new Vector3(s.ChunkPosition.x, GameGen.TerGen.ChunkBases[s.ChunkPosition.x, s.ChunkPosition.z].Height, s.ChunkPosition.z);
+            obj.transform.parent = transform;
+
+        }
+    }
+
 }

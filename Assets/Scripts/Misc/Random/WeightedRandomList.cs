@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// We can then ramdomly select an element from this list, with each elements weight value 
 /// being directly proportional to the probability of it being picked
 /// </summary>
-public class WeightRandomList<T>
+public class WeightedRandomList<T>
 {
 
     struct StartEnd
@@ -24,10 +24,10 @@ public class WeightRandomList<T>
     private List<T> Elements;
     private float Accumulated;
     private System.Random Random;
-    public WeightRandomList(int seed=-1){
-        ElementStartEnd = new List<StartEnd>();
-        
-        Elements = new List<T>();
+    public WeightedRandomList(int seed=-1, int startSize = 1000){
+
+        ElementStartEnd = new List<StartEnd>(startSize);        
+        Elements = new List<T>(startSize);
         if(seed == -1)
         {
             seed = System.DateTime.Now.Millisecond;

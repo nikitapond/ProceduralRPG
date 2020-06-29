@@ -51,6 +51,7 @@ public class GameGenerator
     /// <returns></returns>
     public void GenerateWorld(WorldManager wm)
     {
+        /*
         //Set Random init state based on seed
         Random.InitState(Seed);
         MiscMaths.SetRandomSeed(Seed);
@@ -115,7 +116,7 @@ public class GameGenerator
         //Create a simple map based on the terrain of the world
         GenerateTerrainMap(TerrainGenerator.ChunkBases);
         Debug.EndDeepProfile("terrain_map_gen");
-        
+     */   
     }
 
     
@@ -129,6 +130,7 @@ public class GameGenerator
     /// <param name="midpoint">The region coordinate to centre inital region generation about</param>
     public ChunkRegionGenerator GenerateChunks(Vec2i midpoint)
     {
+        /*
         Debug.BeginDeepProfile("start_region_gen");
         
         //Create the generator and start the initial generation
@@ -137,7 +139,8 @@ public class GameGenerator
 
         Debug.EndDeepProfile("start_region_gen");
 
-        return crg;
+        return crg;*/
+        return null;
     }
     /// <summary>
     /// Generates a simple texture representing the terrain defined by the

@@ -14,15 +14,16 @@ public class GameGenerator2
     public SettlementGenerator2 SettlementGen;
     public ChunkStructureGenerator2 StructureGen;
 
-    private List<IWorldEventLocation> WorldEventLocations;
-
+    private List<WorldLocation> WorldEventLocations;
+    private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
     public World World;
 
     public GameGenerator2(int seed)
     {
         Seed = seed;
         World = new World();
-        WorldEventLocations = new List<IWorldEventLocation>();
+        WorldManager.Instance.SetWorld(World);
+        WorldEventLocations = new List<WorldLocation>();
     }
 
 
@@ -45,18 +46,24 @@ public class GameGenerator2
         Debug.EndDeepProfile("KingdomGen");
 
         
-        Debug.BeginDeepProfile("SettleGen");
+        Debug.BeginDeepProfile("SettleShellGen");
         SettlementGen = new SettlementGenerator2(this);
         SettlementGen.GenerateAllSettlementShells();
         SettlementGen.GenerateAllTacticalLocationShells();
         SettlementGen.CalculateTactialAndSettlementData();
         //SettlementGen.GenerateAllSettlements(KingdomGen.Kingdoms);
-        Debug.EndDeepProfile("SettleGen");
-
-        
-        //StructureGen = new ChunkStructureGenerator2(this);
+        Debug.EndDeepProfile("SettleShellGen");
 
 
+        Debug.BeginDeepProfile("StructShellGen");
+
+        StructureGen = new ChunkStructureGenerator2(this);
+        StructureGen.GenerateAllShells();
+        Debug.EndDeepProfile("StructShellGen");
+
+        Debug.BeginDeepProfile("SetChunksGen");
+        PreGeneratedChunks = SettlementGen.GenerateAllSettlementChunks();
+        Debug.EndDeepProfile("SetChunksGen");
         return;
         FillWorldEventLocations();
         World.ChunkBases2 = TerGen.ChunkBases;
@@ -65,6 +72,28 @@ public class GameGenerator2
         WorldEventManager.Instance.Init(TerGen.ChunkBases, GridPlacement, WorldEventLocations);
         Debug.EndDeepProfile("WorldEventInit");
     }
+
+
+    /// <summary>
+    /// Starts the generation of chunk regions for the world.
+    /// Initially generates regions near to the specified midpoint.
+    /// All remaining regions are then generated on a seperate thread 
+    /// with those closest to the initial point being generated first
+    /// </summary>
+    /// <param name="midpoint">The region coordinate to centre inital region generation about</param>
+    public ChunkRegionGenerator GenerateChunks(Vec2i midpoint)
+    {
+        Debug.BeginDeepProfile("start_region_gen");
+
+        //Create the generator and start the initial generation
+        ChunkRegionGenerator crg = new ChunkRegionGenerator(this, PreGeneratedChunks);
+        crg.GenStartRegion(midpoint);
+
+        Debug.EndDeepProfile("start_region_gen");
+
+        return crg;
+    }
+
     /// <summary>
     /// Iterates all settlements and chunk structures, adding them
     /// to the list <see cref="WorldEventLocations"/>
@@ -77,7 +106,7 @@ public class GameGenerator2
         }
         foreach(ChunkStructure cs in StructureGen.ChunkStructures)
         {
-            if(cs is IWorldEventLocation)
+            if(cs is WorldLocation)
                 WorldEventLocations.Add(cs);
         }
     }

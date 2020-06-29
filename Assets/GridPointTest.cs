@@ -13,125 +13,83 @@ public class GridPointTest : MonoBehaviour
         bool isActive = false;
         this.p = p;
         Text = GetComponentInChildren<Text>();
-        if (p.HasSettlement)
+
+        if(p.Shell != null)
         {
             Button = GetComponent<Button>();
             isActive = true;
             ColorBlock b = Button.colors;
-            
-
-            Color c = Color.magenta;
-            if (p.SettlementShell.Type == SettlementType.CITY)
-                c = Color.red;
-            else if (p.SettlementShell.Type == SettlementType.TOWN)
-                c = Color.green;
-            else if (p.SettlementShell.Type == SettlementType.VILLAGE)
-                c = Color.yellow;
-
-            Text.text = p.SettlementShell.Type.ToString();
-
-            b.normalColor = c;
-            Button.colors = b;
-        }
-        else if(p.ChunkStructure != null)
-        {
-            Button = GetComponent<Button>();
-
-            ColorBlock b = Button.colors;
-
-            isActive = true;
-            Color c = Color.magenta;
-            if (p.ChunkStructure is BanditCamp)
+            Color c = Color.black;
+            if(p.Shell is SettlementShell)
             {
-                c = Color.grey;
-                Text.text = "Bandit";
-            }             
-
-            b.normalColor = c;
-            Button.colors = b;
-        }
-        else
-        {
-           // this.gameObject.SetActive(false);
-        }
-
-        if (p.HasSet)
-        {
-            isActive = true;
-            Button = GetComponent<Button>();
-
-            ColorBlock b = Button.colors;
-
-
-            Color c = Color.magenta;
-            if (p.SETYPE == SettlementType.CITY)
-                c = Color.red;
-            else if (p.SETYPE == SettlementType.TOWN)
-                c = Color.green;
-            else if (p.SETYPE == SettlementType.VILLAGE)
-                c = Color.yellow;
-
-            //Text.text = p.SettlementShell.Type.ToString();
-
-            b.normalColor = c;
-            Button.colors = b;
-        }
-        if (p.HasTacLoc)
-        {
-            isActive = true;
-            Button = GetComponent<Button>();
-
-            ColorBlock b = Button.colors;
-
-
-            Color c = Color.magenta;
-            if (p.TACTYPE == TacLocType.fort)
+                SettlementShell ss = p.Shell as SettlementShell;
+                if(ss.Type == SettlementType.CAPITAL)
+                {
+                    c = Color.yellow;
+                    Text.text = "CA";
+                }else if(ss.Type == SettlementType.CITY)
+                {
+                    c = Color.magenta;
+                    Text.text = "CI";
+                }
+                else if(ss.Type == SettlementType.TOWN)
+                {
+                    c = Color.blue;
+                    Text.text = "TO";
+                }
+                else if(ss.Type == SettlementType.VILLAGE)
+                {
+                    c = Color.green;
+                    Text.text = "VI";
+                }
+            }
+            else if (p.Shell is TacticalLocationShell)
             {
-                c = Color.blue;
-                Text.text = "FORT";
-            }else if (p.TACTYPE == TacLocType.tower)
+                TacticalLocationShell ss = p.Shell as TacticalLocationShell;
+                if (ss.Type ==TacLocType.fort)
+                {
+                    c = Color.red;
+                    Text.text = "FO";
+                }
+                else if (ss.Type == TacLocType.tower) { 
+                    c = Color.cyan;
+                    Text.text = "TO";
+                }               
+            }else if(p.Shell is ChunkStructureShell)
             {
-                c = new Color(0.5f, 0, 0.5f);
-                Text.text = "TOWER";
+                ChunkStructureShell css = p.Shell as ChunkStructureShell;
+                if(css.Type == ChunkStructureType.banditCamp)
+                {
+                    c = Color.red;
+                    Text.text = "BA";
+                }else if(css.Type == ChunkStructureType.vampireNest)
+                {
+                    c = new Color(0.5f, 0, 0.5f);
+                    Text.text = "VA";
+                }
+                else if (css.Type == ChunkStructureType.kithenaCatacomb)
+                {
+                    c = new Color(0, 0.5f, 0.5f);
+                    Text.text = "KI";
+                }
+                else if (css.Type == ChunkStructureType.ancientTemple)
+                {
+                    c = new Color(0, 0.5f, 0.5f);
+                    Text.text = "AT";
+                }
+                else
+                {
+                    c = Color.red;
+                    Text.text = "DA";
+                }
             }
 
-            //Text.text = p.SettlementShell.Type.ToString();
 
             b.normalColor = c;
             Button.colors = b;
         }
-       /*
-        if(p.Desirability > 0.1f)
-        {
-            Button = GetComponent<Button>();
-
-            ColorBlock b = Button.colors;
-
-            float r = p.Desirability / 2f;
-            Color c = FromDes(p.Desirability);
-
-  
 
 
-            b.normalColor = c;
-            Button.colors = b;
-        }*/
-        if (p.IsCapital)
-        {
-            isActive = true;
-            Button = GetComponent<Button>();
-
-            ColorBlock b = Button.colors;
-
-
-            Color c = Color.yellow;
-
-            Text.text = "Cap";
-
-
-            b.normalColor = c;
-            Button.colors = b;
-        }
         this.gameObject.SetActive(isActive);
     }
 

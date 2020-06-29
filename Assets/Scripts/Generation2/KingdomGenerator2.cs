@@ -58,7 +58,8 @@ public class KingdomGenerator2
             //Find the nearest grid point
             GridPoint gp = GameGen.GridPlacement.GetNearestPoint(k.CapitalChunk);
             //move to the exact capital chunk
-            gp.ChunkPos = k.CapitalChunk;
+            //gp.ChunkPos = k.CapitalChunk;
+            k.CapitalChunk = gp.ChunkPos;
             gp.IsCapital = true;
 
         }
@@ -85,8 +86,8 @@ public class KingdomGenerator2
                 {
                     obstruction[x, z] = true;
                 }
-                else if (GameGen.TerGen.EvilDragonMountainPeak.QuickDistance(new Vec2i(x, z)) < 128 * 128)
-                    obstruction[x, z] = true;
+                //else if (GameGen.TerGen.EvilDragonMountainPeak.QuickDistance(new Vec2i(x, z)) < 128 * 128)
+                //    obstruction[x, z] = true;
             }
         }
 
@@ -147,52 +148,7 @@ public class KingdomGenerator2
             }
         }
         return;
-        for (int x=0; x<World.WorldSize; x++)
-        {
-            for(int z=0; z<World.WorldSize; z++)
-            {
-                ChunkBase2 cb = GameGen.TerGen.ChunkBases[x, z];
-
-                
-                if(cb.Biome != ChunkBiome.ocean)
-                {
-                    int lowestDist = -1;
-                    int curKing = -1;
-                    for (int i = 0; i < kings.Length; i++)
-                    {
-                        int dist = new Vec2i(x, z).QuickDistance(kings[i].CapitalChunk);
-                        if (lowestDist == -1 || dist < lowestDist)
-                        {
-                            lowestDist = dist;
-                            curKing = i;
-                        }
-                    }
-                    ClaimedChunks[kings[curKing]].Add(new Vec2i(x, z));
-                    GameGen.TerGen.ChunkBases[x, z].KingdomID = curKing;
-
-                }
-                
-
-
-            }
-        }
-
-        for(int x=0; x<GridPlacement.GridSize; x++)
-        {
-            for(int z=0; z<GridPlacement.GridSize; z++)
-            {
-                GridPoint p = GameGen.GridPlacement.GridPoints[x,z];
-               // Debug.Log(p);
-                if(p != null)
-                {
-                    int id = GameGen.TerGen.ChunkBases[p.ChunkPos.x, p.ChunkPos.z].KingdomID;
-                   /// Debug.Log(kings[GameGen.TerGen.ChunkBases[x, z].KingdomID]);
-                   
-                    if(id != -1)
-                        p.Kingdom = kings[GameGen.TerGen.ChunkBases[p.ChunkPos.x, p.ChunkPos.z].KingdomID];
-                }
-            }
-        }
+        
     }
 
 
@@ -336,31 +292,6 @@ public class KingdomGenerator2
             
         }
         return caps;
-    }
-
-    public void BuildRoad(GridPoint a, GridPoint b)
-    {
-        List<GridPoint> path = new List<GridPoint>(50);
-        path.Add(a);
-        path.AddRange(GameGen.GridPlacement.ConnectPoints(a, b));
-        //List<GridPoint> path = GameGen.GridPlacement.ConnectPoints(a, b);
-        
-        path[path.Count - 1].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
-        GameGen.GridPlacement.GridPoints[path[path.Count - 1].GridPos.x, path[path.Count - 1].GridPos.z].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
-        for (int i=0; i<path.Count-1; i++)
-        {
-            path[i].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
-            GameGen.GridPlacement.GridPoints[path[i].GridPos.x, path[i].GridPos.z].ChunkRoad = new ChunkRoad(ChunkRoad.RoadType.Paved);
-            Vec2i v1 = path[i].ChunkPos;
-            Vec2i v2 = path[i + 1].ChunkPos;
-            LineI li = new LineI(v1, v2);
-            foreach(Vec2i v in li.ConnectPoints())
-            {
-                GameGen.TerGen.ChunkBases[v.x, v.z].SetChunkFeature(new ChunkRoad(ChunkRoad.RoadType.Paved));
-            }
-        }
-
-        
     }
 
 }
