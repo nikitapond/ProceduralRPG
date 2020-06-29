@@ -37,6 +37,11 @@ public class PreLoadedChunk
         {
             mesh.uv = pmesh.UV;
         }
+        if (pmesh.Normals != null)
+        {
+            mesh.normals = pmesh.Normals;
+        }
+            
             
 
         return mesh;
@@ -49,13 +54,34 @@ public class PreLoadedChunk
 
 }
 
-public struct PreMesh
+public class PreMesh
 {
     public Vector3[] Verticies;
     public int[] Triangles;
     public Vector2[] UV;
     public Color[] Colours;
+    public Vector3[] Normals;
+
+    public void RecalculateNormals()
+    {
+
+        Normals = new Vector3[Verticies.Length];
+
+        for (int t = 0; t < Triangles.Length; t += 3)
+        {
+            Vector3 AB = Verticies[Triangles[t + 1]] - Verticies[Triangles[t]];
+            Vector3 AC = Verticies[Triangles[t + 2]] - Verticies[Triangles[t]];
+            Vector3 norm = Vector3.Cross(AB, AC);
+            norm.Normalize();
+            Normals[Triangles[t]] += norm;
+            Normals[Triangles[t + 1]] += norm;
+            Normals[Triangles[t + 2]] += norm;
+        }
+        for (int i = 0; i < Normals.Length; i++)
+        {
+            Normals[i].Normalize();
+        }
 
 
-
+    }
 }

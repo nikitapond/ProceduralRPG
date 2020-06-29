@@ -10,7 +10,7 @@ public class WorldEventManager : MonoBehaviour
     public List<EntityGroup> EntityGroups;
 
 
-    private List<IWorldEventLocation> EventLocations;
+    private List<WorldLocation> EventLocations;
 
     private void Awake()
     {
@@ -28,11 +28,11 @@ public class WorldEventManager : MonoBehaviour
     public GridPlacement GridPlacement { get; private set; }
 
 
-    public List<IWorldEventLocation> WorldEventLocations;
+    public List<WorldLocation> WorldEventLocations;
 
     private GenerationRandom GenRan;
 
-    public void Init(ChunkBase2[,] chunks, GridPlacement gp, List<IWorldEventLocation> eventLocations)
+    public void Init(ChunkBase2[,] chunks, GridPlacement gp, List<WorldLocation> eventLocations)
     {
         Groups = new Dictionary<Vec2i, List<EntityGroup>>();
         PathFinder = new WorldEventPathFinder(chunks);
@@ -281,7 +281,7 @@ public class WorldEventManager : MonoBehaviour
    
     private void LocationTick()
     {
-        foreach(IWorldEventLocation wel in WorldEventLocations)
+        foreach(WorldLocation wel in WorldEventLocations)
         {
             wel?.Tick();
         }
@@ -368,20 +368,31 @@ public class WorldEventManager : MonoBehaviour
 /// can travel between.
 /// - > All settlements (via settlement economoy) and chunk structures
 /// </summary>
-public interface IWorldEventLocation
+public abstract class WorldLocation
 {
+    public Vec2i Position { get; private set; }
+    public int LocationID { get { return Position.GetHashCode(); } }
+
+
+    public WorldLocation(Vec2i cPos)
+    {
+        Position = cPos;
+    }
+
+
+
     /// <summary>
     /// Calls the update tick for this location
     /// In settlements, this will update the economy
     /// In chunk structures, this will randomly spawn a relevent entity
     /// group
     /// </summary>
-    void Tick();
+    public abstract void Tick();
 
     /// <summary>
     /// Called when the entity group param has returned back home
     /// </summary>
     /// <param name="group"></param>
-    void GroupReturn(EntityGroup group);
+    public abstract void GroupReturn(EntityGroup group);
 
 }

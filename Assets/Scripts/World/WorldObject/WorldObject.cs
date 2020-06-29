@@ -51,7 +51,8 @@ public class WorldObject : MonoBehaviour
         }
         else
         {
-            StartCoroutine("WaitAndAdjust");
+            return;
+            StartCoroutine(WaitAndAdjust());
             Debug.Log("no hit" + "_" + basePos);
         }
 

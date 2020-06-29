@@ -62,7 +62,7 @@ public class SettlementTester : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        /*
         int seed = 0;
         SettlementBuilder setB = new SettlementBuilder(WorldHeight, new SettlementBase(new Vec2i(9, 9), 8, SettlementType.CAPITAL));
         setB.Generate(GameManager.RNG);
@@ -106,8 +106,7 @@ public class SettlementTester : MonoBehaviour
 
         Player player = new Player();
         PlayerManager.Instance.SetPlayer(player);
-
-
+        */
         
     }
 

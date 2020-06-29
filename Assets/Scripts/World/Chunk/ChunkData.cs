@@ -4,6 +4,8 @@ using System.Collections.Generic;
 [System.Serializable]
 public class ChunkData
 {
+
+    public Vec2i Position { get; private set; }
     public int X { get; private set; }
     public int Z { get; private set; }
     public int[,] TileIDs { get; private set; }
@@ -23,6 +25,7 @@ public class ChunkData
     public ChunkData(int x, int z, int[,] tiles, bool isLand, 
         float baseHeight = 5, float[,] heightMap=null, List<WorldObjectData> objects=null)
     {
+        Position = new Vec2i(x, z);
         X = x;
         Z = z;
         TileIDs = tiles;

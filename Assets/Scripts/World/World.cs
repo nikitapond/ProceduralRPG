@@ -10,17 +10,24 @@ public class World
     public static World Instance;
 
     public static readonly int ChunkHeight = 16;
-    public readonly static int ChunkSize = 32; //Chunk size in tiles
+    public readonly static int ChunkSize = 16; //Chunk size in tiles
     public readonly static int WorldSize = 1024; //World size in chunks
     public readonly static int RegionSize = 32;
     public readonly static int RegionCount = WorldSize / RegionSize;
 
 
-    private Object SettlementAddLock; //Lock for thread safe adding settlements
+    private Object LocationAddLock; //Lock for thread safe adding settlements
     public Dictionary<int, Settlement> WorldSettlements { get; private set; }
     public Dictionary<int, Kingdom> WorldKingdoms { get; private set; }
     public Dictionary<int, Subworld> WorldSubWorlds { get; private set; }
     public Dictionary<int, ChunkStructure> WorldChunkStructures { get; private set; }
+    /// <summary>
+    /// A dictionary containing all world locations
+    /// Key = hash of item position
+    /// </summary>
+    public Dictionary<int, WorldLocation> WorldLocations { get; private set; }
+
+
 
     public ChunkBase[,] ChunkBases;
 
@@ -29,12 +36,12 @@ public class World
     public WorldMap WorldMap { get; private set; }
     public World()
     {
-        SettlementAddLock = new Object();
+        LocationAddLock = new Object();
         WorldSettlements = new Dictionary<int, Settlement>();
         WorldKingdoms = new Dictionary<int, Kingdom>();
         WorldSubWorlds = new Dictionary<int, Subworld>();
         WorldChunkStructures = new Dictionary<int, ChunkStructure>();
-
+        WorldLocations = new Dictionary<int, WorldLocation>();
         Instance = this;
     }
 
@@ -62,40 +69,27 @@ public class World
         gls.WorldSettlements = WorldSettlements;
     }
 
-    public int AddSettlement(Settlement settlement)
-    {
-        lock (SettlementAddLock)
-        {
-            int place = WorldSettlements.Count;
-            while (WorldSettlements.ContainsKey(place))
-            {
-                place++;
-            }
 
-            WorldSettlements.Add(place, settlement);
-            settlement.SetSettlementID(place);
-            Debug.Log("Settlement " + settlement.ToString() + " has ID " + place, Debug.ENTITY_TEST);
-            return place;
-        }        
+    public void AddLocation(WorldLocation location)
+    {
+        int id = location.LocationID;
+        lock (LocationAddLock)
+        {
+            WorldLocations.Add(id, location);
+        }
+        
     }
-
-    public void AddSettlementRange(List<Settlement> sets)
+    public void AddLocationRange(List<WorldLocation> locations)
     {
-        lock (SettlementAddLock)
+        lock (LocationAddLock)
         {
-            int place = WorldSettlements.Count;
-            foreach(Settlement s in sets)
+            foreach(WorldLocation wl in locations)
             {
-                if (WorldSettlements.ContainsKey(place))
-                    place++;
-                else
-                {
-                    WorldSettlements.Add(place, s);
-                    s.SetSettlementID(place);
-                }
+                WorldLocations.Add(wl.LocationID, wl);
             }
         }
     }
+
 
 
     public int AddSubworld(Subworld subworld)

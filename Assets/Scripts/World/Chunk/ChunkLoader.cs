@@ -9,7 +9,7 @@ public class ChunkLoader : MonoBehaviour
 
 
     public const int MAX_LOAD_PER_FRAME = 5;
-    public const int MAX_CHUNK_LOADS_PER_FRAME = 64;
+    public const int MAX_CHUNK_LOADS_PER_FRAME = 32;
     public GameObject ChunkPrefab;
     public GameObject ChunkVoxelPrefab;
 
@@ -326,7 +326,7 @@ public class ChunkLoader : MonoBehaviour
         if (lc2 == null)
         {
             //Debug.Log(chunk);
-            Debug.Log("[ChunkLoader] Chunk for object is not loaded, attempting another object");
+            //Debug.Log("[ChunkLoader] Chunk for object is not loaded, attempting another object");
             //if the chunk is null, we throw this object to the end of the que and try again.  
             lock (ObjectsToLoadLock)
             {
@@ -355,66 +355,80 @@ public class ChunkLoader : MonoBehaviour
 
         cObj.name = "chunk_" + pChunk.Position;
         LoadedChunk2 loaded = pChunk.LoadedChunk;
+        loaded.SetPreLoadedChunk(pChunk);
         loaded.gameObject.SetActive(true);
         MeshFilter mf = loaded.GetComponent<MeshFilter>();
         //Create the terrain mesh
         mf.mesh = PreLoadedChunk.CreateMesh(pChunk.TerrainMesh);
-        try
+        
+        /*try
         {
             mf.mesh.RecalculateNormals();
         }catch(System.Exception e)
         {
             Debug.Log(e);
-        }
+        }*/
         
         if(pChunk.LoadedChunk.LOD == 1)
         {
             MeshCollider mc = loaded.GetComponent<MeshCollider>();
             mc.sharedMesh = mf.mesh;
+            mc.enabled = true;
         }
         else
         {
             MeshCollider mc = loaded.GetComponent<MeshCollider>();
             mc.sharedMesh = null;
+            mc.enabled = false;
         }
 
 
-        
-        //Iterate all voxels
-        foreach (Voxel v in MiscUtils.GetValues<Voxel>())
-        {
-            if (v == Voxel.none)
-                continue;
-            if(pChunk.VoxelMesh.TryGetValue(v, out PreMesh pmesh))
-            {
-                GameObject voxelObj = Instantiate(ChunkVoxelPrefab);
-                MeshFilter voxelMf = voxelObj.GetComponent<MeshFilter>();
-                MeshRenderer voxelMr = voxelObj.GetComponent<MeshRenderer>();
-                voxelMr.material = ResourceManager.GetVoxelMaterial(v);
-                voxelMf.mesh = PreLoadedChunk.CreateMesh(pmesh);
-                MeshCollider voxelMc = voxelObj.GetComponent<MeshCollider>();
-                voxelMc.sharedMesh = voxelMf.mesh;
-                voxelObj.transform.parent = cObj.transform;
-                voxelObj.transform.localPosition = Vector3.zero;
+        if (loaded.PreLoaded.VoxelMesh != null)
+            loaded.SetHasGeneratedVoxels(true);
 
-                voxelMf.mesh.RecalculateNormals();
-            }
-        }
-
-        cObj.transform.position = pChunk.Position.AsVector3() * World.ChunkSize;
-        //loaded.SetChunk(pChunk.ChunkData);
-        lock (ObjectsToLoadLock)
+        if(loaded.LOD < 4 && loaded.HasGeneratedVoxels)
         {
-            if (pChunk.ChunkData.WorldObjects != null)
+            //loaded.SetHasGeneratedVoxels(true);
+            //Iterate all voxels
+            foreach (Voxel v in MiscUtils.GetValues<Voxel>())
             {
-                ObjectsToLoad.AddRange(pChunk.ChunkData.WorldObjects);
-                Debug.Log("Chunk " + pChunk.ChunkData.X + "," + pChunk.ChunkData.Z + " has " + pChunk.ChunkData.WorldObjects.Count + " objects");
-                foreach (WorldObjectData objDat in pChunk.ChunkData.WorldObjects)
+                if (v == Voxel.none)
+                    continue;
+                if (pChunk.VoxelMesh.TryGetValue(v, out PreMesh pmesh))
                 {
-                    Debug.Log(objDat);
+                    GameObject voxelObj = Instantiate(ChunkVoxelPrefab);
+                    MeshFilter voxelMf = voxelObj.GetComponent<MeshFilter>();
+                    MeshRenderer voxelMr = voxelObj.GetComponent<MeshRenderer>();
+                    voxelMr.material = ResourceManager.GetVoxelMaterial(v);
+                    voxelMf.mesh = PreLoadedChunk.CreateMesh(pmesh);
+                    MeshCollider voxelMc = voxelObj.GetComponent<MeshCollider>();
+                    voxelMc.sharedMesh = voxelMf.mesh;
+                    voxelObj.transform.parent = cObj.transform;
+                    voxelObj.transform.localPosition = Vector3.zero;
+
+                   // voxelMf.mesh.RecalculateNormals();
                 }
             }
         }
+        cObj.transform.position = pChunk.Position.AsVector3() * World.ChunkSize;
+
+        if (loaded.LOD < 3 && !loaded.HasLoadedWorldObjects)
+        {
+            loaded.SetHasLoadedWorldObjects(true);
+            //loaded.SetChunk(pChunk.ChunkData);
+            lock (ObjectsToLoadLock)
+            {
+                if (pChunk.ChunkData.WorldObjects != null)
+                {
+                    ObjectsToLoad.AddRange(pChunk.ChunkData.WorldObjects);
+              
+                }
+            }
+        }
+        
+
+
+        
         return loaded;
     }
 
@@ -893,7 +907,7 @@ public class ChunkLoader : MonoBehaviour
         ChunkData[] neighbors = ChunkRegionManager.GetNeighbors(new Vec2i(chunk.X, chunk.Z));
 
         PreMesh terrainMesh = GenerateSmoothTerrain(chunk, neighbors, lod);
-
+        terrainMesh.RecalculateNormals();
         Debug.Log("[ChunkLoader] Terrain mesh for " + chunk + " created - " + CurrentVerticies.Count + " verticies", Debug.CHUNK_LOADING);
         //Create the base pre-loaded chunk
         PreLoadedChunk preChunk = new PreLoadedChunk(new Vec2i(chunk.X, chunk.Z), terrainMesh, chunk);
@@ -958,7 +972,7 @@ public class ChunkLoader : MonoBehaviour
 
         }
         
-
+        //Next we generate all relevent voxel meshes
         foreach(Voxel v in MiscUtils.GetValues<Voxel>())
         {
             if (v == Voxel.none)
@@ -983,11 +997,13 @@ public class ChunkLoader : MonoBehaviour
                 voxelMesh.Verticies = CurrentVerticies.ToArray();
                 voxelMesh.Triangles = CurrentTriangles.ToArray();
                 voxelMesh.UV = CreateUV(voxelMesh);
+                voxelMesh.RecalculateNormals();
                 //Add it the the pre loaded chunk
                 preChunk.VoxelMesh.Add(v, voxelMesh);
             }
-
         }
+       
+        /*
         if(chunk.WorldObjects != null)
         {
             
@@ -997,7 +1013,7 @@ public class ChunkLoader : MonoBehaviour
                 ObjectsToLoad.AddRange(chunk.WorldObjects);
             }
            
-        }
+        }*/
 
 
 

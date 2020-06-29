@@ -15,12 +15,22 @@ public class LoadedChunk2 : MonoBehaviour
     //True if we have loaded in world objects
     public bool HasLoadedWorldObjects { get; private set; }
 
-
+    public bool HasCollisionMesh { get; private set; }
     public PreLoadedChunk PreLoaded { get; private set; }
 
 
+    public bool DrawNormals;
+
+    private void Reset()
+    {
+        HasGeneratedVoxels = false;
+        HasLoadedWorldObjects = false;
+        HasCollisionMesh = false;
+    }
+
     public void SetChunkAndLOD(ChunkData cd, int lod)
     {
+        Reset();
         Chunk = cd;
         LOD = lod; 
         Position = new Vec2i(cd.X, cd.Z);
@@ -35,7 +45,7 @@ public class LoadedChunk2 : MonoBehaviour
         if (cd == Chunk)
             return;
 
-
+        Reset();
         Position = new Vec2i(cd.X, cd.Z);
         Chunk = cd;
 
@@ -48,7 +58,6 @@ public class LoadedChunk2 : MonoBehaviour
 
         if (lod == LOD)
             return;
-
         LOD = lod;
 
         ChunkRegionManager.Instance.ChunkLoader.AddToGenerationQue(this);
@@ -63,6 +72,10 @@ public class LoadedChunk2 : MonoBehaviour
     {
         HasLoadedWorldObjects = has;
     }
+    public void SetHasCollisionMesh(bool has)
+    {
+        HasCollisionMesh = has;
+    }
 
     public void SetPreLoadedChunk(PreLoadedChunk prc) {
         PreLoaded = prc;
@@ -74,5 +87,24 @@ public class LoadedChunk2 : MonoBehaviour
         if (other == null || (other as LoadedChunk2) == null) return false;
         LoadedChunk2 lc = other as LoadedChunk2;
         return lc.Position == Position;
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (DrawNormals)
+        {
+
+            
+            Mesh m = GetComponent<MeshFilter>().mesh;
+            Gizmos.color = Color.white;
+            Debug.Log("Vert Count: " + m.vertices.Length + ", normal count: " + m.normals.Length);
+            for (int t=0; t<m.triangles.Length; t+=3)
+            {
+                Vector3 pos = (m.vertices[m.triangles[t]] + m.vertices[m.triangles[t+ 1]] + m.vertices[m.triangles[t + 2]])/ 3f;
+                Vector3 norm = (m.normals[m.triangles[t]] + m.normals[m.triangles[t + 1]] + m.normals[m.triangles[t + 2]]) / 3f;
+                Gizmos.DrawLine(transform.position + pos, transform.position + pos + 5* norm);
+            }
+            
+        }
     }
 }

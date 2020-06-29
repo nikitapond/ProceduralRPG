@@ -1,14 +1,13 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-public abstract class ChunkStructure : IWorldEventLocation
+public abstract class ChunkStructure : WorldLocation
 {
-
+    
     public string Name;
 
 
 
-    public Vec2i Position { get; private set; }
     public Vec2i Size { get; private set; }
 
     public List<Entity> Entities { get; private set; }
@@ -26,9 +25,8 @@ public abstract class ChunkStructure : IWorldEventLocation
 
     public WorldMapLocation WorldMapLocation { get; private set; }
 
-    public ChunkStructure(Vec2i cPos, Vec2i cSize)
+    public ChunkStructure(Vec2i cPos, Vec2i cSize) : base(cPos)
     {
-        Position = cPos;
         Size = cSize;
     }
 
@@ -60,7 +58,12 @@ public abstract class ChunkStructure : IWorldEventLocation
         StructureID = id;
     }
 
-    public abstract void Tick();
 
-    public abstract void GroupReturn(EntityGroup group);
+}
+
+public enum ChunkStructureType
+{
+    evilDragonLair, goodDragonLair,
+    kithenaCatacomb, ancientTemple,
+    banditCamp, vampireNest
 }
