@@ -14,33 +14,24 @@ public class Recti
     public int Width { get; private set; }
     public int Height { get; private set; }
 
-    public Vec2i[] BoundedPoints { get; private set; }
-    public Vec2i[] BoundaryPoints { get; private set; }
+
+
+    public Recti(Vec2i min, Vec2i size)
+    {
+        X = min.x;
+        Y = min.z;
+        Width = size.x;
+        Height = size.z;
+    }
     public Recti(int x, int y, int width, int height)
     {
         X = x;
         Y = y;
         Width = width;
         Height = height;
-        List<Vec2i> BoundedPoints = new List<Vec2i>();
-        List<Vec2i> BoundaryPoints = new List<Vec2i>();
-        for(int x_=x; x_<x+width; x_++)
-        {
-            for(int y_=y; y_<y+height; y_++)
-            {
-                if(x_==x || x_==x+width-1 || y_==y || y_ == y + height - 1)
-                {
-                    BoundaryPoints.Add(new Vec2i(x_, y_));
-                }
-                else
-                {
-                    BoundedPoints.Add(new Vec2i(x_, y_));
-                }
-            }
-        }
-        this.BoundaryPoints = BoundaryPoints.ToArray();
-        this.BoundedPoints = BoundedPoints.ToArray();
+
     }
+
 
     public bool ContainsPoint(int x, int z)
     {
@@ -49,8 +40,7 @@ public class Recti
 
     public bool ContainsPoint(Vec2i v)
     {
-        return System.Array.IndexOf(BoundedPoints, v) > -1;
-        return v.x >= X && v.x < X + Width && v.z >= Y && v.z < Y + Height;
+        return v.x >= X && v.x <= X + Width && v.z >= Y && v.z <= Y + Height;
     }
 
 

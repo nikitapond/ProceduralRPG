@@ -15,9 +15,12 @@ public class SettlementTester : MonoBehaviour
 
     ChunkData[,] Chunks;
 
+    private Player Player;
 
     private void Awake()
     {
+        TestMain.SetupTest();
+        Player = TestMain.CreatePlayer(new Vector3(0, 0, 0));
         GameManager.RNG = new GenerationRandom(0);
         CurrentVerticies = new List<Vector3>(World.ChunkSize * World.ChunkSize);
         CurrentTriangles = new List<int>(World.ChunkSize * World.ChunkSize);
@@ -25,10 +28,6 @@ public class SettlementTester : MonoBehaviour
         CurrentColours = new List<Color>(World.ChunkSize * World.ChunkSize);
         MarchingCubes = new MarchingCubes(-0.5f);
 
-        ResourceManager.LoadAllResources();
-
-        EventManager em = new EventManager();
-        //GetComponentInChildren<EntityManager>().st
     }
 
 
@@ -49,7 +48,7 @@ public class SettlementTester : MonoBehaviour
     }
 
 
-    public float WorldHeight(int x, int z)
+    public float WorldHeight(float x, float z)
     {
         int cx = Mathf.FloorToInt((float)x / World.ChunkSize);
         int cz = Mathf.FloorToInt((float)z / World.ChunkSize);
@@ -62,6 +61,33 @@ public class SettlementTester : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        SettlementShell shell = new SettlementShell(new GridPoint(new Vec2i(0, 0), new Vec2i(0, 0)), 0, SettlementType.CAPITAL);
+
+        bool[] entraceDir = new bool[8];
+        entraceDir[0] = true;
+        entraceDir[3] = true;
+       // entraceDir[4] = true;
+       // entraceDir[6] = true;
+        SettlementGenerator2.LocationData ld = new SettlementGenerator2.LocationData() { OnRiver = false, OnBorder = false, OnLake = false,EntranceDirections=entraceDir };
+        shell.SetLocationData(ld);
+
+
+        ChunkBase2[,] bases = new ChunkBase2[16, 16];
+        for(int x=0; x<16; x++)
+        {
+            for(int z=0; z<16; z++)
+            {
+                bases[x, z] = new ChunkBase2(new Vec2i(x, z), WorldHeightChunk(x, z), ChunkBiome.grassland);
+                if (z == 8)
+                    bases[x, z].SetChunkFeature(new ChunkRiverNode(new Vec2i(x, z)));
+            }
+        }
+
+
+        Debug.BeginDeepProfile("Setgen");
+        SettlementBuilder2 setB = new SettlementBuilder2(WorldHeight, shell);
+        setB.Generate(new GenerationRandom(0));
+        Debug.EndDeepProfile("Setgen");
         /*
         int seed = 0;
         SettlementBuilder setB = new SettlementBuilder(WorldHeight, new SettlementBase(new Vec2i(9, 9), 8, SettlementType.CAPITAL));
@@ -72,42 +98,42 @@ public class SettlementTester : MonoBehaviour
         k.AddSettlement(set);
         KingdomNPCGenerator npcGen = new KingdomNPCGenerator(null, k, EntityManager.Instance);
         npcGen.GenerateSettlementNPC(set);
-
+        */
 
 
         List<ChunkData> chunks = setB.ToChunkData();
         Chunks = new ChunkData[20, 20];
 
-        foreach(ChunkData c in chunks)
+
+        foreach (ChunkData cd in chunks)
         {
-            Chunks[c.X, c.Z] = c;
-
-            Debug.BeginDeepProfile("compress");
-            c.VoxelData.Compress();
-            Debug.EndDeepProfile("compress");
 
 
-            Debug.BeginDeepProfile("de_compress");
-            c.VoxelData.UnCompress();
 
-            Debug.EndDeepProfile("de_compress");
+            if (cd == null)
+                continue;
+
+            Chunks[cd.X, cd.Z] = cd;
+          
+            //EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
         }
         foreach (ChunkData cd in Chunks)
         {
+
             if (cd == null)
                 continue;
+
+    
             PreLoadedChunk plc = GeneratePreLoadedChunk(cd);
 
             CreateChunk(plc, cd);
-            EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
+            //EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
 
 
         }
 
-        Player player = new Player();
-        PlayerManager.Instance.SetPlayer(player);
-        */
-        
+
+
     }
 
     // Update is called once per frame
@@ -157,7 +183,7 @@ public class SettlementTester : MonoBehaviour
     private List<Color> CurrentColours;
     private ChunkData GetChunk(int x, int z)
     {
-        if (x > 0 && z > 0 && x < Chunks.GetLength(0) && z < Chunks.GetLength(1))
+        if (x >= 0 && z >= 0 && x < Chunks.GetLength(0) && z < Chunks.GetLength(1))
             return Chunks[x, z];
         return null;
     }
@@ -312,7 +338,7 @@ public class SettlementTester : MonoBehaviour
         Color[,] colourMap = new Color[size + 1, size + 1];
         ClearBuffers();
         ChunkData[] neighbors = GetNeighbors(new Vec2i(chunk.X, chunk.Z));
-
+       
         for (int x = 0; x <= size; x++)
         {
             for (int z = 0; z <= size; z++)

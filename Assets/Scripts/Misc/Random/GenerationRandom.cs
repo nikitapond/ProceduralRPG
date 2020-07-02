@@ -73,6 +73,11 @@ public class GenerationRandom
         return random.Next(min, max);
     }
 
+    public int RandomIntFromSet(params int[] param)
+    {
+        return RandomFromArray(param);
+    }
+
     public bool RandomBool()
     {
         return random.Next(0, 2) == 0 ? true : false;
@@ -86,7 +91,7 @@ public class GenerationRandom
     public Vec2i RandomQuadDirection()
     {
         //Random number of either 0 or 1
-        int xy = random.Next(0, 3);
+        int xy = random.Next(0, 4);
 
         if(xy == 0)
         {

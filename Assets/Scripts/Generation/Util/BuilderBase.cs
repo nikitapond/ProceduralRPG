@@ -16,7 +16,7 @@ public abstract class BuilderBase
     public Vec2i BaseTile { get; private set; } //Minimum point in world coords
     public Vec2i TileSize { get; private set; } //Size in tiles
 
-    protected ChunkBase[,] ChunkBases;
+    protected ChunkBase2[,] ChunkBases;
     private ChunkVoxelData[,] ChunkVoxels;
     private float[,][,] HeightMaps;
     protected float[,] ChunkBaseHeights;
@@ -25,7 +25,7 @@ public abstract class BuilderBase
 
     public delegate float HeightFunction(float x, float z);
 
-    public BuilderBase(Vec2i baseChunk, Vec2i chunkSize, HeightFunction heightFunc) {
+    public BuilderBase(Vec2i baseChunk, Vec2i chunkSize, HeightFunction heightFunc, ChunkBase2[,] chunkBases) {
 
         BaseChunk = baseChunk;
         ChunkSize = chunkSize;
@@ -37,11 +37,7 @@ public abstract class BuilderBase
         ChunkBaseHeights = new float[ChunkSize.x, ChunkSize.z];
         TileMaps = new int[ChunkSize.x, ChunkSize.z][,];
         ObjectMaps = new List<WorldObjectData>[ChunkSize.x, ChunkSize.z];
-
-        if (GameGenerator.Instance != null && GameGenerator.Instance.TerrainGenerator != null)
-        {
-            ChunkBases = new ChunkBase[ChunkSize.x, ChunkSize.z];
-        }
+        ChunkBases = chunkBases;
 
         for (int x = 0; x < ChunkSize.x; x++)
         {
@@ -49,9 +45,9 @@ public abstract class BuilderBase
             {
                 HeightMaps[x, z] = new float[World.ChunkSize + 1, World.ChunkSize + 1];
 
-                if (ChunkBases != null)
-                    ChunkBases[x, z] = GameGenerator.Instance.TerrainGenerator.ChunkBases[x + BaseChunk.x, z + BaseChunk.z];
-                float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
+   
+
+                float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].Height;
                 int baseTile = (ChunkBases == null || ChunkBases[x, z] == null) ? Tile.NULL.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
                 ChunkBaseHeights[x, z] = baseHeight;
                 TileMaps[x, z] = new int[World.ChunkSize, World.ChunkSize];
@@ -61,11 +57,15 @@ public abstract class BuilderBase
 
             }
         }
+        //if no height function is specified, we define the height to be 0
+        if (heightFunc == null)
+            heightFunc = (float x, float y) => { return 0; };
+
         for (int x = 0; x < ChunkSize.x; x++)
         {
             for (int z = 0; z < ChunkSize.z; z++)
             {
-                float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
+                float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].Height;
                 int baseTile = (ChunkBases == null || ChunkBases[x, z] == null) ? Tile.NULL.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
 
                 for (int x_ = 0; x_ < World.ChunkSize; x_++)
@@ -78,8 +78,7 @@ public abstract class BuilderBase
 
                         SetHeight(x * World.ChunkSize + x_, z * World.ChunkSize + z_, baseHeight);
                         SetTile(x * World.ChunkSize + x_, z * World.ChunkSize + z_, Tile.FromID(baseTile));
-                        // HeightMaps[x, z][x_, z_] = baseHeight;
-                        //TileMaps[x, z][x_, z_] = baseTile;
+
                     }
                 }
             }
@@ -88,6 +87,7 @@ public abstract class BuilderBase
 
     }
 
+    /*
     public BuilderBase(Vec2i baseChunk, Vec2i chunkSize, GameGenerator gameGen = null)
     {
         BaseChunk = baseChunk;
@@ -151,7 +151,7 @@ public abstract class BuilderBase
         }
         //FlattenBase();
     }
-
+    */
 
     public void RaiseBase(float deltaheight, int boundry)
     {
@@ -588,7 +588,7 @@ public abstract class BuilderBase
         {
             for (int z = 0; z < ChunkSize.z; z++)
             {
-                float height = ChunkBases == null ? 0 : ChunkBases[x, z].BaseHeight;
+                float height = ChunkBases == null ? 0 : ChunkBases[x, z].Height;
                 ChunkData chunk_xz = new ChunkData(BaseChunk.x + x, BaseChunk.z + z, TileMaps[x, z], true, height, HeightMaps[x, z], ObjectMaps[x,z]);
                 ChunkVoxels[x, z].HasBoundryVoxels = true;
                 chunk_xz.SetVoxelData(ChunkVoxels[x, z]);

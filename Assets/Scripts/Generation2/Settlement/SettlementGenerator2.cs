@@ -604,6 +604,16 @@ public class SettlementGenerator2
         public bool OnRiver;
         public bool OnCoast;
         public bool OnBorder;
+        public bool[] EntranceDirections;
+        public override string ToString()
+        {
+            string first = string.Format("OnLake:{0}, OnRiver:{1}, OnCoast:{2}, OnBorder:{3}", OnLake, OnRiver, OnCoast, OnBorder);
+            first += "\nEntrances: ";
+            for (int i = 0; i < EntranceDirections.Length; i++)
+                if (EntranceDirections[i])
+                    first += i;
+            return first;
+        }
     }
 
     /// <summary>
@@ -661,10 +671,43 @@ public class SettlementGenerator2
 
             }
         }
-        LocationData ld = new LocationData() { OnCoast = true, OnLake = true, OnRiver = false, OnBorder = false };
+        //Define entraces
+        bool[] entrances = new bool[8];
+        for(int i=0; i<8; i++)
+        {
+            foreach (Vec2i v in Vec2i.OCT_DIRDIR)
+            {
+                Vec2i p = gp.GridPos + v;
+                if (GridPlacement.InGridBounds(p))
+                {
+                    GridPoint gp2 = GameGen.GridPlacement.GridPoints[p.x, p.z];
+                    if (gp2.HasRoad)
+                        entrances[i] = true;
+                    else
+                        entrances[i] = false;
+                }
+            }    
+        }
+        LocationData ld = new LocationData() { OnCoast = onCoast, OnLake = onLake, OnRiver = onRiver, OnBorder = onBorder, EntranceDirections=entrances };
         shell.SetLocationData(ld);
+        Vec2i size = shell.GetSize();
+        ChunkBase2[,] bases = new ChunkBase2[size.x, size.z];
+        //Iterate chunk bases that belong to this shell, add them to the array
+        for(int x=0; x < size.x; x++)
+        {
+            for (int z = 0; z < size.z; z++)
+            {
+                bases[x, z] = GameGen.TerGen.ChunkBases[x, z];
+            }
+        }
+        //Set bases
+        shell.SetChunkBases(bases);
+
 
     }
+
+  
+
     /// <summary>
     /// Generates all roads in the game
     /// We do this by first starting at each kingdom capital, and iterativly searching 

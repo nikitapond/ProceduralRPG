@@ -67,8 +67,31 @@ public class SettlementBuilder : BuilderBase
 
     //public floazt AverageHeight = 5;
 
+    public SettlementBuilder(HeightFunction heightFunc, SettlementShell shell) : base(shell.ChunkPosition, new Vec2i(1, 1) * shell.Type.GetSize(), heightFunc, null)
+    {
+        GenerationRandom = new GenerationRandom(0);
+        TileSize = shell.Type.GetSize() * World.ChunkSize;
+        PathTile = Tile.STONE_PATH;
+        MidTile = new Vec2i(TileSize / 2, TileSize / 2);
+        //Tiles = new Tile[TileSize, TileSize];
+        //SettlementObjects = new WorldObjectData[TileSize, TileSize];
+        Buildings = new List<Building>();
+        //PathNodes = new List<Vec2i>();
+        BuildingPlots = new List<Recti>();
+        SettlementType = shell.Type;
 
-    public SettlementBuilder(TerrainGenerator2 terGen, SettlementShell shell) : base(shell.ChunkPosition, new Vec2i(1,1)*shell.Type.GetSize(), terGen.GetWorldHeightAt)
+        // Heights = new float[TileSize, TileSize];
+
+
+        //TestNodes = new List<SettlementPathNode>();
+
+        //Defines a path node to be once every chunk
+        PathNodeRes = World.ChunkSize;
+        PathNodes = new float[TileSize / NODE_RES, TileSize / NODE_RES];
+        PNSize = TileSize / PathNodeRes;
+
+    }
+    public SettlementBuilder(TerrainGenerator2 terGen, SettlementShell shell) : base(shell.ChunkPosition, new Vec2i(1,1)*shell.Type.GetSize(), terGen.GetWorldHeightAt, null)
     {
         GenerationRandom = new GenerationRandom(0);
         TileSize = shell.Type.GetSize() * World.ChunkSize;

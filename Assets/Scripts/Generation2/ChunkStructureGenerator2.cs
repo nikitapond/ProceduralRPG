@@ -293,4 +293,9 @@ public class ChunkStructureShell : Shell
     {
         Type = type;
     }
+
+    public override Vec2i GetSize()
+    {
+        throw new System.NotImplementedException();
+    }
 }

@@ -10,7 +10,7 @@ public abstract class SubworldBuilder : BuilderBase
     public Vec2i WorldEntrance { get; private set; }
 
     protected Vec2i SubworldEntrance;
-    public SubworldBuilder(Vec2i worldEntrance, Vec2i chunkSize) : base(new Vec2i(0,0), chunkSize)
+    public SubworldBuilder(Vec2i worldEntrance, Vec2i chunkSize) : base(new Vec2i(0,0), chunkSize, null, null)
     {
         WorldEntrance = worldEntrance;
 

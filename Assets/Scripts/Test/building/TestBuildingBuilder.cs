@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class TestBuildingBuilder : BuilderBase
 {
-    public TestBuildingBuilder(Vec2i baseChunk, Vec2i chunkSize) : base(baseChunk, chunkSize)
+    public TestBuildingBuilder(Vec2i baseChunk, Vec2i chunkSize) : base(baseChunk, chunkSize, null, null)
     {
     }
 
@@ -22,7 +22,7 @@ public class TestBuildingBuilder : BuilderBase
                 int cx = WorldToChunk(x);
                 int cz = WorldToChunk(z);
 
-                int deltaHeight = ChunkBases != null ? (int)(minHeight - ChunkBases[cx, cz].BaseHeight) : 0;
+                int deltaHeight = ChunkBases != null ? (int)(minHeight - ChunkBases[cx, cz].Height) : 0;
 
                 SetTile(x + pos.x, z + pos.z, b.BuildingTiles[x, z]);
                 SetHeight(x + pos.x, z + pos.z, minHeight);

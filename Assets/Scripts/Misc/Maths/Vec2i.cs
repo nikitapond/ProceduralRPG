@@ -1,12 +1,15 @@
 ﻿using UnityEngine;
 using UnityEditor;
-
+using System.Collections.Generic;
 [System.Serializable]
 public class Vec2i
 {
-    public static Vec2i[] QUAD_DIR = new Vec2i[] { new Vec2i(1, 0), new Vec2i(0, 1), new Vec2i(-1, 0), new Vec2i(0, -1), };
-    public static Vec2i[] OCT_DIRDIR = new Vec2i[] { new Vec2i(1, 0), new Vec2i(0, 1), new Vec2i(-1, 0), new Vec2i(0, -1), 
-                                                     new Vec2i(1,1), new Vec2i(1,-1), new Vec2i(-1,1), new Vec2i(-1,-1)};
+    public static readonly Vec2i[] QUAD_DIR = new Vec2i[] { new Vec2i(1, 0), new Vec2i(0, 1), new Vec2i(-1, 0), new Vec2i(0, -1), };
+    public static readonly int Q_EAST = 0, Q_NORTH = 1, Q_WEST = 2, Q_SOUTH = 3;
+
+
+    public static Vec2i[] OCT_DIRDIR = new Vec2i[] { new Vec2i(1, 0), new Vec2i(1,1),new Vec2i(0, 1), new Vec2i(-1,1), new Vec2i(-1, 0),new Vec2i(-1,-1),
+        new Vec2i(0, -1),  new Vec2i(1,-1), };
 
 
     public int x;
@@ -28,6 +31,51 @@ public class Vec2i
     {
         return Mathf.Sqrt(Vec2i.QuickDistance(this, b));
     }
+
+    public static float ShortestDistance(Vec2i target, IEnumerable<Vec2i> testSet)
+    {
+        
+        int minSqr = -1;
+        foreach(Vec2i v in testSet)
+        {
+            int dSqr = v.QuickDistance(target);
+            if (minSqr == -1 || dSqr < minSqr)
+                minSqr = dSqr;
+        }
+
+        return minSqr<0 ? 0:Mathf.Sqrt(minSqr);
+    }
+    public static int ShortestDistanceSquared(Vec2i target, IEnumerable<Vec2i> testSet)
+    {
+
+        int minSqr = -1;
+        foreach (Vec2i v in testSet)
+        {
+            int dSqr = v.QuickDistance(target);
+            if (minSqr == -1 || dSqr < minSqr)
+                minSqr = dSqr;
+        }
+        return minSqr;
+    }
+    public static int ShortestDistanceSquared(Vec2i target, IEnumerable<Vec2i> testSet, out Vec2i nearest)
+    {
+        int minSqr = -1;
+        nearest = null;
+        foreach (Vec2i v in testSet)
+        {
+            if (v == null)
+                continue;
+            int dSqr = v.QuickDistance(target);
+            if (minSqr == -1 || dSqr < minSqr)
+            {
+                minSqr = dSqr;
+                nearest = v;
+            }
+                
+        }
+        return minSqr;
+    }
+
 
     public static float Distance(Vec2i a, Vec2i b)
     {
@@ -74,7 +122,14 @@ public class Vec2i
         return Vec2i.ToVector3(this);
     }
 
-
+    public static Vec2i GetPerpendicularDirection(Vec2i v)
+    {
+        if (v.x == 0 && v.z == 0)
+            return v;
+        if (v.x != 0 && v.z != 0)
+            return new Vec2i(0, 0);
+        return new Vec2i(v.x == 0 ? 1 : 0, v.z == 0 ? 1 : 0);
+    }
     public static Vec2i operator *(Vec2i a, int s)
     {
         return new Vec2i(a.x * s, a.z * s);
@@ -138,6 +193,27 @@ public class Vec2i
     public static Vec2i FromVector2(Vector2 v)
     {
         return new Vec2i((int)v.x, (int)v.y);
+    }
+
+
+    /// <summary>
+    /// Automatic conversion from SerializableVector3 to Vector3
+    /// </summary>
+    /// <param name="rValue"></param>
+    /// <returns></returns>
+    public static implicit operator Vector2(Vec2i rValue)
+    {
+        return new Vector2(rValue.x, rValue.z);
+    }
+
+    /// <summary>
+    /// Automatic conversion from Vector3 to SerializableVector3
+    /// </summary>
+    /// <param name="rValue"></param>
+    /// <returns></returns>
+    public static implicit operator Vec2i(Vector3 rValue)
+    {
+        return new Vec2i((int)rValue.x, (int)rValue.z);
     }
 
 

@@ -35,7 +35,8 @@ public class LoadedChunk2 : MonoBehaviour
         LOD = lod; 
         Position = new Vec2i(cd.X, cd.Z);
 
-
+        if (TestMain.TEST)
+            return;
         ChunkRegionManager.Instance.ChunkLoader.AddToGenerationQue(this);
 
     }
@@ -48,7 +49,8 @@ public class LoadedChunk2 : MonoBehaviour
         Reset();
         Position = new Vec2i(cd.X, cd.Z);
         Chunk = cd;
-
+        if (TestMain.TEST)
+            return;
         ChunkRegionManager.Instance.ChunkLoader.AddToGenerationQue(this);
 
     }
@@ -59,7 +61,8 @@ public class LoadedChunk2 : MonoBehaviour
         if (lod == LOD)
             return;
         LOD = lod;
-
+        if (TestMain.TEST)
+            return;
         ChunkRegionManager.Instance.ChunkLoader.AddToGenerationQue(this);
 
     }

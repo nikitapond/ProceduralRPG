@@ -4,10 +4,49 @@ using System.Collections.Generic;
 public class BuildingGenerator
 {
 
+    public struct BuildingGenerationPlan
+    {
+        public BuildingPlan BuildingPlan;
+        public Vec2i EntranceSide;
+        public int MaxWidth;
+        public int MaxHeight;
+        public Vec2i DesiredSize;
+    }
+
+
     public const int NORTH_ENTRANCE = 0;
     public const int EAST_ENTRANCE = 1;
     public const int SOUTH_ENTRANCE = 2;
     public const int WEST_ENTRANCE = 3;
+
+
+    public static Building CreateBuilding(GenerationRandom genRan, out BuildingVoxels vox, BuildingGenerationPlan plan)
+    {
+
+        int maxWidth = plan.DesiredSize == null?Mathf.Min(plan.BuildingPlan.MaxSize, plan.MaxWidth): plan.DesiredSize.x;
+        int maxHeight = plan.DesiredSize==null? Mathf.Min(plan.BuildingPlan.MaxSize, plan.MaxHeight) : plan.DesiredSize.z;
+        int width = genRan.RandomInt(plan.BuildingPlan.MinSize, maxWidth);
+        int height = genRan.RandomInt(plan.BuildingPlan.MinSize, maxHeight);
+
+        if (plan.BuildingPlan == Building.BLACKSMITH)
+        {
+            Blacksmith smith = BlacksmithGenerator.GenerateBlacksmith(genRan, new Blacksmith(width, height), out vox);
+            return smith;
+        }
+        if (plan.BuildingPlan == Building.BARACKS)
+        {
+            Barracks barr = BarracksGenerator.GenerateBarracks(genRan, new Barracks(width, height), out vox);
+            return barr;
+        }
+        if (plan.BuildingPlan == Building.TAVERN)
+        {
+            return TavernGenerator.GenerateTavern(genRan, new Tavern(width, height), out vox);
+        }
+
+        House house = HouseGenerator.GenerateHouse(genRan, new House(width, height), out vox);
+        return house;
+        //return GenerateHouse(out vox, width, height);
+    }
 
     /// <summary>
     /// Takes a building plan and generates a full building from it.
@@ -18,7 +57,7 @@ public class BuildingGenerator
     /// <param name="height"></param>
     /// <param name="entrance"></param>
     /// <returns></returns>
-    public static Building CreateBuilding(GenerationRandom genRan, out BuildingVoxels vox, BuildingPlan plan, int width=-1, int height=-1, int entrance = 0)
+    public static Building CreateBuilding(GenerationRandom genRan, out BuildingVoxels vox, BuildingPlan plan, Vec2i entrance=null, int width=-1, int height=-1)
     {
         if (width == -1)
             width = MiscMaths.RandomRange(plan.MinSize, plan.MaxSize);

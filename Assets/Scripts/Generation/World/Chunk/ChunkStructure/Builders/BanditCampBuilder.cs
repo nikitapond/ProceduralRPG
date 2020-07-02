@@ -33,7 +33,7 @@ public class BanditCampBuilder : ChunkStructureBuilder
     private void BuildWallAndEntrance()
     {
         Recti boundry = new Recti(Boundry, Boundry, TileSize.x - 2 * Boundry, TileSize.z - 2 * Boundry);
-        Vec2i entrance = GenRan.RandomFromArray(boundry.BoundaryPoints);
+        Vec2i entrance = new Vec2i(0,0);
         for (int x = Boundry + 1; x < TileSize.x - Boundry - 1; x++)
         {
 

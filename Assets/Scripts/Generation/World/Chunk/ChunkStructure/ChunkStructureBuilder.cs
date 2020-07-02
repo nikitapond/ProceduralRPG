@@ -8,7 +8,7 @@ public abstract class ChunkStructureBuilder : BuilderBase
     protected List<Entity> Entities;
     public bool HasSubworlds { get { return Subworlds != null; } }
     public ChunkStructure Structure { get; private set; }
-    public ChunkStructureBuilder(ChunkStructure structure, GameGenerator gameGen = null) : base(structure.Position, structure.Size, gameGen)
+    public ChunkStructureBuilder(ChunkStructure structure, GameGenerator gameGen = null) : base(structure.Position, structure.Size, null, null)
     {
         Structure = structure;
     }
