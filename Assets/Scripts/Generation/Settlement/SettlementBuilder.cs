@@ -1029,7 +1029,7 @@ public class SettlementBuilder : BuilderBase
                 }
             }
         }
-        foreach (WorldObjectData obj in b.GetBuildingObjects())
+        foreach (WorldObjectData obj in b.GetBuildingExternalObjects())
         {
 
             //We must set the object to have coordinates based on the settlement,
@@ -1159,27 +1159,5 @@ public class SettlementBuilder : BuilderBase
         return curHeight;
 
     }
-    private float GetHighestChunkHeight(int lx, int lz, int width, int height)
-    {
-        if (GameGenerator == null)
-            return 0;
-        float curHeight = -1;
 
-        for (int x=lx; x<lx+width; x++)
-        {
-            for (int z = lz; z < lz + height; z++)
-            {
-                int cx = WorldToChunk(x);
-                int cz = WorldToChunk(z);
-                if (cx < 0 || cz < 0 || cx >= ChunkSize.x || cz >= ChunkSize.z)
-                    continue;
-                float cHeight = ChunkBaseHeights[cx, cz];
-                if (cHeight > curHeight)
-                    curHeight = cHeight;
-            }
-        }
-
-        return curHeight;
-
-    }
 }

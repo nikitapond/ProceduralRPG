@@ -43,7 +43,7 @@ public class TestBuildingBuilder : BuilderBase
                 
             }
         }
-        foreach(WorldObjectData obj in b.GetBuildingObjects())
+        foreach(WorldObjectData obj in b.GetBuildingExternalObjects())
         {
 
             obj.SetPosition(obj.Position + pos.AsVector3());

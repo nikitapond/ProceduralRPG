@@ -83,6 +83,16 @@ public class WorldObject : MonoBehaviour
         if(Data is IOnEntityInteract)
         {
             (Data as IOnEntityInteract).OnEntityInteract(ent);
+        }else if(Data is ISubworldEntranceObject)
+        {
+            ISubworldEntranceObject ob = Data as ISubworldEntranceObject;
+            Debug.Log("lol" + ob.GetSubworldID());
+            Key key = ob.GetSubworldKey();
+            if(key == null || ent.Inventory.ContainsItemStack(key)!=null)
+            {
+                World.Instance.EntityEnterSubworld(ent, ob.GetSubworld());
+            }
+
         }
     }
 

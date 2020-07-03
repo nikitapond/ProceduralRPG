@@ -9,7 +9,7 @@ using UnityEditor;
 public class Castle : House
 {
     public static BuildingPlan BuildingPlanSmall = new BuildingPlan("Castle", 32, 32);
-    public static BuildingPlan BuildingPlanBig = new BuildingPlan("Castle", 64, 64);
+    public static BuildingPlan BuildingPlanBig = new BuildingPlan("Castle", 48, 48);
 
     public Castle(int width, int height) : base(width, height)
     {

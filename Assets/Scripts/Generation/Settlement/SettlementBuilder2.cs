@@ -22,6 +22,8 @@ public class SettlementBuilder2 : BuilderBase
     public List<Building> Buildings { get; private set; }
     //A list that defines the mid point of the settelment entrances, up to 4 (one on each face) can be defined.
     public Vec2i Entrance { get; private set; }
+    public Vec2i EntranceSide { get; private set; }
+
     //A list of all points that are parts of a path. Contains duplicates which are removed when the final settlement is built
     //A list of the possible plots to build on.
     public List<Recti> BuildingPlots { get; }
@@ -69,56 +71,34 @@ public class SettlementBuilder2 : BuilderBase
     {
         GenerationRandom = genRan;
         FlattenBase();
-        Entrance = DecideSettlementEntrance();        
-        PlaceMainPaths();
+        Entrance = DecideSettlementEntrance();
+        Debug.BeginDeepProfile("Paths1");
+        PlaceMainPaths(Shell.Type.GetSize()/ 2 + 1);
+        Debug.EndDeepProfile("Paths1");
+        Debug.BeginDeepProfile("MainBuild");
         PlaceLargeBuildings();
-        PlaceSmallPaths(40);
-        PlaceRemainingBuildings();
+        Debug.EndDeepProfile("MainBuild");
+        //DrawPath();
+        
 
-        //CreatePaths();
-        DrawPath();
-        //TestDraw();
-    }
-    
-  
-
-    #region TEST
-
-
-    private void DrawPlot(Recti r, Tile tile)
-    {
-        SetTiles(r.X, r.Y, r.X + r.Width, r.Y + r.Height, tile);
-    }
-
-    private void DrawPlot(Plot plot, Tile tile)
-    {
-        SetTiles(plot.Bounds.X, plot.Bounds.Y, plot.Bounds.X + plot.Bounds.Width, plot.Bounds.Y + plot.Bounds.Height, tile);
-
-
-        foreach(Vec2i v in plot.EntranceSides)
-        {
-            if (v.x == -1)
-            {
-                SetTiles(plot.Bounds.X, plot.Bounds.Y, plot.Bounds.X + 1, plot.Bounds.Y + plot.Bounds.Height, Tile.TEST_RED);
-            }
-            else if (v.x == 1)
-            {
-                SetTiles(plot.Bounds.X + plot.Bounds.Width - 1, plot.Bounds.Y, plot.Bounds.X + plot.Bounds.Width, plot.Bounds.Y + plot.Bounds.Height, Tile.TEST_RED);
-            }
-            else if (v.z == -1)
-            {
-                SetTiles(plot.Bounds.X, plot.Bounds.Y, plot.Bounds.X + plot.Bounds.Width, plot.Bounds.Y + 1, Tile.TEST_RED);
-            }
-            else if (v.z == 1)
-            {
-                SetTiles(plot.Bounds.X, plot.Bounds.Y + plot.Bounds.Height - 1, plot.Bounds.X + plot.Bounds.Width, plot.Bounds.Y + plot.Bounds.Height, Tile.TEST_RED);
-            }
-        }
+        Debug.BeginDeepProfile("Path2");
+        PlaceSmallPaths(Shell.Type.GetSize() * 3);
+        Debug.EndDeepProfile("Path2");
 
         
 
+        Debug.BeginDeepProfile("FinalBuild");
+        PlaceRemainingBuildings();
+        Debug.EndDeepProfile("FinalBuild");
+        //CreatePaths();
+        DrawPath();
+        GenerateDetails();
+        SetTileBase();
+        
+        //TestDraw();
     }
-    #endregion
+
+
 
     /// <summary>
     /// Decides the tile placement in settlement coordinates of all entrances, based on
@@ -146,11 +126,12 @@ public class SettlementBuilder2 : BuilderBase
 
         return GenerationRandom.RandomFromList(entrances);
     }
-
+    
+    #region paths 
     /// <summary>
     /// Places a small amount of large paths
     /// </summary>
-    private void PlaceMainPaths(int initialPathCount=9)
+    private void PlaceMainPaths(int initialPathCount = 9)
     {
         //Calculate node map size
         MapNodeSize = TileSize / NodeSize;
@@ -171,20 +152,186 @@ public class SettlementBuilder2 : BuilderBase
             startDir = new Vec2i(0, (int)Mathf.Sign(entranceToMid.z));
         }
         //The start direction for our path     
-
+        EntranceSide = startDir;
         //Calculate a random length
         int length = GenerationRandom.RandomInt(Shell.Type.GetSize() / 2 - 1, Shell.Type.GetSize() - 1) * NodeSize;
         //Place 'main road'
-        AddPath(Entrance, startDir, length, 5, NodeMap, AllNodes, NodeSize, true);
+        AddPath(Entrance, startDir, length, 7, NodeMap, AllNodes, NodeSize, true);
         //We generate other initial paths
-        for (int i = 0; i < initialPathCount-1; i++)
+        for (int i = 0; i < initialPathCount - 1; i++)
         {
-            GeneratePathBranch(AllNodes);
+            GeneratePathBranch(AllNodes, width:5);
         }
     }
 
 
 
+    /// <summary>
+    /// Generates a number of paths off existing nodes
+    /// </summary>
+    /// <param name="count"></param>
+    private void PlaceSmallPaths(int count = 10, int width=3)
+    {
+        for (int i = 0; i < count - 1; i++)
+        {
+            GeneratePathBranch(AllNodes, width);
+        }
+    }
+
+    private void GeneratePathBranch(List<Vec2i> nodes, int width=3, int remIt = 5)
+    {
+        if (nodes.Count == 0)
+            return;
+
+        Vec2i start = GenerationRandom.RandomFromList(nodes);
+        Vec2i dir = GenerationRandom.RandomQuadDirection();
+        Vec2i perp = Vec2i.GetPerpendicularDirection(dir);
+
+
+        Vec2i test = start + dir * NodeSize;
+
+        int nodeX = test.x / NodeSize;
+        int nodeZ = test.z / NodeSize;
+        if(!InNodeBounds(nodeX, nodeZ))
+        {
+            remIt--;
+            if (remIt <= 0)
+                return;
+            //nodes.Remove(start);
+            GeneratePathBranch(nodes, remIt);
+            return;
+        }
+        //Check if node is outside of main map
+        if (nodeX >= MapNodeSize - 1 || nodeZ >= MapNodeSize - 1 || NodeMap[nodeX, nodeZ])
+        {
+            remIt--;
+            if (remIt <= 0)
+                return;
+            //nodes.Remove(start);
+            GeneratePathBranch(nodes, remIt);
+            return;
+        }
+        int length = GenerationRandom.RandomInt(3, 7) * NodeSize;
+        AddPath(start, dir, length, width, NodeMap, nodes, NodeSize);
+    }
+
+    private bool InNodeBounds(int x, int z)
+    {
+        if (x >= MapNodeSize - 1 || z >= MapNodeSize - 1 || x < 0 || z < 0)
+            return false;
+        return true;
+    }
+
+    /// <summary>
+    /// Creates a straight path from the start position, travelling in the direction specified for the length specified.
+    /// 
+    /// </summary>
+    /// <param name="start">The position the path should start at</param>
+    /// <param name="dir">The direction the path should be in. 
+    /// This must be a QUAD_DIR <see cref="Vec2i.QUAD_DIR"/></param>
+    /// <param name="length">The length from the start of the path to the end, 
+    /// assuming there is no obsticle and that the end is within the map bounds</param>
+    /// <param name="width">The total widith of the path</param>
+    /// <param name="nodeMap">A bool[,] that defines all nodes {true=node, false=no node}</param>
+    /// <param name="allNodePos">A list contaning all nodes, we add created nodes to this</param>
+    /// <param name="nodeSize">The distance between each node. Default=32</param>
+    /// <param name="ignoreBoundry">If true, we allow the path to extend the whole size of the settlement. If false,
+    ///  we do not allow the path to exist inside the settlement boundry </param>
+    /// <param name="crossRoadProb">Normally, the algorithm will terminate upon reaching another node (cross road). 
+    /// if RNG in range (0,1) is less than this number, we will continue the path as normal, producing a cross road </param>
+    private void AddPath(Vec2i start, Vec2i dir, int length, int width, bool[,] nodeMap, List<Vec2i> allNodePos,
+        int nodeSize = 32, bool ignoreBoundry = false, float crossRoadProb = 0.1f)
+    {
+        //Get half width, and direction perpendicular to path
+        int hW = width / 2;
+        Vec2i perp = Vec2i.GetPerpendicularDirection(dir);
+
+
+  
+        for(int l=0; l<length; l++)
+        {
+            /*
+            Vec2i nextNodePos = start + new Vec2i(dir.x * (n + 1) * nodeSize, dir.z * (n + 1) * nodeSize);
+            if (!InBounds(nextNodePos, ignoreBoundry))
+                break;
+                */
+            //Get length based position
+            //Check for boundry & obsticles, then for nodes
+            Vec2i v1 = start + new Vec2i(dir.x * l, dir.z * l);
+
+            Vec2i nextNode = start + new Vec2i(dir.x * (l + nodeSize), dir.z * (l + nodeSize));
+            
+
+            if (!InBounds(v1, ignoreBoundry) || !InBounds(nextNode, ignoreBoundry))
+                break;
+            if (!IsTileFree(v1.x, v1.z))
+                break;
+
+            //Get node coordinates
+            int nodeX = v1.x / nodeSize;
+            int nodeZ = v1.z / nodeSize;
+
+            //If we are at a node, and it isn't the first in the path
+            if (l > 0 && l % nodeSize == 0)
+            {
+
+                //If this path is hitting another node -> 
+                //We have reached this paths end
+                //TODO - maybe make a small probablility of continuing to produce more cross roads
+                if (nodeMap[nodeX, nodeZ] && GenerationRandom.Random() > crossRoadProb)
+                    return;
+                //Place a node here
+                nodeMap[nodeX, nodeZ] = true;
+                //
+                allNodePos.Add(new Vec2i(nodeX * nodeSize, nodeZ * nodeSize));
+
+
+                //If instead, this is the firstnode, but no node is placed
+            }
+            else if (l == 0 && !nodeMap[nodeX, nodeZ])
+            {
+                //We place it
+                nodeMap[nodeX, nodeZ] = true;
+                //And add to random selection if required
+                if (InBounds(v1))
+                    allNodePos.Add(v1);
+            }
+            //If we are able to build this path, we 
+            //iterate over the width
+            for (int w = -hW; w <= hW; w++)
+            {
+                Vec2i v = v1 + new Vec2i(perp.x * w, perp.z * w);
+                if (!InBounds(v, ignoreBoundry))
+                    return;
+                //Define the path to exist at this point
+                Path[v.x, v.z] = true;
+
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Draws all paths on map based on data in <see cref="Path"/>
+    /// </summary>
+    private void DrawPath()
+    {
+
+        for (int x = 0; x < TileSize; x++)
+        {
+            for (int z = 0; z < TileSize; z++)
+            {
+                if (Path[x, z])
+                    SetTile(x, z, Tile.STONE_PATH);
+            }
+        }
+        foreach(Vec2i v in AllNodes)
+        {
+            SetTile(v.x, v.z, Tile.TEST_BLUE);
+        }
+    }
+    #endregion
+
+    #region buildingPlacement
     /// <summary>
     /// Calculates the possible plots allowed by the paths, and then places 
     /// the large buildings for the settlement
@@ -216,8 +363,8 @@ public class SettlementBuilder2 : BuilderBase
         }
 
         //Sort with large buildings first
-        buildings.Sort((a,b) => {
-            return b.MinSize.CompareTo(a.MinSize);        
+        buildings.Sort((a, b) => {
+            return b.MinSize.CompareTo(a.MinSize);
         });
 
         List<Plot> plots = FindPlots();
@@ -232,22 +379,23 @@ public class SettlementBuilder2 : BuilderBase
         foreach (Plot r in plots)
         {
             int size = Mathf.Min(r.Bounds.Height, r.Bounds.Width);
-            if (size >= 64)
+            if (size >= 48)
                 largePlots.Add(r);
             else if (size >= 32)
                 mediumPlots.Add(r);
-           // Tile t = Tile.TEST_YELLOW;
-           // DrawPlot(r, t);
+            // Tile t = Tile.TEST_YELLOW;
+            // DrawPlot(r, t);
         }
 
-        foreach(BuildingPlan bp in buildings)
+        foreach (BuildingPlan bp in buildings)
         {
-            if(largePlots.Count > 0)
+            if (largePlots.Count > 0)
             {
                 Plot p = GenerationRandom.RandomFromList(largePlots);
                 GenBuildingInPlot(bp, p);
                 largePlots.Remove(p);
-            }else if(mediumPlots.Count > 0)
+            }
+            else if (mediumPlots.Count > 0)
             {
                 Plot p = GenerationRandom.RandomFromList(mediumPlots);
 
@@ -263,6 +411,11 @@ public class SettlementBuilder2 : BuilderBase
 
     }
 
+    /// <summary>
+    /// Attempts to place generate a building based on <paramref name="bp"/> in the plot specified
+    /// </summary>
+    /// <param name="bp"></param>
+    /// <param name="plot"></param>
     private void GenBuildingInPlot(BuildingPlan bp, Plot plot)
     {
 
@@ -279,25 +432,26 @@ public class SettlementBuilder2 : BuilderBase
         Building b = BuildingGenerator.CreateBuilding(GenerationRandom, out BuildingVoxels vox, bpPlan);
 
         Vec2i pos = new Vec2i(plot.Bounds.X, plot.Bounds.Y);
-        if(entrance.x == -1)
+        if (entrance.x == -1)
         {
             pos = new Vec2i(plot.Bounds.X, plot.Bounds.Y + GenerationRandom.RandomIntFromSet(0, plot.Bounds.Height - b.Height));
-        }else if (entrance.x == 1)
+        }
+        else if (entrance.x == 1)
         {
-            pos = new Vec2i(plot.Bounds.X + (plot.Bounds.Width-b.Width), plot.Bounds.Y + GenerationRandom.RandomIntFromSet(0, plot.Bounds.Height - b.Height));
-        }else if (entrance.z == -1)
+            pos = new Vec2i(plot.Bounds.X + (plot.Bounds.Width - b.Width), plot.Bounds.Y + GenerationRandom.RandomIntFromSet(0, plot.Bounds.Height - b.Height));
+        }
+        else if (entrance.z == -1)
         {
-            pos = new Vec2i(plot.Bounds.X + GenerationRandom.RandomIntFromSet(0, plot.Bounds.Width - b.Width),plot.Bounds.Y );
+            pos = new Vec2i(plot.Bounds.X + GenerationRandom.RandomIntFromSet(0, plot.Bounds.Width - b.Width), plot.Bounds.Y);
         }
         else if (entrance.z == 1)
         {
             pos = new Vec2i(plot.Bounds.X + GenerationRandom.RandomIntFromSet(0, plot.Bounds.Width - b.Width), plot.Bounds.Y + (plot.Bounds.Height - b.Height));
         }
-        AddBuilding(b, vox, pos);
+        Recti r = AddBuilding(b, vox, pos);
+        if (r != null)
+            BuildingPlots.Add(r);
     }
-
-
-
 
     /// <summary>
     /// Attempts to place multiple buildings inside this plot
@@ -309,7 +463,7 @@ public class SettlementBuilder2 : BuilderBase
     /// <param name="bps"></param>
     /// <param name="startIndex">The index of the first building to place</param>
     /// <param name="plot"></param>
-    /// <returns></returns>
+    /// <returns>The number of buildings placed in this plot, between 0 and 4 (incusive)</returns>
     private int GenMultipleBuildingsInPlot(List<BuildingPlan> bps, int startIndex, Plot plot)
     {
 
@@ -317,14 +471,15 @@ public class SettlementBuilder2 : BuilderBase
         bool[,] isCornerPossible = new bool[2, 2];
         bool[] sideHasPath = new bool[4];
         //Iterate all entrances
-        foreach(Vec2i v in plot.EntranceSides)
+        foreach (Vec2i v in plot.EntranceSides)
         {
-            if(v.x == -1)
+            if (v.x == -1)
             {
                 sideHasPath[0] = true;
                 isCornerPossible[0, 0] = true;
                 isCornerPossible[0, 1] = true;
-            }else if (v.x == 1)
+            }
+            else if (v.x == 1)
             {
                 sideHasPath[1] = true;
                 isCornerPossible[1, 0] = true;
@@ -335,24 +490,25 @@ public class SettlementBuilder2 : BuilderBase
                 sideHasPath[2] = true;
                 isCornerPossible[0, 0] = true;
                 isCornerPossible[1, 0] = true;
-            }else if (v.z == 1)
+            }
+            else if (v.z == 1)
             {
                 sideHasPath[3] = true;
                 isCornerPossible[0, 1] = true;
                 isCornerPossible[1, 1] = true;
-            }              
+            }
         }
         //Buildings sorted by the corner they have been placed in
-       
-        
+
+
         Recti[,] bounds = new Recti[2, 2];
         int j = 0;
-        for(int x=0; x<2; x++)
+        for (int x = 0; x < 2; x++)
         {
-            for(int z=0; z<2; z++)
+            for (int z = 0; z < 2; z++)
             {
 
-                
+
                 //Index of adjacect x, and adjacent z
                 int adjX = (x + 1) % 2;
                 int adjZ = (x + 1) % 2;
@@ -385,7 +541,7 @@ public class SettlementBuilder2 : BuilderBase
                     Vec2i entranceSide = null;
                     Vec2i pos = null;
                     //We calculate the entrance side and position of each building
-                    if (x==0 && z == 0)
+                    if (x == 0 && z == 0)
                     {
                         if (sideHasPath[2])
                             posSides.Add(new Vec2i(0, -1));
@@ -436,7 +592,7 @@ public class SettlementBuilder2 : BuilderBase
 
                     Recti curBound = new Recti(pos.x, pos.z, desWidth, desHeight);
                     bool intersect = false;
-                    foreach(Recti ri in bounds)
+                    foreach (Recti ri in bounds)
                     {
                         if (ri != null)
                             if (ri.Intersects(curBound))
@@ -446,7 +602,8 @@ public class SettlementBuilder2 : BuilderBase
                         continue;
                     bounds[x, z] = curBound;
 
-                    BuildingGenerator.BuildingGenerationPlan curCorn = new BuildingGenerator.BuildingGenerationPlan() {
+                    BuildingGenerator.BuildingGenerationPlan curCorn = new BuildingGenerator.BuildingGenerationPlan()
+                    {
                         BuildingPlan = bps[startIndex + j],
                         MaxWidth = maxWidth,
                         MaxHeight = maxHeight,
@@ -455,29 +612,25 @@ public class SettlementBuilder2 : BuilderBase
                     };
 
                     Building build = BuildingGenerator.CreateBuilding(GenerationRandom, out BuildingVoxels vox, curCorn);
-                    AddBuilding(build, vox, pos);
+                    Recti r = AddBuilding(build, vox, pos);
+                    if (r != null)
+                        BuildingPlots.Add(r);
                     j++;
                 }
             }
         }
-
-
         return j;
 
     }
 
-    private void PlaceSmallPaths(int count = 10)
-    {
-        for (int i = 0; i < count - 1; i++)
-        {
-            GeneratePathBranch(AllNodes);
-        }
-    }
-
+    /// <summary>
+    /// Decides the remaining buildings that are required for this settlement, based on its type and on the 
+    /// <see cref="SettlementShell.RequiredBuildings"/>. Will attempt to place each building in a shared plot
+    /// </summary>
     private void PlaceRemainingBuildings()
     {
         List<BuildingPlan> buildings = new List<BuildingPlan>();
-        if(Shell.RequiredBuildings != null)
+        if (Shell.RequiredBuildings != null)
             buildings.AddRange(Shell.RequiredBuildings);
         //Add relevent required large buildings for each settlement type
         switch (Shell.Type)
@@ -501,7 +654,7 @@ public class SettlementBuilder2 : BuilderBase
                 buildings.Add(Building.VILLAGEHALL);
                 break;
         }
-        for(int i=0; i<Shell.Type.GetSize() * 6; i++)
+        for (int i = 0; i < Shell.Type.GetSize() * 6; i++)
         {
             buildings.Add(Building.HOUSE);
         }
@@ -516,204 +669,164 @@ public class SettlementBuilder2 : BuilderBase
             return Mathf.Min(b.Bounds.Width, b.Bounds.Height).CompareTo(Mathf.Min(a.Bounds.Width, a.Bounds.Height));
         });
 
-       // foreach (Plot p in plots)
-        //    DrawPlot(p, Tile.TEST_BLUE);
-//return;
 
-        for(int i=0; i<buildings.Count; i++)
+        //Iterate each building 
+        for (int i = 0; i < buildings.Count; i++)
         {
             if (plots.Count == 0)
-                break;
+            {
+                PlaceSmallPaths(10, 1);
+                plots = FindPlots();
+
+                plots.Sort((a, b) => {
+                    return Mathf.Min(b.Bounds.Width, b.Bounds.Height).CompareTo(Mathf.Min(a.Bounds.Width, a.Bounds.Height));
+                });
+
+                Debug.Log("Run out of plots - creating more succesful? " + plots.Count);
+                
+            }
+            if(plots.Count == 0)
+                break; 
+
             Plot p = plots[0];
             plots.RemoveAt(0);
 
-            if(buildings[i].MinSize < p.Bounds.Width / 2)
+            if (buildings[i].MinSize <= p.Bounds.Width / 2)
             {
+                //Attempt to place multiple buildings in this plot
                 int jump = GenMultipleBuildingsInPlot(buildings, i, p);
-                if(jump == 0)
+                if (jump == 0)
                 {
+                    //if we fail, place a single building
                     GenBuildingInPlot(buildings[i], p);
                 }
                 else
                 {
+                    //if we don't fail, incriment iterator to correct place
                     i += (jump - 1);
                 }
             }
 
         }
-   
+
+    }
+
+    #endregion
+
+    #region details
+
+    private void GenerateDetails()
+    {
+
+        List<Vec2i> freeAreas = new List<Vec2i>(100);
+        int areaSize = 2;
+
+        int boundry = 2 * World.ChunkSize;
+        int areaMapSize = (TileSize - 2 * boundry) / areaSize;
+
+        for(int x= boundry; x<TileSize - boundry; x+=areaSize)
+        {
+            for (int z = boundry; z < TileSize - boundry; z+=areaSize)
+            {
+
+                int areaX = (x - boundry) / areaSize;
+                int areaZ = (z - boundry) / areaSize;
+
+                bool isFree = true;
+                for(int i=0; i<areaSize; i++)
+                {
+                    for (int j = 0; j < areaSize; j++)
+                    {
+                        if (GetTile(x + i, z + j) != 0)
+                            isFree = false;
+                    }
+                }
+                if (isFree)
+                {
+                    freeAreas.Add(new Vec2i(x, z));
+                }                    
+            }
+        }
+
+        for(int i=0; i<20; i++)
+        {
+            Vec2i pos = GenerationRandom.RandomFromList(freeAreas);
+            freeAreas.Remove(pos);
+            Anvil anvil = new Anvil();
+            anvil.SetPosition(pos);
+            AddObject(anvil);
+
+        }
+
+
+
     }
 
     
-
     /// <summary>
-    /// Only for test, to display positions of nodes
+    /// Calculates all available plots on the map, based on current map state, building map, and paths
     /// </summary>
-    private List<Vec2i> PATHNODES;
-    private void CreatePaths()
+    /// <param name="pathCornerSearch"></param>
+    /// <returns></returns>
+
+    private float GetSquareWallLength(float theta)
     {
-        MapNodeSize = TileSize / NodeSize;
-        NodeMap = new bool[MapNodeSize, MapNodeSize];
-        Path = new bool[TileSize, TileSize];
-        AllNodes = new List<Vec2i>();
-
-        Vec2i entranceSide = null;
-        Vec2i entranceToMid = Middle - Entrance;
-
-        if(Mathf.Abs(entranceToMid.x) > Mathf.Abs(entranceToMid.z))
-        {
-            entranceSide = new Vec2i((int)Mathf.Sign(entranceToMid.x), 0);
-        }
-        else {
-            entranceSide = new Vec2i(0, (int)Mathf.Sign(entranceToMid.z));
-        }
-
-        Vec2i startDir = entranceSide;
-
-        List<Vec2i> nodes = new List<Vec2i>();
-
-        MapNodeSize = TileSize / NodeSize;
-
-         NodeMap = new bool[MapNodeSize, MapNodeSize];
-
-        int length = GenerationRandom.RandomInt(Shell.Type.GetSize()/2 - 1, Shell.Type.GetSize()-1) * NodeSize;
-        AddPath(Entrance, startDir, length, 5, NodeMap, nodes, NodeSize, true);
-
-        //We generate some initial paths
-        for (int i=0; i<8; i++)
-        {
-            GeneratePathBranch(nodes);
-        }
-        //We then find the plots this set of paths results in
-        List<Plot> plots = FindPlots();
-        
-        //Large plots are at least 64x64
-        List<Plot> largePlots = new List<Plot>();
-        //Medium plots are 32x32 -> 63x63
-        List<Plot> mediumPlots = new List<Plot>();
-        //We iterate each plot and find its size, then sort them if the are large enough
-        foreach (Plot r in plots)
-        {
-            int size = Mathf.Min(r.Bounds.Height, r.Bounds.Width);
-            if (size >= 64)
-                largePlots.Add(r);
-            else if (size >= 32)
-                mediumPlots.Add(r);
-            Tile t = Tile.TEST_YELLOW;
-            DrawPlot(r, t);
-        }      
-        
-        PATHNODES = nodes;
+        theta = ((theta + 45) % 90 - 45) * Mathf.Deg2Rad;
+        return 1 / Mathf.Cos(theta);
     }
-
-
-    private void GeneratePathBranch(List<Vec2i> nodes, int remIt=5)
+    public SettlementWall GenerateWall(int points = 20)
     {
-        Vec2i start = GenerationRandom.RandomFromList(nodes);
-        Vec2i dir = GenerationRandom.RandomQuadDirection();
-        Vec2i test = start + dir * NodeSize;
+        List<Vec2i> wall = new List<Vec2i>();
+        Debug.Log("TEST:" + EntranceSide);
+        Vec2i entrancePerp = Vec2i.GetPerpendicularDirection(EntranceSide);
 
-        int nodeX = test.x / NodeSize;
-        int nodeZ = test.z / NodeSize;
+        int entranceHalfWidth = 3;
+        Vec2i start = Entrance - entrancePerp * entranceHalfWidth;
+        Vec2i end = Entrance + entrancePerp * entranceHalfWidth;
+        Debug.Log(start + "_" + end);
+        //Displacement from middle to start and end point
+        Vector2 midToStart = start - Middle;
+        Vector2 midToEnd = end - Middle;
 
-        if (nodeX >= MapNodeSize-1 || nodeZ >= MapNodeSize-1 || NodeMap[nodeX, nodeZ])
+        wall.Add(start);
+
+        float startTheta = Vector2.Angle(Vector2.up, midToStart);
+        float startEndThetaDelta = Vector2.Angle(midToEnd, midToStart);
+        Debug.Log(startTheta);
+        Debug.Log("2" + startEndThetaDelta);
+
+        float tTheta = 360 - startEndThetaDelta;
+        float dTheta = tTheta / points;
+        Debug.Log("t" + tTheta);
+        for(int t=0; t< points; t++)
         {
-            remIt--;
-            if (remIt <= 0)
-                return;
-            GeneratePathBranch(nodes, remIt);
+            float theta = (t * dTheta + startTheta) % 360;
+
+            float rawRad = GetSquareWallLength(theta);
+            int maxRad = (int)((World.ChunkSize * Shell.Type.GetSize() / 2f) * rawRad) - 2;
+            int minRad = (int)((World.ChunkSize * (Shell.Type.GetSize() - 1) / 2f) * rawRad);
+            int rad = GenerationRandom.RandomInt(minRad, maxRad);
+
+            int x = (int)( Middle.x + Mathf.Sin(theta * Mathf.Deg2Rad) * rad);
+            int z = (int)(Middle.z + Mathf.Cos(theta * Mathf.Deg2Rad) * rad);
+            wall.Add(new Vec2i(x, z));
+
         }
-        int length = GenerationRandom.RandomInt(3, 7) * NodeSize;
-        AddPath(start, dir, length, 3, NodeMap, nodes, NodeSize);
+        wall.Add(end);
+
+
+
+
+        return new SettlementWall(wall);
     }
+    #endregion
 
-    /// <summary>
-    /// Creates a straight path from the start position, travelling in the direction specified for the length specified.
-    /// 
-    /// </summary>
-    /// <param name="start">The position the path should start at</param>
-    /// <param name="dir">The direction the path should be in. 
-    /// This must be a QUAD_DIR <see cref="Vec2i.QUAD_DIR"/></param>
-    /// <param name="length">The length from the start of the path to the end, 
-    /// assuming there is no obsticle and that the end is within the map bounds</param>
-    /// <param name="width">The total widith of the path</param>
-    /// <param name="nodeMap">A bool[,] that defines all nodes {true=node, false=no node}</param>
-    /// <param name="allNodePos">A list contaning all nodes, we add created nodes to this</param>
-    /// <param name="nodeSize">The distance between each node. Default=32</param>
-    /// <param name="ignoreBoundry">If true, we allow the path to extend the whole size of the settlement. If false,
-    ///  we do not allow the path to exist inside the settlement boundry </param>
-    /// <param name="crossRoadProb">Normally, the algorithm will terminate upon reaching another node (cross road). 
-    /// if RNG in range (0,1) is less than this number, we will continue the path as normal, producing a cross road </param>
-    private void AddPath(Vec2i start, Vec2i dir, int length, int width, bool[,] nodeMap, List<Vec2i> allNodePos, 
-        int nodeSize = 32, bool ignoreBoundry=false, float crossRoadProb = 0.1f)
+    private List<Plot> FindPlots(int pathCornerSearch = 7)
     {
-        //Get half width, and direction perpendicular to path
-        int hW = width / 2;
-        Vec2i perp = Vec2i.GetPerpendicularDirection(dir);
-        //iterate over paths length
-        for(int l=0; l<length; l++)
-        {
-            //Get length based position
-            //Check for boundry & obsticles, then for nodes
-            Vec2i v1 = start + new Vec2i(dir.x * l, dir.z * l);
-            if (!InBounds(v1, ignoreBoundry))
-                break;
-            if (!IsTileFree(v1.x, v1.z))
-                break;
-
-            //Get node coordinates
-            int nodeX = v1.x / nodeSize ;
-            int nodeZ = v1.z / nodeSize ;
-
-            //If we are at a node, and it isn't the first in the path
-            if (l > 0 && l % nodeSize == 0 )
-            {
-                
-                //If this path is hitting another node -> 
-                //We have reached this paths end
-                //TODO - maybe make a small probablility of continuing to produce more cross roads
-                if (nodeMap[nodeX, nodeZ] && GenerationRandom.Random() > crossRoadProb)
-                    return;
-                //Place a node here
-                nodeMap[nodeX, nodeZ] = true;
-                //
-                allNodePos.Add(new Vec2i(nodeX*nodeSize, nodeZ * nodeSize));
-                
-
-                //If instead, this is the firstnode, but no node is placed
-            }
-            else if(l==0 && !nodeMap[nodeX, nodeZ])
-            {
-                //We place it
-                nodeMap[nodeX, nodeZ] = true;
-                //And add to random selection if required
-                if (InBounds(v1))
-                    allNodePos.Add(v1);
-            }
-            //If we are able to build this path, we 
-            //iterate over the width
-            for (int w=-hW; w<= hW; w++)
-            {
-                Vec2i v = v1 + new Vec2i(perp.x * w, perp.z * w);
-                if (!InBounds(v, ignoreBoundry))
-                    return;
-                //Define the path to exist at this point
-                Path[v.x, v.z] = true;
-                
-            }
-        }
-    }
-
-    private List<Plot> FindPlots(int pathCornerSearch = 4)
-    {
-        List<Plot> plots = new List<Plot>();
-
- 
+        List<Plot> plots = new List<Plot>(); 
         //Nodes already checked
         bool[,] nodeSkip = new bool[MapNodeSize, MapNodeSize];
-
-
-
+        //iterate settlement nodes
         for (int x=1; x<MapNodeSize-1; x++)
         {
             for (int z = 1; z < MapNodeSize-1; z++)
@@ -721,9 +834,7 @@ public class SettlementBuilder2 : BuilderBase
                 //If we don't wish to skip this node
                 if (!nodeSkip[x, z] && !BuildingMap[x,z])
                 {
-
-                    Debug.Log("Starting plot " + plots.Count + " at " + new Vec2i(x,z));
-
+                    //After starting, we can now skip
                     nodeSkip[x, z] = true;
                     //We find the tile position that the paths are not on
                     Vec2i tilePos = new Vec2i(x * NodeSize, z * NodeSize);
@@ -737,7 +848,7 @@ public class SettlementBuilder2 : BuilderBase
                             break;
                         }
                     }
-
+                    //
                     int size = 1;
 
                     for (int i = 1; i < 4; i++)
@@ -750,25 +861,25 @@ public class SettlementBuilder2 : BuilderBase
 
                                 if (x + x_ >= MapNodeSize - 1 || z + z_ >= MapNodeSize - 1 || NodeMap[x + x_, z + z_] || BuildingMap[x+x_, z+z_])
                                     valid = false;
-                               
-                                
-
+                                //Ensure node will be skipped next time
+                                    
                             }
                             if (!valid)
                                 break;
+                        }
+                        for(int x_=0; x_<size; x_++)
+                        {
+                            for(int z_=0; z_<size; z_++)
+                            {
+                                nodeSkip[x + x_, z + z_] = true;
+                            }
                         }
                         
                         size = i;
                         if (!valid)
                             break;
                     }
-                    for (int x_ = 0; x_ < size; x_++)
-                    {
-                        for (int z_ = 0; z_ < size; z_++)
-                        {
-                            nodeSkip[x + x_, z + z_] = true;
-                        }
-                    }
+                   
                     Vec2i endPos = new Vec2i((x + size) * NodeSize, (z + size) * NodeSize);
 
                     //Works up to paths
@@ -791,7 +902,7 @@ public class SettlementBuilder2 : BuilderBase
                     if (Path[tilePos.x, tilePos.z + bounds.Height + 1])
                         sides.Add(new Vec2i(0, 1));
                     if (sides.Count == 0)
-                        sides.Add(new Vec2i(1, 0));
+                        continue;
                     Plot p = new Plot(bounds, sides.ToArray());
                     plots.Add(p);
 
@@ -807,37 +918,89 @@ public class SettlementBuilder2 : BuilderBase
 
         return plots;
     }
+     
+    /// <summary>
+    /// Adds the building to the settlement
+    /// </summary>
+    /// <param name="b"></param>
+    /// <param name="vox"></param>
+    /// <param name="pos"></param>
+    /// <returns></returns>
+    public Recti AddBuilding(Building b, BuildingVoxels vox, Vec2i pos)
+    {
+
+        if (!IsAreaFree(pos.x, pos.z, b.Width, b.Height))
+            return null;
 
 
-    private void DrawPath() { 
-    
-        for(int x=0; x<TileSize; x++)
+        int nodeX = Mathf.FloorToInt(((float)pos.x) / NodeSize);
+        int nodeZ = Mathf.FloorToInt(((float)pos.z) / NodeSize);
+        int nodeWidth = Mathf.CeilToInt(((float)b.Width) / NodeSize);
+        int nodeHeight = Mathf.CeilToInt(((float)b.Height) / NodeSize);
+        for(int x=nodeX; x<nodeX+nodeWidth; x++)
         {
-            for (int z = 0;z < TileSize; z++)
+            for (int z = nodeZ; z < nodeZ + nodeHeight; z++)
             {
-                if (Path[x, z])
-                    SetTile(x, z, Tile.STONE_PATH);
+                BuildingMap[x, z] = true;
             }
         }
 
-        for (int x = 0; x < MapNodeSize; x++)
+        int height = (int)FlattenArea(pos.x - 1, pos.z - 1, b.Width + 2, b.Height + 2);
+        Recti bo = new Recti(pos.x-1, pos.z-1, b.Width+2, b.Height+2);
+        foreach(Recti bound in BuildingPlots)
         {
-            for (int z = 0; z < MapNodeSize; z++)
+            if (bo.Intersects(bound))
+                return null;
+
+        }
+        BuildingPlots.Add(bo);
+
+        //Debug.Log("Adding building " + b);
+        //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);
+        for (int x = 0; x < b.Width; x++)
+        {
+            for (int z = 0; z < b.Height; z++)
             {
-                if (NodeMap[x, z])
-                    SetTile(x*NodeSize, z* NodeSize, Tile.TEST_BLUE);
+
+
+
+                SetTile(x + pos.x, z + pos.z, b.BuildingTiles[x, z]);
+
+
+                //SetHeight(x + pos.x, z + pos.z, maxHeight);
+                for (int y = 0; y < vox.Height; y++)
+                {
+                    SetVoxelNode(x + pos.x, height + y, z + pos.z, vox.GetVoxelNode(x, y, z));
+                }
             }
         }
+        foreach (WorldObjectData obj in b.GetBuildingExternalObjects())
+        {
 
+            //We must set the object to have coordinates based on the settlement,
+            //such that the object is added to the correct chunk.
+            obj.SetPosition(obj.Position + pos.AsVector3());
+            //We (should) already have checked for object validity when creating the building
+           AddObject(obj, true);
+        }
+       
 
-      
+        Vec2i wPos = pos + BaseTile;
+        Vec2i cPos = World.GetChunkPosition(wPos);
+        //Debug.Log("Calculating tiles!!!");
+        b.SetPositions(BaseTile, pos);
+
+        if (b.BuildingSubworld != null)
+            AddObject(b.ExternalEntranceObject as WorldObjectData, true);
+        //    World.Instance.AddSubworld(b.BuildingSubworld);
+
+        b.CalculateSpawnableTiles(vox);
+        Buildings.Add(b);
+        //PathNodes.Add(b.Entrance);
+        return bo;
     }
 
-
-
-
-
-
+    #region util
     private void SetTiles(int minX, int minZ, int maxX, int maxZ, Tile tile)
     {
         if (!InBounds(new Vec2i(minX, minZ)) || !InBounds(new Vec2i(maxX, maxZ)))
@@ -856,199 +1019,12 @@ public class SettlementBuilder2 : BuilderBase
         }
     }
 
-
-
-    
-
-
-
-
-    private SettlementPathNode[] AddPlot(Recti r)
+    public bool InBounds(Vec2i v, bool ignoreBoundry = false)
     {
-        SettlementPathNode[] nodes = new SettlementPathNode[4];
-        if (r.X > 0 && r.Y > 0)
-        {
-            Vec2i n1 = new Vec2i(r.X - 1, r.Y - 1);
-            nodes[0] = new SettlementPathNode(n1); //Bottom left
-            //PathNodes.Add(new Vec2i(r.X - 1, r.Y - 1));
-        }
-        if (r.X > 0 && r.X + r.Width + 1 < TileSize && r.Y > 0)
-        {
-            //PathNodes.Add(new Vec2i(r.X + r.Width + 1, r.Y - 1));
-            nodes[1] = new SettlementPathNode(new Vec2i(r.X + r.Width + 1, r.Y - 1)); //Bottom right
-        }
-        if (r.X > 0 && r.Y > 0 && r.Y + r.Height + 1 < TileSize)
-        {
-            //PathNodes.Add(new Vec2i(r.X - 1, r.Y + r.Height + 1));
-            nodes[2] = new SettlementPathNode(new Vec2i(r.X - 1, r.Y + r.Height + 1)); //Top Left
-
-        }
-        if (r.X > 0 && r.X + r.Width + 1 < TileSize && r.Y > 0 && r.Y + r.Height + 1 < TileSize)
-        {
-            //PathNodes.Add(new Vec2i(r.X + r.Width + 1, r.Y + r.Height + 1));
-            nodes[3] = new SettlementPathNode(new Vec2i(r.X + r.Width + 1, r.Y + r.Height + 1)); //Top Right
-        }
-        if (nodes[0] != null)
-        {
-            if (nodes[1] != null)
-            {
-                nodes[0].AddConnection(SettlementPathNode.EAST, nodes[1]);
-                nodes[1].AddConnection(SettlementPathNode.WEST, nodes[0]);
-            }
-            if (nodes[2] != null)
-            {
-                nodes[0].AddConnection(SettlementPathNode.NORTH, nodes[2]);
-                nodes[2].AddConnection(SettlementPathNode.SOUTH, nodes[0]);
-            }
-        }
-        if (nodes[3] != null)
-        {
-            if (nodes[1] != null)
-            {
-                nodes[3].AddConnection(SettlementPathNode.SOUTH, nodes[1]);
-                nodes[1].AddConnection(SettlementPathNode.NORTH, nodes[3]);
-            }
-            if (nodes[2] != null)
-            {
-                nodes[3].AddConnection(SettlementPathNode.WEST, nodes[2]);
-                nodes[2].AddConnection(SettlementPathNode.EAST, nodes[3]);
-            }
-        }
-        //TestNodes.AddRange(nodes);
-        BuildingPlots.Add(r);
-        return nodes;
-
-    }
-    /// <summary>
-    /// Surrounds the given region by a path of width 'pathSize'
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="z"></param>
-    /// <param name="width"></param>
-    /// <param name="height"></param>
-    /// <param name="pathSize"></param>
-    public void SurroundByPath(int x, int z, int width, int height, int pathSize)
-    {
-        //iterate pathsize
-        for (int i = 0; i < pathSize; i++)
-        {
-            //Iterate along x axis
-            for (int x_ = x - pathSize; x_ < x + width + pathSize; x_++)
-            {
-                //Add path for each x point at minimum and maximum z values
-                SetTile(x_, z - 1 - i, Tile.STONE_FLOOR);
-                SetTile(x_, z + height + i, Tile.STONE_FLOOR);
-            }
-            for (int z_ = z; z_ <= z + height; z_++)
-            {
-                //Add path for each z point at minimum and maximum x values
-                SetTile(x - 1 - i, z_, Tile.STONE_FLOOR);
-                SetTile(x + width + i, z_, Tile.STONE_FLOOR);
-            }
-        }
-
-
-    }
-
-
-    public bool PointFree(int x, int z)
-    {
-        if (x < 0 || x >= TileSize || z < 0 || z >= TileSize)
-        {
-            return false;
-        }
-        return GetTile(x, z) == 0;
-    }
-
-
-
-    public Vec2i GetFreePoint()
-    {
-        Vec2i toOut = GenerationRandom.RandomVec2i(1, TileSize - 2);
-        //Vec2i toOut = new Vec2i(MiscMaths.RandomRange(1, TileSize - 2), MiscMaths.RandomRange(1, TileSize - 2));
-        while (true)
-        {
-            if (GetTile(toOut.x, toOut.z) == 0)
-                return toOut;
-            toOut = GenerationRandom.RandomVec2i(1, TileSize - 2);
-
-        }
-
-
-    }
-
-
-    public bool InBounds(Vec2i v, bool ignoreBoundry=false)
-    {
-        if(ignoreBoundry)
+        if (ignoreBoundry)
             return v.x >= 0 && v.x < TileSize && v.z >= 0 && v.z < TileSize;
-        return v.x >= World.ChunkSize && v.x < TileSize- World.ChunkSize && v.z >= World.ChunkSize && v.z < TileSize- World.ChunkSize;
+        return v.x >= World.ChunkSize && v.x < TileSize - World.ChunkSize && v.z >= World.ChunkSize && v.z < TileSize - World.ChunkSize;
     }
-       
-
-    public Recti AddBuilding(Building b, BuildingVoxels vox, Vec2i pos)
-    {
-
-        if (!IsAreaFree(pos.x, pos.z, b.Width, b.Height))
-            return null;
-
-
-        int nodeX = Mathf.FloorToInt(((float)pos.x-1) / NodeSize);
-        int nodeZ = Mathf.FloorToInt(((float)pos.z-1) / NodeSize);
-        int nodeWidth = Mathf.CeilToInt(((float)b.Width+1) / NodeSize);
-        int nodeHeight = Mathf.CeilToInt(((float)b.Height+1) / NodeSize);
-        for(int x=nodeX; x<nodeX+nodeWidth; x++)
-        {
-            for (int z = nodeZ; z < nodeZ + nodeHeight; z++)
-            {
-                BuildingMap[x, z] = true;
-            }
-        }
-
-        int height = (int)FlattenArea(pos.x - 1, pos.z - 1, b.Width + 2, b.Height + 2);
-
-        //Debug.Log("Adding building " + b);
-        //SetTiles(pos.x, pos.z, b.Width, b.Height, b.BuildingTiles);
-        for (int x = 0; x < b.Width; x++)
-        {
-            for (int z = 0; z < b.Height; z++)
-            {
-
-
-
-                SetTile(x + pos.x, z + pos.z, b.BuildingTiles[x, z]);
-
-
-                //SetHeight(x + pos.x, z + pos.z, maxHeight);
-                for (int y = 0; y < vox.Height; y++)
-                {
-                    SetVoxelNode(x + pos.x, height + y, z + pos.z, vox.GetVoxelNode(x, y, z));
-
-                }
-            }
-        }
-        foreach (WorldObjectData obj in b.GetBuildingObjects())
-        {
-
-            //We must set the object to have coordinates based on the settlement,
-            //such that the object is added to the correct chunk.
-            obj.SetPosition(obj.Position + pos.AsVector3());
-            //We (should) already have checked for object validity when creating the building
-            AddObject(obj, true);
-        }
-
-        Vec2i wPos = pos + BaseTile;
-        Vec2i cPos = World.GetChunkPosition(wPos);
-        //Debug.Log("Calculating tiles!!!");
-        b.SetPositions(BaseTile, pos);
-        b.CalculateSpawnableTiles(vox);
-        Buildings.Add(b);
-        //PathNodes.Add(b.Entrance);
-        return new Recti(pos.x - 1, pos.z - 1, b.Width + 2, b.Height + 2);
-    }
-
-
-
 
     public bool IsTileFree(int x, int z)
     {
@@ -1135,7 +1111,7 @@ public class SettlementBuilder2 : BuilderBase
 
         return true;
     }
-
+    #endregion
 
 
 }

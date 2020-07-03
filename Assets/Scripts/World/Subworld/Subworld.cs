@@ -16,7 +16,7 @@ public class Subworld
 
     public ISubworldEntranceObject Exit; //The object that is used to exit the subworld, its ID must be set to this ID.
 
-
+    public List<Entity> Entities { get; private set; }
     public Vec2i InternalEntrancePos { get; protected set; } //Where in the local dungeon space the player goes when entering
 
     public Vec2i ChunkSize { get; private set; }
@@ -29,9 +29,17 @@ public class Subworld
         ExternalEntrancePos = externalEtrnace;
         InternalEntrancePos = internalEntrance;
         ChunkSize = new Vec2i(subChunks.GetLength(0), subChunks.GetLength(1));
+        Entities = new List<Entity>();
 
 
     }
+
+    public void SetExternalEntrancePos(Vec2i v)
+    {
+        ExternalEntrancePos = v;
+        SetSubworldID(v.GetHashCode());
+    }
+
     public void SetSubworldID(int id)
     {
         if (Exit == null)

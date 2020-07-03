@@ -430,7 +430,7 @@ public class PlayerManager : MonoBehaviour
 
     public void RightMouseButton()
     {
-
+        Debug.Log("Right click");
         if(LookObject != null)
         {
 
@@ -459,6 +459,7 @@ public class PlayerManager : MonoBehaviour
                     (data as IOnEntityInteract).OnEntityInteract(Player);
                 }else if(data is ISubworldEntranceObject)
                 {
+                    
                     Subworld sw = (data as ISubworldEntranceObject).GetSubworld();
                     WorldManager.Instance.EnterSubworld(sw.SubworldID);
                 }

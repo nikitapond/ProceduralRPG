@@ -49,14 +49,17 @@ public abstract class Building
     public Inventory Inventory { get; private set; }
 
     public Tile[,] BuildingTiles { get; private set; }
-    private List<WorldObjectData> BuildingObjects; 
+    private List<WorldObjectData> InternalObjects;
+    private List<WorldObjectData> ExternalObjects;
     public int Width { get; private set; }
     public int Height { get; private set; }
     public float BaseValue { get { return Width * Height; } }
     public float ValueModifier { get; private set; }
     public float Value { get { return BaseValue * ValueModifier; } }
 
-
+    public Subworld BuildingSubworld;
+    public ISubworldEntranceObject ExternalEntranceObject;
+    public ISubworldEntranceObject InternalEntranceObject;
 
     public Vec2i[] BoundingWall;
 
@@ -77,8 +80,9 @@ public abstract class Building
         Height = height;
         Inventory = new Inventory();
         BuildingTiles = new Tile[width, height];
-        BuildingObjects = new List<WorldObjectData>();
-        if(boundingWall == null)
+        InternalObjects = new List<WorldObjectData>();
+        ExternalObjects = new List<WorldObjectData>();
+        if (boundingWall == null)
         {
             BoundingWall = new Vec2i[] { new Vec2i(0, 0), new Vec2i(width-1, 0), new Vec2i(width-1, height-1), new Vec2i(0, height-1) };
         }
@@ -95,7 +99,7 @@ public abstract class Building
     public void AfterApplyToWorld()
     {
         BuildingTiles = null;
-        BuildingObjects = null;
+        InternalObjects = null;
     }
 
     /// <summary>
@@ -107,21 +111,37 @@ public abstract class Building
     public void SetPositions(Vec2i settlementBaseCoord, Vec2i buildingSettlementCoord)
     {
         WorldPosition = settlementBaseCoord + buildingSettlementCoord;
-        foreach (WorldObjectData obj in BuildingObjects)
+        if(BuildingSubworld != null)
         {
-            //obj.SetPosition(obj.Position + settlementBaseCoord.AsVector3());
+
+            BuildingSubworld.Exit = ExternalEntranceObject;
+
+            BuildingSubworld.SetExternalEntrancePos(WorldPosition + Entrance);
+            
+
+            ExternalEntranceObject.SetSubworld(BuildingSubworld);
+            InternalEntranceObject.SetSubworld(BuildingSubworld);
         }
+        
+
+      
+        
+
     }
 
 
-    public List<WorldObjectData> GetBuildingObjects()
+    public List<WorldObjectData> GetBuildingExternalObjects()
     {
-        return BuildingObjects;
+        return ExternalObjects;
+    }
+    public List<WorldObjectData> GetBuildingInternalObjects()
+    {
+        return InternalObjects;
     }
 
     public bool ObjectIntersects(WorldObjectData obj)
     {
-        foreach(WorldObjectData obj_ in BuildingObjects)
+        foreach(WorldObjectData obj_ in InternalObjects)
         {
             if (obj.Intersects(obj_))
                 return true;
@@ -134,9 +154,13 @@ public abstract class Building
     /// all objects in this building.
     /// WARNING - this does not add the object to the array of objects itself
     /// </summary>
-    public void AddObjectReference(WorldObjectData obj) {
-        BuildingObjects.Add(obj);
+    public void AddInternalObject(WorldObjectData obj) {
+        InternalObjects.Add(obj);
+    }
 
+    public void AddExternalObject(WorldObjectData obj)
+    {
+        ExternalObjects.Add(obj);
     }
 
     public void SetValueModifier(float v)
@@ -190,7 +214,7 @@ public abstract class Building
                 if (vox.GetVoxelNode(x, 0, z).Voxel != Voxel.none)
                     continue;
                 bool canPlace = true;
-                foreach(WorldObjectData obj in BuildingObjects)
+                foreach(WorldObjectData obj in InternalObjects)
                 {
                     if (obj.IntersectsPoint(new Vec2i(x, z))){
                         canPlace = false;

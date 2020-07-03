@@ -11,15 +11,18 @@ public abstract class BuilderBase
 
     protected bool DEBUG = false;
 
+    public List<Subworld> Subworlds { get; private set; }
+
     public Vec2i BaseChunk { get; private set; } //Minimum point in chunk coords
     public Vec2i ChunkSize { get; private set; } //Size in chunks
     public Vec2i BaseTile { get; private set; } //Minimum point in world coords
     public Vec2i TileSize { get; private set; } //Size in tiles
 
     protected ChunkBase2[,] ChunkBases;
+
     private ChunkVoxelData[,] ChunkVoxels;
     private float[,][,] HeightMaps;
-    protected float[,] ChunkBaseHeights;
+    //protected float[,] ChunkBaseHeights;
     private int[,][,] TileMaps;
     private List<WorldObjectData>[,] ObjectMaps;
 
@@ -32,9 +35,10 @@ public abstract class BuilderBase
         BaseTile = BaseChunk * World.ChunkSize;
         TileSize = ChunkSize * World.ChunkSize;
 
+        Subworlds = new List<Subworld>();
+
         ChunkVoxels = new ChunkVoxelData[ChunkSize.x, ChunkSize.z];
         HeightMaps = new float[ChunkSize.x, ChunkSize.z][,];
-        ChunkBaseHeights = new float[ChunkSize.x, ChunkSize.z];
         TileMaps = new int[ChunkSize.x, ChunkSize.z][,];
         ObjectMaps = new List<WorldObjectData>[ChunkSize.x, ChunkSize.z];
         ChunkBases = chunkBases;
@@ -45,11 +49,7 @@ public abstract class BuilderBase
             {
                 HeightMaps[x, z] = new float[World.ChunkSize + 1, World.ChunkSize + 1];
 
-   
-
-                float baseHeight = ChunkBases == null ? 0 : ChunkBases[x, z].Height;
-                int baseTile = (ChunkBases == null || ChunkBases[x, z] == null) ? Tile.NULL.ID : Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
-                ChunkBaseHeights[x, z] = baseHeight;
+               // ChunkBaseHeights[x, z] = baseHeight;
                 TileMaps[x, z] = new int[World.ChunkSize, World.ChunkSize];
 
 
@@ -77,7 +77,7 @@ public abstract class BuilderBase
                         baseHeight = heightFunc((x + BaseChunk.x) * World.ChunkSize + x_, (z + BaseChunk.z) * World.ChunkSize + z_);
 
                         SetHeight(x * World.ChunkSize + x_, z * World.ChunkSize + z_, baseHeight);
-                        SetTile(x * World.ChunkSize + x_, z * World.ChunkSize + z_, Tile.FromID(baseTile));
+                        //SetTile(x * World.ChunkSize + x_, z * World.ChunkSize + z_, Tile.FromID(baseTile));
 
                     }
                 }
@@ -152,6 +152,34 @@ public abstract class BuilderBase
         //FlattenBase();
     }
     */
+
+
+    protected void SetTileBase()
+    {
+
+        for (int x = 0; x < ChunkSize.x; x++)
+        {
+            for (int z = 0; z < ChunkSize.z; z++)
+            {
+                int t = Tile.GetFromBiome(ChunkBases[x, z].Biome).ID;
+                for (int tx = 0; tx < World.ChunkSize; tx++)
+                {
+                    for (int tz = 0; tz < World.ChunkSize; tz++)
+                    {
+                        int x_ = x * World.ChunkSize + tx;
+                        int z_ = z * World.ChunkSize + tz;
+                        if (TileMaps[x, z][tx, tz] == 0)
+                        {
+                            TileMaps[x, z][tx, tz] = t;
+                        }
+                    }
+                }
+            }
+        }
+
+
+    }
+
 
     public void RaiseBase(float deltaheight, int boundry)
     {
@@ -435,7 +463,6 @@ public abstract class BuilderBase
         //ChunkVoxels[cx, cz].GetVoxelNode(tx, y, tz).AddVoxel(vox);
         if (tx == 0 && tz == 0 && cx > 0 && cz > 0)
         {
-            int dChunkHeight = (int)Mathf.Clamp((ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz - 1]), 0, World.ChunkHeight - 1) ;
             ChunkVoxels[cx - 1, cz - 1].AddVoxel(World.ChunkSize, y , World.ChunkSize,vox);
             ChunkVoxels[cx - 1, cz].AddVoxel(World.ChunkSize, y , tz, vox);    
             ChunkVoxels[cx, cz - 1].AddVoxel(tx, y , World.ChunkSize,vox);
@@ -476,26 +503,21 @@ public abstract class BuilderBase
 
         if(tx == 0 && tz == 0 && cx>0 && cz>0)
         {
-            int dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz - 1]), 0, World.ChunkHeight);
             ChunkVoxels[cx - 1, cz - 1].SetVoxelNode(World.ChunkSize, y, World.ChunkSize, vox);
 
-            dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]), 0, World.ChunkHeight);
             ChunkVoxels[cx - 1, cz].SetVoxelNode(World.ChunkSize, y , tz, vox);
 
-            dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz - 1]), 0, World.ChunkHeight);
             ChunkVoxels[cx, cz - 1].SetVoxelNode(tx, y , World.ChunkSize, vox);
 
 
         }
         else if (tx == 0 && cx > 0)
         {
-            int dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx - 1, cz]), 0, World.ChunkHeight);
 
             ChunkVoxels[cx - 1, cz].SetVoxelNode(World.ChunkSize, y , tz, vox);
         }
         else if (tz == 0 && cz > 0)
         {
-            int dChunkHeight = Mathf.Clamp((int)(ChunkBaseHeights[cx, cz] - ChunkBaseHeights[cx, cz-1]), 0, World.ChunkHeight);
 
             ChunkVoxels[cx, cz-1].SetVoxelNode(tx, y , World.ChunkSize, vox);
         }

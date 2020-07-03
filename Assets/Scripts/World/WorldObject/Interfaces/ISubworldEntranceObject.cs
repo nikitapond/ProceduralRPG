@@ -10,6 +10,7 @@ public interface ISubworldEntranceObject
 {
 
 
+
     /// <summary>
     /// The key required to enter this sub world.
     /// If null, then no key is required.
@@ -33,6 +34,6 @@ public static class ISubworldEntranceHelper
 {
     public static Subworld GetSubworld(this ISubworldEntranceObject swEnt)
     {
-        return GameManager.WorldManager.World.GetSubworld(swEnt.GetSubworldID());
+        return WorldManager.Instance.World.GetSubworld(swEnt.GetSubworldID());
     }
 }

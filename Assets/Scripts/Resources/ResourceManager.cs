@@ -109,7 +109,9 @@ public class ResourceManager
 
         AllWorldObjects.Add((int)WorldObjects.GLASS_WINDOW, Resources.Load<GameObject>(root + "Structure/Glass/Window"));
         AllWorldObjects.Add((int)WorldObjects.ROOF, Resources.Load<GameObject>(root + "Building/Roof"));
-        AllWorldObjects.Add((int)WorldObjects.DOOR, Resources.Load<GameObject>(root + "Structure/Door/Door"));
+
+        AllWorldObjects.Add((int)WorldObjects.DOOR, Resources.Load<GameObject>(root + "Building/Misc/Door"));
+
         AllWorldObjects.Add((int)WorldObjects.DUNGEON_ENTRANCE, Resources.Load<GameObject>(root + "Null"));
         AllWorldObjects.Add((int)WorldObjects.BED, Resources.Load<GameObject>(root + "Building/House/Bed"));
         AllWorldObjects.Add((int)WorldObjects.DOUBLE_BED, Resources.Load<GameObject>(root + "Building/House/DoubleBed"));

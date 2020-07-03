@@ -6,14 +6,12 @@ public class WallSegment : MonoBehaviour
 {
     public const float WallDeltaUpdate = 0.1f;
 
-
     public MeshFilter WallMesh;
     public MeshFilter WallWalkway;
 
     public float WallLength;
     public float WallHeight;
     public Vector3 WallStart;
-
 
     private List<Vector3> WallBase = new List<Vector3>();
 

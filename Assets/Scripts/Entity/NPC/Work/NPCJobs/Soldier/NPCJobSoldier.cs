@@ -35,7 +35,7 @@ public class NPCJobSoldier : NPCJob
         SubTask = CurrentSubTask.None;
         WorkItems = new List<Item>();
         WorkEquiptment = new List<IWorkEquiptmentObject>(5);
-        foreach (WorldObjectData obj in workLocation.WorkBuilding.GetBuildingObjects())
+        foreach (WorldObjectData obj in workLocation.WorkBuilding.GetBuildingExternalObjects())
         {
             if (obj is IWorkEquiptmentObject workObj)
                 WorkEquiptment.Add(workObj);

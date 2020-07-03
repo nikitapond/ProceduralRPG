@@ -35,7 +35,7 @@ public class NPCJobBlackSmith : NPCJob
     {
         BlackSmith = workLocation as Blacksmith;
         WorkEquiptment = new List<IWorkEquiptmentObject>(5);
-        foreach(WorldObjectData obj in workLocation.WorkBuilding.GetBuildingObjects())
+        foreach(WorldObjectData obj in workLocation.WorkBuilding.GetBuildingExternalObjects())
         {
             if (obj is IWorkEquiptmentObject workObj)
                 WorkEquiptment.Add(workObj);

@@ -8,7 +8,8 @@ public class SettlementTester : MonoBehaviour
     public GameObject ChunkPrefab;
     public GameObject ChunkVoxelPrefab;
 
-
+    public SettlementWall SettlementWall;
+    Vector2[] wall;
     public GameObject ChunkHolder;
 
     private MarchingCubes MarchingCubes;
@@ -19,8 +20,8 @@ public class SettlementTester : MonoBehaviour
 
     private void Awake()
     {
-        TestMain.SetupTest();
-        Player = TestMain.CreatePlayer(new Vector3(0, 0, 0));
+        
+
         GameManager.RNG = new GenerationRandom(0);
         CurrentVerticies = new List<Vector3>(World.ChunkSize * World.ChunkSize);
         CurrentTriangles = new List<int>(World.ChunkSize * World.ChunkSize);
@@ -47,6 +48,17 @@ public class SettlementTester : MonoBehaviour
         return c;
     }
 
+    private void OnDrawGizmos()
+    {
+        if(SettlementWall != null)
+        {
+            for(int i=0; i< SettlementWall.WallPoints.Count - 1; i++)
+            {
+                Gizmos.DrawSphere(new Vector3(SettlementWall.WallPoints[i].x, 5, SettlementWall.WallPoints[i].z), 1);
+                Gizmos.DrawLine(new Vector3(SettlementWall.WallPoints[i].x, 5, SettlementWall.WallPoints[i].z), new Vector3(SettlementWall.WallPoints[i + 1].x, 5, SettlementWall.WallPoints[i + 1].z));
+            }
+        }
+    }
 
     public float WorldHeight(float x, float z)
     {
@@ -61,6 +73,8 @@ public class SettlementTester : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        TestMain.SetupTest();
+        Player = TestMain.CreatePlayer(new Vector3(0, 0, 0));
         SettlementShell shell = new SettlementShell(new GridPoint(new Vec2i(0, 0), new Vec2i(0, 0)), 0, SettlementType.CAPITAL);
 
         bool[] entraceDir = new bool[8];
@@ -82,11 +96,25 @@ public class SettlementTester : MonoBehaviour
                     bases[x, z].SetChunkFeature(new ChunkRiverNode(new Vec2i(x, z)));
             }
         }
-
-
+        List<BuildingPlan> reqBuild = new List<BuildingPlan>() { Building.VEGFARM, Building.WHEATFARM, };
+        shell.RequiredBuildings = reqBuild;
+        shell.SetChunkBases(bases);
         Debug.BeginDeepProfile("Setgen");
         SettlementBuilder2 setB = new SettlementBuilder2(WorldHeight, shell);
         setB.Generate(new GenerationRandom(0));
+
+        foreach(Building b in setB.Buildings)
+        {
+            if (b.BuildingSubworld != null)
+            {
+                Debug.Log(b.BuildingSubworld.ExternalEntrancePos);
+                World.Instance.AddSubworld(b.BuildingSubworld);
+            }
+                
+        }
+
+        SettlementWall = setB.GenerateWall();
+        //wall = SettlementWall.WallPath.CalculateEvenlySpacedPoints(5, 1);
         Debug.EndDeepProfile("Setgen");
         /*
         int seed = 0;
@@ -114,9 +142,12 @@ public class SettlementTester : MonoBehaviour
                 continue;
 
             Chunks[cd.X, cd.Z] = cd;
-          
+            
             //EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
         }
+
+        SetChunks(Chunks);
+        return;
         foreach (ChunkData cd in Chunks)
         {
 
@@ -133,6 +164,38 @@ public class SettlementTester : MonoBehaviour
         }
 
 
+
+    }
+
+
+    private void SetChunks(ChunkData[,] chunks)
+    {
+        int regX = Mathf.CeilToInt(((float)chunks.GetLength(0)) / World.RegionSize);
+        int regZ = Mathf.CeilToInt(((float)chunks.GetLength(1)) / World.RegionSize);
+
+        for(int rx=0; rx<regX; rx++)
+        {
+            for(int rz=0; rz<regZ; rz++)
+            {
+                ChunkData[,] cd = new ChunkData[World.RegionSize, World.RegionSize];
+
+                for (int x = 0; x < World.RegionSize; x++)
+                {
+                    for (int z = 0; z < World.RegionSize; z++)
+                    {
+                        int x_ = rx * World.RegionSize + x;
+                        int z_ = rz * World.RegionSize + z;
+                        if (x < chunks.GetLength(0) && z < chunks.GetLength(1))
+                            cd[x, z] = chunks[x_, z_];
+                    }
+                }
+
+                ChunkRegion cr = new ChunkRegion(rx, rz, cd);
+                WorldManager.Instance.CRManager.LoadedRegions[rx, rz] = cr;
+            }
+        }
+
+        
 
     }
 

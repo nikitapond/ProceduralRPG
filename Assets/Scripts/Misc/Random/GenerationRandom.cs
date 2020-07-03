@@ -90,23 +90,7 @@ public class GenerationRandom
 
     public Vec2i RandomQuadDirection()
     {
-        //Random number of either 0 or 1
-        int xy = random.Next(0, 4);
-
-        if(xy == 0)
-        {
-            int x = random.Next(0, 2);
-            if (x == 0)
-                return new Vec2i(-1, 0);
-            return new Vec2i(1, 0);
-        }
-        else
-        {
-            int z = random.Next(0, 2);
-            if (z == 0)
-                return new Vec2i(0, -1);
-            return new Vec2i(0, 1);
-        }
+        return Vec2i.QUAD_DIR[RandomInt(0, 4)];
     }
     public Vec2i RandomVec2i(int mins, int maxs)
     {

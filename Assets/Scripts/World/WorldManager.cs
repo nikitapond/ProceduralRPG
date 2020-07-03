@@ -31,11 +31,29 @@ public class WorldManager : MonoBehaviour
 
     public Player Player { get; private set; }
 
+
+
     public void SetWorld(World world)
     {
         World = world;
 
     }
+
+    public void EntityEnterSubworld(Entity entity, Subworld sub)
+    {
+        if(entity is Player)
+        {
+            CRManager.LoadSubworldChunks(sub);
+        }
+    }
+
+    public void EntityExitSubworld(Entity entity, Subworld sub)
+    {
+
+    }
+
+
+
     /// <summary>
     /// Enters the player into the subworld of the given ID.
     /// If the given subworld is the one the player is already in, leave the subworld <see cref="WorldManager.LeaveSubworld"/>
@@ -76,9 +94,10 @@ public class WorldManager : MonoBehaviour
             CurrentSubworld = sub;
             //Load all subworld chunks and add them to the the relevent list
             CRManager.LoadSubworldChunks(sub);
-            GameManager.PathFinder.LoadSubworld(sub);
+
+            //GameManager.PathFinder.LoadSubworld(sub);
             //Inform entity manager we are entering the sub world, then teleport player to correct position.
-            GameManager.EntityManager.EnterSubworld(sub);
+            EntityManager.Instance?.EnterSubworld(sub);
             Player.SetPosition(sub.InternalEntrancePos);
         }
 
@@ -115,7 +134,7 @@ public class WorldManager : MonoBehaviour
             Player.SetPosition(CurrentSubworld.ExternalEntrancePos);
             //CurrentSubworld = null;
             LoadedChunksCentre = null;
-            GameManager.EntityManager.LeaveSubworld();
+            EntityManager.Instance?.LeaveSubworld();
         }
     }
 
@@ -136,7 +155,7 @@ public class WorldManager : MonoBehaviour
         Debug.BeginDeepProfile("world_update");
         if (Player == null)
         {
-            Player = GameManager.PlayerManager.Player;
+            Player = PlayerManager.Instance.Player;
             return;
         }
 

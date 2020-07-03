@@ -22,8 +22,8 @@ public class ChunkRegionManager : MonoBehaviour
     private List<Vec2i> ToUnloadChunks;
     //private Object ToUnloadChunksLOCK = new Object();
 
-    private World World { get { return GameManager.WorldManager.World; } }
-    private Player Player { get { return GameManager.PlayerManager.Player; } }
+    private World World { get { return WorldManager.Instance.World; } }
+    private Player Player { get { return PlayerManager.Instance.Player; } }
     public Vec2i LoadedChunksCentre { get; private set; }
     public Dictionary<Vec2i, LoadedChunk2> SubworldChunks { get; private set; }
 
@@ -90,6 +90,9 @@ public class ChunkRegionManager : MonoBehaviour
             Debug.EndDeepProfile("ChunkThreadStart");
             //LoadChunks(new Vec2i(playerChunk.x, playerChunk.z), LoadChunkRadius, forceLoad);
         }
+
+        List<KeyValuePair<Vec2i, LoadedChunk2>> loadedToAdd = new List<KeyValuePair<Vec2i, LoadedChunk2>>();
+
         lock (LoadedChunksLock)
         {
             if(ToUnloadChunks.Count > 0)
@@ -98,18 +101,29 @@ public class ChunkRegionManager : MonoBehaviour
                     UnloadChunk(v);
                 }
                 ToUnloadChunks.Clear();
-            }
-            lock (ToGetLoadedChunksLOCK)
+            }            
+        }
+
+        lock (ToGetLoadedChunksLOCK)
+        {
+            if (ToGetLoadedChunks.Count > 0)
             {
-                if (ToGetLoadedChunks.Count > 0)
+                Debug.Log(ToGetLoadedChunks.Count + " chunks to gen");
+                foreach (KeyValuePair<ChunkData, int> kvp in ToGetLoadedChunks)
                 {
-                    foreach (KeyValuePair<ChunkData, int> kvp in ToGetLoadedChunks)
-                    {
-                        //Get free object instance and add to list of chunks
-                        LoadedChunks.Add(kvp.Key.Position, ChunkLoader.GetLoadedChunk(kvp.Key, kvp.Value));
-                    }
-                    ToGetLoadedChunks.Clear();
+                    Debug.Log("In the loop...");
+                    //Get free object instance and add to list of chunks
+                    loadedToAdd.Add(new KeyValuePair<Vec2i, LoadedChunk2>(kvp.Key.Position, ChunkLoader.GetLoadedChunk(kvp.Key, kvp.Value)));
+                    //LoadedChunks.Add(kvp.Key.Position, ChunkLoader.GetLoadedChunk(kvp.Key, kvp.Value));
                 }
+                ToGetLoadedChunks.Clear();
+            }
+        }
+        lock (LoadedChunksLock)
+        {
+            foreach(KeyValuePair<Vec2i,LoadedChunk2> kvp in loadedToAdd)
+            {
+                LoadedChunks.Add(kvp.Key, kvp.Value);
             }
         }
         /*
@@ -140,11 +154,17 @@ public class ChunkRegionManager : MonoBehaviour
         UnloadAllChunks();
         CurrentSubworld = sub;
 
+        SubworldChunks.Clear();
+
         foreach(ChunkData cd in sub.SubworldChunks)
         {
-            ChunkLoader.LoadChunk(cd);
+            Debug.Log("Object count:" + cd.WorldObjects.Count);
+            SubworldChunks.Add(cd.Position, ChunkLoader.GetLoadedChunk(cd, 1));
+            Debug.Log("sub chunk: " + cd.Position);
+            //ChunkLoader.LoadChunk(cd);
         }
-        ChunkLoader.ForceLoadAll();
+        CurrentSubworld = sub;
+        //ChunkLoader.ForceLoadAll();
 
         //TODO - fix this bad boy
         return;
@@ -211,8 +231,6 @@ public class ChunkRegionManager : MonoBehaviour
         Vec2i r = World.GetRegionCoordFromChunkCoord(v);
         if (r.x >= World.RegionCount || r.z >= World.RegionCount || r.x < 0 || r.z < 0)
         {
-
-
             return null;
         }
         //Check loaded regions for this region
@@ -267,6 +285,9 @@ public class ChunkRegionManager : MonoBehaviour
         {
             throw new System.Exception("Region " + rPos + " is not within world bounds");
         }
+
+        if (GameManager.ChunkRegionGenerator == null)
+            return;
 
         //If valid, load and add to array
         if (GameManager.ChunkRegionGenerator.IsGeneratingRegion(rPos))
@@ -366,7 +387,7 @@ public class ChunkRegionManager : MonoBehaviour
                     ChunkData cd = GetChunk(pos);
                     if (cd == null)
                     {
-                        Debug.Log("Chunk at " + pos + " was null");
+                       // Debug.Log("Chunk at " + pos + " was null");
                         continue;
                     }
                     lock (ToGetLoadedChunksLOCK)
@@ -377,7 +398,7 @@ public class ChunkRegionManager : MonoBehaviour
                     
                     //Load the entities for this chunk
                     //TODO - check this doesn't cause issues with entities loading before chunks?
-                    GameManager.EntityManager.LoadChunk(pos);
+                    GameManager.EntityManager?.LoadChunk(pos);
 
                     //ChunkLoader.LoadChunk(cd);
                 }
@@ -513,9 +534,16 @@ public class ChunkRegionManager : MonoBehaviour
     /// <returns></returns>
     public LoadedChunk2 GetLoadedChunk(Vec2i chunk)
     {
-        if(LoadedChunks.TryGetValue(chunk, out LoadedChunk2 val))
+        LoadedChunk2 lChunk;
+        if (InSubworld)
         {
-            return val;
+
+            if (SubworldChunks.TryGetValue(chunk, out lChunk))
+                return lChunk;
+        }
+        if(LoadedChunks.TryGetValue(chunk, out lChunk))
+        {
+            return lChunk;
         }
         return null;
 
@@ -564,7 +592,7 @@ public class ChunkRegionManager : MonoBehaviour
             Destroy(kpv.Value.gameObject);
         }
         LoadedChunks.Clear();
-        GameManager.EntityManager.UnloadChunks(chunkKeys);
+        EntityManager.Instance?.UnloadChunks(chunkKeys);
     }
 
     public ChunkData[] GetNeighbors(Vec2i c)

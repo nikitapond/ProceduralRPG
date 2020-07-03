@@ -67,18 +67,18 @@ public abstract class WorldObjectData
 
     public WorldObjectData SetPosition(Vector3 nPos)
     {
-        Position = nPos;
+        this.Position = nPos;
         return this;
     }
     public WorldObjectData SetPosition(Vec2i nPos)
     {
-        Position = nPos.AsVector3();
+        this.Position = nPos.AsVector3();
         return this;
     }
 
     public WorldObjectData SetRotation(float rot)
     {
-        Rotation = rot;
+        this.Rotation = rot;
         return this;
     }
 

@@ -84,6 +84,7 @@ public class ChunkLoader : MonoBehaviour
         //Check if any chunks are in the buffer
         if (ChunkBuffer.Count != 0)
         {
+            Debug.Log("Taking from buffer");
             //If there is, we get it and remove from the buffer
             lChunk = ChunkBuffer[0];
             ChunkBuffer.RemoveAt(0);
@@ -95,6 +96,7 @@ public class ChunkLoader : MonoBehaviour
             GameObject cObj = Instantiate(ChunkPrefab);
             cObj.transform.parent = transform;
             lChunk = cObj.GetComponent<LoadedChunk2>();
+            Debug.Log("Created new LoadedChunk");
             lChunk.SetChunkAndLOD(chunk, lod);
 
         }
@@ -204,6 +206,7 @@ public class ChunkLoader : MonoBehaviour
     /// <param name="chunk"></param>
     public void AddToGenerationQue(LoadedChunk2 chunk)
     {
+        Debug.Log("Added to gen que");
         float priority = chunk.LOD;
         //If we already contain this chunk, then we don't need to add again
         
@@ -322,11 +325,14 @@ public class ChunkLoader : MonoBehaviour
         }
         //Find the chunk for the first object to generate
         Vec2i chunk = World.GetChunkPosition(objData.Position);
+
+
+
         LoadedChunk2 lc2 = ChunkRegionManager.GetLoadedChunk(chunk);
         if (lc2 == null)
         {
             //Debug.Log(chunk);
-            //Debug.Log("[ChunkLoader] Chunk for object is not loaded, attempting another object");
+            Debug.Log("[ChunkLoader] Chunk ( " + chunk + " ) for object ( " + objData + " ) is not loaded, attempting another object");
             //if the chunk is null, we throw this object to the end of the que and try again.  
             lock (ObjectsToLoadLock)
             {
@@ -411,17 +417,18 @@ public class ChunkLoader : MonoBehaviour
             }
         }
         cObj.transform.position = pChunk.Position.AsVector3() * World.ChunkSize;
-
+        Debug.Log("LOD: " + loaded.LOD + " has loaded? " + loaded.HasLoadedWorldObjects);
         if (loaded.LOD < 3 && !loaded.HasLoadedWorldObjects)
         {
             loaded.SetHasLoadedWorldObjects(true);
+            Debug.Log("In here");
             //loaded.SetChunk(pChunk.ChunkData);
             lock (ObjectsToLoadLock)
             {
                 if (pChunk.ChunkData.WorldObjects != null)
                 {
                     ObjectsToLoad.AddRange(pChunk.ChunkData.WorldObjects);
-              
+                    Debug.Log("Adding " + pChunk.ChunkData.WorldObjects.Count + " to load");
                 }
             }
         }

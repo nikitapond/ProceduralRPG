@@ -54,8 +54,6 @@ public class World
         ChunkBases = cb;
     }
 
-
-
     public void LoadWorld(GameLoadSave gls)
     {
         Debug.Log(gls.WorldKingdoms + " - " + gls.WorldSettlements);
@@ -63,6 +61,10 @@ public class World
         WorldSettlements = gls.WorldSettlements;
 
     }
+
+
+
+
     public void WorldSave(GameLoadSave gls)
     {
         gls.WorldKingdoms = WorldKingdoms;
@@ -94,9 +96,9 @@ public class World
 
     public int AddSubworld(Subworld subworld)
     {
-        int id = WorldSubWorlds.Count+1;
+        int id = subworld.SubworldID;
         WorldSubWorlds.Add(id, subworld);
-        subworld.SetSubworldID(id);
+        //subworld.SetSubworldID(id);
         return id;
     }
 
@@ -135,6 +137,12 @@ public class World
     public Kingdom GetKingdom(int id)
     {
         return id == -1 ? null : WorldKingdoms[id];
+    }
+
+
+    public void EntityEnterSubworld(Entity entity, Subworld subworld)
+    {
+
     }
 
 

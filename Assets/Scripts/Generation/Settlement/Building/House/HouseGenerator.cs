@@ -57,7 +57,13 @@ public class HouseGenerator
             BuildingGenerator.PlaceObjectAgainstWall(genRan, new WallTorch(), 1.5f, vox, house, 0f, requireWallBacking:true);
         }
         
-        BuildingGenerator.AddRoof(genRan, vox, house, Voxel.thatch);
+        //BuildingGenerator.AddRoof(genRan, vox, house, Voxel.thatch);
+
+        BuildingSubworldBuilder b = new BuildingSubworldBuilder(house, vox);
+        b.CreateSubworld();
+        //ChunkData[,] subChunks = new ChunkData[1, 1];
+
+
         return house;
 
     }

@@ -12,6 +12,8 @@ public class TestMain
         TEST = true;
         EventManager em = new EventManager();
         ResourceManager.LoadAllResources();
+        World world = new World();
+        WorldManager.Instance.SetWorld(world);
     }
     public static Player CreatePlayer(Vector3 position)
     {

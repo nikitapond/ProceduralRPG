@@ -3,6 +3,16 @@ using UnityEditor;
 using System.Collections.Generic;
 public class BuildingGenerator
 {
+    /// <summary>
+    /// Used to define how a building will look
+    /// </summary>
+    public struct BuildingStyle
+    {
+        public int test1;
+        public bool test2;
+    }
+
+    public static readonly BuildingStyle DEFAULT = new BuildingStyle() { test1 = 1, test2 = true };
 
     public struct BuildingGenerationPlan
     {
@@ -20,8 +30,11 @@ public class BuildingGenerator
     public const int WEST_ENTRANCE = 3;
 
 
-    public static Building CreateBuilding(GenerationRandom genRan, out BuildingVoxels vox, BuildingGenerationPlan plan)
+    public static Building CreateBuilding(GenerationRandom genRan, out BuildingVoxels vox, BuildingGenerationPlan plan, BuildingStyle style = default)
     {
+        //If default, set the correct default
+        if (style.Equals(default(BuildingStyle)))
+            style = DEFAULT;
 
         int maxWidth = plan.DesiredSize == null?Mathf.Min(plan.BuildingPlan.MaxSize, plan.MaxWidth): plan.DesiredSize.x;
         int maxHeight = plan.DesiredSize==null? Mathf.Min(plan.BuildingPlan.MaxSize, plan.MaxHeight) : plan.DesiredSize.z;
@@ -47,6 +60,7 @@ public class BuildingGenerator
         return house;
         //return GenerateHouse(out vox, width, height);
     }
+
 
     /// <summary>
     /// Takes a building plan and generates a full building from it.
@@ -135,6 +149,11 @@ public class BuildingGenerator
         
     }
 
+
+    protected static int WorldToChunk(int w)
+    {
+        return Mathf.FloorToInt((float)w / World.ChunkSize);
+    }
 
     public static Vec2i GetWallPointDirection(Building build, Vec2i wallPoint)
     {
@@ -240,7 +259,7 @@ public class BuildingGenerator
         obj.SetPosition(finPos).SetRotation(rotation);
         if (!forcePlace)
         {
-            foreach (WorldObjectData obj_ in build.GetBuildingObjects())
+            foreach (WorldObjectData obj_ in build.GetBuildingExternalObjects())
             {
                 if (obj.Intersects(obj_))
                     return PlaceObjectAgainstWall(genRan, obj, height, vox, build, distFromWall, requireWallBacking, distToEntr, forcePlace, attemptsCount);
@@ -249,7 +268,7 @@ public class BuildingGenerator
 
 
         //obj.SetPosition(finPos);
-        build.AddObjectReference(obj);
+        build.AddInternalObject(obj);
         return true;
     }
 
@@ -410,6 +429,7 @@ public class BuildingGenerator
         return true;
     }
 
+
     public static void ChooseEntrancePoint(GenerationRandom genRan, BuildingVoxels vox, Building build)
     {
 
@@ -426,8 +446,17 @@ public class BuildingGenerator
         for(int y=0; y<4; y++)
         {
             vox.ClearVoxel(entr.x, y, entr.z);
-
         }
+        Door interior = new Door();
+        interior.SetPosition(entr);
+        
+        build.InternalEntranceObject = interior;
+        AddObject(build, vox, interior, true);
+
+        Door external = new Door();
+        external.SetPosition(entr);
+        build.ExternalEntranceObject = external;
+        build.AddExternalObject(external);
 
     }
 
@@ -524,13 +553,13 @@ public class BuildingGenerator
 
         if (force)
         {
-            build.AddObjectReference(obj);
+            build.AddInternalObject(obj);
             return true;
         }
         else
         {
             //Iterate all objects in the building and check for intersection.
-            foreach(WorldObjectData obj_ in build.GetBuildingObjects())
+            foreach(WorldObjectData obj_ in build.GetBuildingInternalObjects())
             {
                 //If they intersect, then we cannot place this object.
                 if (obj_.Intersects(obj))
@@ -554,11 +583,98 @@ public class BuildingGenerator
                     }
                 }
             }
-            build.AddObjectReference(obj);
+            build.AddInternalObject(obj);
             return true;
 
         }
 
+    }
+
+}
+
+public class BuildingSubworldBuilder
+{
+
+    private Vec2i ChunkSize;
+    private Vec2i Size;
+    private int[,][,] Tiles;
+    private List<WorldObjectData>[,] Objects;
+    private ChunkVoxelData[,] Voxels;
+
+    private Building Building;
+    private BuildingVoxels BuildVox;
+    public BuildingSubworldBuilder(Building building, BuildingVoxels vox)
+    {
+        Building = building;
+        BuildVox = vox;
+        Size = new Vec2i(building.Width, building.Height);
+        int cWidth = Mathf.CeilToInt(((float)Size.x) / World.ChunkSize);
+        int cHeight = Mathf.CeilToInt(((float)Size.z) / World.ChunkSize);
+        if (cWidth < 1)
+            cWidth = 1;
+        if (cHeight < 1)
+            cHeight = 1;
+        ChunkSize = new Vec2i(cWidth, cHeight);
+
+        Tiles = new int[cWidth, cHeight][,];
+        Voxels = new ChunkVoxelData[cWidth, cHeight];
+        Objects = new List<WorldObjectData>[cWidth, cHeight];
+        for (int x=0; x<cWidth; x++)
+        {
+            for(int z=0; z<cHeight; z++)
+            {
+                Tiles[x, z] = new int[World.ChunkSize, World.ChunkSize];
+                Voxels[x, z] = new ChunkVoxelData();
+            }
+        }
+
+    }
+
+    public void CreateSubworld()
+    {
+
+        for(int x=0; x<Size.x; x++)
+        {
+            for(int z=0; z<Size.z; z++)
+            {
+                int cx = WorldToChunk(x);
+                int cz = WorldToChunk(z);
+                int tx = x % World.ChunkSize;
+                int tz = z % World.ChunkSize;
+
+                Tiles[cx, cz][tx, tz] = Building.BuildingTiles[x, z]==null?0: Building.BuildingTiles[x, z].ID;
+                for(int y=0; y< BuildVox.Height; y++)
+                {
+                    Voxels[cx, cz].SetVoxelNode(tx, y, tz, BuildVox.GetVoxelNode(x, y, z));
+                }               
+            }
+        }
+        foreach(WorldObjectData obj in Building.GetBuildingInternalObjects())
+        {
+            Vec2i v = Vec2i.FromVector3(obj.Position);
+            int cx = WorldToChunk(v.x);
+            int cz = WorldToChunk(v.z);
+            if (Objects[cx, cz] == null)
+                Objects[cx, cz] = new List<WorldObjectData>();
+            //obj.SetPosition(obj.Position.Mod(World.ChunkSize));
+            //Debug.Log(obj.Position);
+            Objects[cx, cz].Add(obj);
+        }
+        ChunkData[,] chunks = new ChunkData[ChunkSize.x, ChunkSize.z];
+        for(int x=0; x<ChunkSize.x; x++)
+        {
+            for (int z = 0; z < ChunkSize.z; z++)
+            {
+                chunks[x,z] = new ChunkData(x, z, Tiles[x, z], true, 0, null, Objects[x, z]);
+                chunks[x, z].SetVoxelData(Voxels[x, z]);
+            }
+        }
+        Subworld sw = new Subworld(chunks, Building.Entrance, Building.Entrance);
+        Building.BuildingSubworld = sw;
+    }
+    protected static int WorldToChunk(int w)
+    {
+        return Mathf.FloorToInt((float)w / World.ChunkSize);
     }
 
 }
