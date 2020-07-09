@@ -1195,7 +1195,7 @@ public class SettlementGenerator2
 
     private Settlement GenerateSettlement(SettlementShell ss)
     {
-        SettlementBuilder builder = new SettlementBuilder(GameGen.TerGen, ss);
+        SettlementBuilder2 builder = new SettlementBuilder2(GameGen.TerGen.GetWorldHeightAt, ss);
         GenerationRandom genRan = new GenerationRandom(GameGen.Seed + ss.ChunkPosition.GetHashCode());
         builder.Generate(genRan);
 

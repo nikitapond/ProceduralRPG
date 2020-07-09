@@ -13,6 +13,8 @@ public class GameGenerator2
     public KingdomGenerator2 KingdomGen;
     public SettlementGenerator2 SettlementGen;
     public ChunkStructureGenerator2 StructureGen;
+    public EntityGenerator EntityGenerator;
+
 
     private List<WorldLocation> WorldEventLocations;
     private Dictionary<Vec2i, ChunkData> PreGeneratedChunks;
@@ -64,6 +66,9 @@ public class GameGenerator2
         Debug.BeginDeepProfile("SetChunksGen");
         PreGeneratedChunks = SettlementGen.GenerateAllSettlementChunks();
         Debug.EndDeepProfile("SetChunksGen");
+
+        EntityGenerator = new EntityGenerator(this, EntityManager.Instance);
+
         return;
         FillWorldEventLocations();
         World.ChunkBases2 = TerGen.ChunkBases;
