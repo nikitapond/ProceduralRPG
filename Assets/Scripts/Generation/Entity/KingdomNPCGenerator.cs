@@ -5,10 +5,10 @@ public class KingdomNPCGenerator
 {
     public readonly Kingdom Kingdom;
     public readonly EntityManager EntityManager;
-    public readonly GameGenerator GameGen;
+    public readonly GameGenerator2 GameGen;
 
     private GenerationRandom GenerationRan;
-    public KingdomNPCGenerator(GameGenerator gameGen, Kingdom kingdom, EntityManager entityManager)
+    public KingdomNPCGenerator(GameGenerator2 gameGen, Kingdom kingdom, EntityManager entityManager)
     {
         GameGen = gameGen;
 
@@ -21,6 +21,7 @@ public class KingdomNPCGenerator
         Kingdom = kingdom;
         EntityManager = entityManager;
     }
+
 
     /// <summary>
     /// <para>
@@ -44,7 +45,7 @@ public class KingdomNPCGenerator
         foreach(int i in Kingdom.SettlementIDs)
         {
 
-            GenerateSettlementNPC(GameManager.WorldManager.World.GetSettlement(i));
+            GenerateSettlementNPC(WorldManager.Instance.World.GetSettlement(i));
         }
 
     }
@@ -102,6 +103,9 @@ public class KingdomNPCGenerator
                     }
                     //Create the empty NPC and add it to the settlement
                     NPC npc = new NPC(isFixed: true);
+
+                    
+
                     npc.SetPosition(entitySpawn);
                     npc.NPCData.SetHome(h);
                     //First two entities should be male and female (husband and wife)
@@ -115,11 +119,23 @@ public class KingdomNPCGenerator
                     else
                         npc.NPCData.SetGender((NPCGender)GenerationRan.RandomInt(0, 2));
                     
-                    EntityManager.AddFixedEntity(npc);
+                    
                     npc.SetName("NPC " + npc.ID);
                     set.AddNPC(npc);
                     settlementNPCs.Add(npc);
                     inThisHouse.Add(npc);
+
+                    if (h.HasSubworld)
+                    {
+                        h.BuildingSubworld.AddEntity(npc);
+                        npc.SetSubworld(h.BuildingSubworld);
+                    }
+                    else
+                    {
+                        EntityManager.AddFixedEntity(npc);
+                    }
+
+
                 }
                 //If more than 1 person lives in this house, they are family
                 if(inThisHouse.Count > 1)
