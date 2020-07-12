@@ -610,7 +610,8 @@ public class BuildingSubworldBuilder
                 chunks[x, z].SetVoxelData(Voxels[x, z]);
             }
         }
-        Subworld sw = new Subworld(chunks, Building.Entrance - Plan.EntranceSide*2, Building.Entrance + Plan.EntranceSide*3);
+        Debug.Log("ENTRANCE SIDE: " + Plan.EntranceSide);
+        Subworld sw = new Subworld(chunks, Building.Entrance - (Plan.EntranceSide*2), (Building.Entrance + Plan.EntranceSide*2));
         Building.BuildingSubworld = sw;
     }
     protected static int WorldToChunk(int w)

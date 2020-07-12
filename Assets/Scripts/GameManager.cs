@@ -120,7 +120,7 @@ public class GameManager : MonoBehaviour
             TestSettle = WorldManager.World.GetSettlement(0);
             Vec2i set = TestSettle.Centre;
             //player.SetPosition(new Vector3(set.x * World.ChunkSize, 0, set.z * World.ChunkSize));
-            player.SetPosition(new Vector3(World.WorldSize / 2 * World.ChunkSize, 0, World.WorldSize/2 * World.ChunkSize));
+            player.MoveEntity(new Vector3(World.WorldSize / 2 * World.ChunkSize, 0, World.WorldSize/2 * World.ChunkSize));
             PlayerManager.SetPlayer(player);
 
             load.End();
@@ -170,7 +170,7 @@ public class GameManager : MonoBehaviour
         
         foreach(KeyValuePair<int, WorldLocation> tl in WorldManager.World.WorldLocations)
         {
-            wpos = tl.Value.Position * World.ChunkSize;
+            wpos = tl.Value.ChunkPos * World.ChunkSize;
             break;
         }
 
@@ -191,7 +191,7 @@ public class GameManager : MonoBehaviour
     private void GeneratePlayer(Vec2i start)
     {
         Player player = new Player();
-        player.SetPosition(start);
+        player.MoveEntity(start);
         PlayerManager.SetPlayer(player);
         player.Inventory.AddItem(new SteelLongSword());
         player.Inventory.AddItem(new Torch());

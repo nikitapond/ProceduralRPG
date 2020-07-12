@@ -17,9 +17,18 @@ public class World
 
 
     private Object LocationAddLock; //Lock for thread safe adding settlements
-    public Dictionary<int, Settlement> WorldSettlements { get; private set; }
+   // public Dictionary<int, Settlement> WorldSettlements { get; private set; }
     public Dictionary<int, Kingdom> WorldKingdoms { get; private set; }
+    /// <summary>
+    /// Contains all subworlds, with the key being their ID = WorldPosition.Hash
+    /// </summary>
     public Dictionary<int, Subworld> WorldSubWorlds { get; private set; }
+    /// <summary>
+    /// Stores subworlds ordered by the chunk their world entrances exists in
+    /// </summary>
+    private Dictionary<Vec2i, List<int>> OrderedSubworlds;
+
+
     public Dictionary<int, ChunkStructure> WorldChunkStructures { get; private set; }
     /// <summary>
     /// A dictionary containing all world locations
@@ -37,9 +46,9 @@ public class World
     public World()
     {
         LocationAddLock = new Object();
-        WorldSettlements = new Dictionary<int, Settlement>();
         WorldKingdoms = new Dictionary<int, Kingdom>();
         WorldSubWorlds = new Dictionary<int, Subworld>();
+        OrderedSubworlds = new Dictionary<Vec2i, List<int>>();
         WorldChunkStructures = new Dictionary<int, ChunkStructure>();
         WorldLocations = new Dictionary<int, WorldLocation>();
         Instance = this;
@@ -58,8 +67,8 @@ public class World
     {
         Debug.Log(gls.WorldKingdoms + " - " + gls.WorldSettlements);
         WorldKingdoms = gls.WorldKingdoms;
-        WorldSettlements = gls.WorldSettlements;
-
+        //TODO - fix load save
+        //WorldLocation = gls.WorldKingdoms
     }
 
 
@@ -68,7 +77,8 @@ public class World
     public void WorldSave(GameLoadSave gls)
     {
         gls.WorldKingdoms = WorldKingdoms;
-        gls.WorldSettlements = WorldSettlements;
+        //TODO - fix world save
+       // gls.WorldSettlements = WorldSettlements;
     }
 
 
@@ -78,6 +88,10 @@ public class World
         lock (LocationAddLock)
         {
             WorldLocations.Add(id, location);
+            if(location is Settlement)
+            {
+                (location as Settlement).GetKingdom().AddSettlement(location as Settlement);
+            }
         }
         
     }
@@ -98,8 +112,35 @@ public class World
     {
         int id = subworld.SubworldID;
         WorldSubWorlds.Add(id, subworld);
-        //subworld.SetSubworldID(id);
+        //get the chunk position
+        Vec2i cPos = World.GetChunkPosition(subworld.ExternalEntrancePos);
+
+        if (!OrderedSubworlds.ContainsKey(cPos))
+            OrderedSubworlds.Add(cPos, new List<int>());
+        //Add ID to relevent chunk position
+        OrderedSubworlds[cPos].Add(id);
         return id;
+    }
+
+    public List<int> GetSubworldIDsInChunk(Vec2i cPos)
+    {
+        if(OrderedSubworlds.TryGetValue(cPos, out List<int> ids))
+        {
+            return ids;
+        }
+        return null;
+    }
+    public List<Subworld> GetSubworldsInChunk(Vec2i cPos)
+    {
+        List<int> ids = GetSubworldIDsInChunk(cPos);
+        if (ids == null)
+            return null;
+        List<Subworld> subs = new List<Subworld>(ids.Count);
+        foreach(int id in ids)
+        {
+            subs.Add(GetSubworld(id));
+        }
+        return subs;
     }
 
     public int AddChunkStructure(ChunkStructure cStruct)
@@ -121,8 +162,10 @@ public class World
 
     public Settlement GetSettlement(int id)
     {
-        if (WorldSettlements.TryGetValue(id, out Settlement set))
-            return set;
+        //Check if we have this location id
+        if (WorldLocations.TryGetValue(id, out WorldLocation loc))
+            //Cast to settlement, will return null if this isn't a settlement
+            return loc as Settlement;
         return null;
     }
 
@@ -140,10 +183,6 @@ public class World
     }
 
 
-    public void EntityEnterSubworld(Entity entity, Subworld subworld)
-    {
-
-    }
 
 
     public static Vec2i GetRegionCoordFromChunkCoord(Vec2i chunkCoord)

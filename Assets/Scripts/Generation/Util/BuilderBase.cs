@@ -266,7 +266,7 @@ public abstract class BuilderBase
             }
         }
         float mean = sum / (ChunkSize.x * ChunkSize.z * World.ChunkSize * World.ChunkSize);
-
+        mean = (int)mean;
         float lerpScale = Mathf.Max(TileSize.x/2, TileSize.z/2);
 
         for(int x=0; x<TileSize.x; x++)
@@ -432,7 +432,7 @@ public abstract class BuilderBase
         {
             for (int j = 0; j < depth; j++)
             {
-                int f = (int)Mathf.CeilToInt(GetHeight(x + i, z + j));
+                int f = (int)(GetHeight(x + i, z + j));
                 if (f > maxHeight)
                     maxHeight = f;
             }

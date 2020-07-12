@@ -119,6 +119,7 @@ public class ResourceManager
         AllWorldObjects.Add((int)WorldObjects.MARKET_STALL, Resources.Load<GameObject>(root + "Building/Work/Market/MarketStall"));
         AllWorldObjects.Add((int)WorldObjects.WALL_TORCH, Resources.Load<GameObject>(root + "Building/Misc/Torch"));
         AllWorldObjects.Add((int)WorldObjects.FIRE_PLACE, Resources.Load<GameObject>(root + "Building/Misc/FirePlace"));
+        AllWorldObjects.Add((int)WorldObjects.NO_WALK_ZONE, Resources.Load<GameObject>(root + "Building/Misc/NoWalk"));
 
         AllWorldObjects.Add((int)WorldObjects.TRAP_DOOR, Resources.Load<GameObject>(root + "SubworldEntrance/TrapDoor"));
 

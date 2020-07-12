@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class Blacksmith : Building, IWorkBuilding
 {
-    public static BuildingPlan BuildingPlan = new BuildingPlan("Blacksmith", 10, 20);
+    public static BuildingPlan BuildingPlan = new BuildingPlan("Blacksmith", 12, 20);
     private WorkBuildingData WorkBuildingData;
     public Blacksmith(int width, int height) : base(width, height)
     {

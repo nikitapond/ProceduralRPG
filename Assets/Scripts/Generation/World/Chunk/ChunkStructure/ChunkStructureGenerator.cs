@@ -175,7 +175,7 @@ public class ChunkStructureGenerator
 
         //Create list to hold generated chunks. Create random (thread safe)
         List<ChunkData> generatedChunks = new List<ChunkData>(40);
-        GenerationRandom genRan = new GenerationRandom(toGen[0].Position.x * 13 + toGen[0].Position.z * 3064);
+        GenerationRandom genRan = new GenerationRandom(toGen[0].ChunkPos.x * 13 + toGen[0].ChunkPos.z * 3064);
 
 
         ChunkStructureBuilder builder = null;

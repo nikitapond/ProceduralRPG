@@ -38,19 +38,12 @@ public class WorldMap
 
         WorldMapLocations = new List<WorldMapLocation>();
 
-
-        foreach(KeyValuePair<int, Settlement> set in world.WorldSettlements)
+        foreach(KeyValuePair<int, WorldLocation> loc in world.WorldLocations)
         {
-            WorldMapLocation wml = new WorldMapLocation(set.Value.Name, set.Value.BaseCoord / World.ChunkSize);
+            WorldMapLocation wml = new WorldMapLocation(loc.Value.Name, loc.Value.ChunkPos);
             WorldMapLocations.Add(wml);
-            set.Value.SetWorldMapLocation(wml);
-        }
-        foreach (KeyValuePair<int, ChunkStructure> set in world.WorldChunkStructures)
-        {
-            WorldMapLocation wml = new WorldMapLocation(set.Value.Name, set.Value.Position);
-            WorldMapLocations.Add(wml);
+            loc.Value.SetWorldMapLocation(wml);
 
-            set.Value.SetWorldMapLocation(wml);
         }
 
     }

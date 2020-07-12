@@ -26,7 +26,7 @@ public abstract class SubworldBuilder : BuilderBase
             chunks[c.X, c.Z] = c;
         }
         Subworld sw = new Subworld(chunks, SubworldEntrance, WorldEntrance);
-        sw.Exit = Exit;
+        sw.Entrance = Exit;
         return sw;
     }
 

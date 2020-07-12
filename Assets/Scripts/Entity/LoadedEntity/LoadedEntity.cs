@@ -102,7 +102,11 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
     public void SetEntity(Entity entity)
     {
-    
+
+
+       
+
+
         EventManager.Instance.AddListener(this);
         
         Entity = entity;
@@ -293,7 +297,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             return World.ChunkHeight;
 
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(new Vector3(x, 512, z), Vector3.down), out hit, 512, layerMask: GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(new Vector3(x, 512, z), Vector3.down), out hit, 513, layerMask: GROUND_LAYER_MASK))
         {
             return hit.point.y;
         }
@@ -310,44 +314,13 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         Vector3 basePos = new Vector3(transform.position.x, 512, transform.position.z);
 
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 512, layerMask:GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 513, layerMask:GROUND_LAYER_MASK))
         {
             return hit.point.y;
         }
-        float height = 4.5f;
-        return height;
-        /*
-        ChunkData2 chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(Entity.TilePos), false);
-
-        if (chunk == null)
-            return World.ChunkHeight;
-
-        if (chunk.Heights != null)
-            height = chunk.Heights[Entity.TilePos.x % World.ChunkSize, Entity.TilePos.z % World.ChunkSize];
-        else
-            height = chunk.BaseHeight;
-
-        */
-        
-        
-        /*
-        if (transform.position.y < height)
-        {
-            RaycastHit hit;
-            if(Physics.Raycast(new Ray(transform.position, Vector3.up), out hit, height+1,  layerMask: GROUND_LAYER_MASK))
-            {
-                return hit.point.y;
-            }
-        }else if(transform.position.y > height)
-        {
-            RaycastHit hit;
-            if (Physics.Raycast(new Ray(transform.position, Vector3.down), out hit, height, layerMask: GROUND_LAYER_MASK))
-            {
-                return hit.point.y;
-            }
-        }
-        */
-        return height;
+        //float height = 4.5f;
+        return 1;
+      
     }
     private void UpdateVerticalVelocity()
     {
@@ -500,6 +473,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             DebugGUI.Instance.SetData("onGround", IsGrounded);
             DebugGUI.Instance.SetData("isJumping", IsJumping);
             DebugGUI.Instance.SetData("isFalling", IsFalling);
+            DebugGUI.Instance.SetData("groundHeight", ground);
 
         }
 
@@ -828,7 +802,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         MoveDirection = Vector2.zero;
 
 
-        Entity.SetPosition(transform.position);
+        Entity.MoveEntity(transform.position);
 
         Debug.EndDeepProfile("le_fixed_update");
 

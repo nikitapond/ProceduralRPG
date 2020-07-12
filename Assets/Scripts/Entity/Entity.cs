@@ -8,13 +8,13 @@ public abstract class Entity
 
     #region variables
     [SerializeField]
-    private float[] Position_;
-    public Vector3 Position { get { return new Vector3(Position_[0], Position_[1], Position_[2]); } }
-    public Vector2 Position2 { get { return new Vector2(Position_[0], Position_[2]); } }
-    public Vec2i TilePos { get { return new Vec2i((int)Position_[0], (int)Position_[2]); } }
+    private SerializableVector3 Position_;
+    public Vector3 Position { get { return Position_; } }
+    public Vector2 Position2 { get { return new Vector2(Position_.x, Position_.z); } }
+    public Vec2i TilePos { get { return new Vec2i((int)Position_.x, (int)Position_.z); } }
     public Vec2i LastChunkPosition { get; protected set; }
 
-
+    public bool IsAlive { get; private set; }
     public float LookAngle { get; private set; }
     public float fov = 30; //Angle either side of look direction entity can see
     public string Name { get; private set; }
@@ -25,6 +25,14 @@ public abstract class Entity
     public EntityCombatManager CombatManager { get; private set; }
 
     public EntityAI EntityAI;
+    /// <summary>
+    /// ID of the current subworld the entity is in
+    /// </summary>
+    public int CurrentSubworldID { get; private set; }
+
+
+
+
 
     /// <summary>
     /// Inventory - Current total inventory
@@ -48,7 +56,7 @@ public abstract class Entity
     {
         Name = name;
         IsFixed = isFixed;
-        SetPosition(Vector3.zero);
+       // MoveEntity(Vector3.zero);
 
         EntityAI = new EntityAI(this, combatAI, taskAI);
 
@@ -57,6 +65,8 @@ public abstract class Entity
         CombatManager = new EntityCombatManager(this);
         SkillTree = new SkillTree();
         MovementData = movementData;
+
+        IsAlive = true;
     }
 
 
@@ -66,15 +76,19 @@ public abstract class Entity
     /// </summary>
     public virtual void Update()
     {
+        Debug.Log("IsUpdated");
         Vec2i cPos = World.GetChunkPosition(Position);
         if(cPos != LastChunkPosition)
         {
+
             EntityManager.Instance.UpdateEntityChunk(this, LastChunkPosition, cPos);
             LastChunkPosition = cPos;
         }
         EntityAI.Update();
     }
-
+    /// <summary>
+    /// The time since game start that the last tick occured at.
+    /// </summary>
     private float LastTick=-1;
 
     public void Tick()
@@ -113,17 +127,46 @@ public abstract class Entity
     public void Kill()
     {
         KillInternal();
-        EntityManager.Instance.UnloadEntity(GetLoadedEntity());
+        IsAlive = false;
+        EntityManager.Instance.UnloadEntity(GetLoadedEntity(), killEntity:true);
         if (!Inventory.IsEmpty)
         {
             LootSack loot = new LootSack(Vec2i.FromVector3(GetLoadedEntity().transform.position).AsVector3());
             loot.GetInventory().AddAll(Inventory);
             GameManager.WorldManager?.AddNewObject(loot);
         }
+        
         EventManager.Instance.InvokeNewEvent(new EntityDeath(this));
+        Debug.Log("Entity  " + this + " is killed");
   
     }
-    #region setters
+    #region setters and gets
+
+    
+
+    public void SetLastChunk(Vec2i chunk)
+    {
+        LastChunkPosition = chunk;
+    }
+
+    public void SetSubworld(int id)
+    {
+        CurrentSubworldID = id;
+    }
+    public void SetSubworld(Subworld subworld)
+    {
+        if (subworld == null)
+            CurrentSubworldID = -1;
+        else
+            CurrentSubworldID = subworld.SubworldID;
+    }
+
+    public Subworld GetSubworld()
+    {
+        if (CurrentSubworldID == -1)
+            return null;
+        return World.Instance.GetSubworld(CurrentSubworldID);
+    }
 
     public void SetEntityFaction(EntityFaction entFact)
     {
@@ -138,22 +181,51 @@ public abstract class Entity
         ID = id;
     }
 
-    public void SetPosition(Vec2i position)
-    {
-        Position_ = new float[] { position.x, 0.5f, position.z };
-        if (LoadedEntity != null)
-        {
-            LoadedEntity.transform.position = Position;
-        }
 
-    }
+    /// <summary>
+    /// Directly sets the position of the entity, this should only be called from
+    /// <see cref="EntityManager.MoveEntity(Entity, int, Vec2i)"/>
+    /// </summary>
+    /// <param name="position"></param>
     public void SetPosition(Vector3 position)
     {
-        Position_ = new float[] { position.x, position.y, position.z };
+        Position_ = position;
+        if(LoadedEntity != null)
+        {
+            LoadedEntity.transform.position = position;
+        }
     }
-    public void SetPosition(Vector2 position)
+
+    /// <summary>
+    /// Used to move the entity. We call <see cref="EntityManager.MoveEntity(Entity, int, Vec2i)"/>.
+    /// If <paramref name="newWorldID"/> is 0, then we stay in the same world.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="newWorldID"></param>
+    public void MoveEntity(Vec2i position, int newWorldID=0)
     {
-        Position_ = new float[] { position.x, 0, position.y };
+        EntityManager.Instance.MoveEntity(this, newWorldID == 0 ? CurrentSubworldID : newWorldID, Vec2i.FromVector2(position));
+    }
+    /// <summary>
+    /// Used to move the entity. We call <see cref="EntityManager.MoveEntity(Entity, int, Vec2i)"/>.
+    /// If <paramref name="newWorldID"/> is 0, then we stay in the same world.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="newWorldID"></param>
+    public void MoveEntity(Vector3 position, int newWorldID=0)
+    {
+        EntityManager.Instance.MoveEntity(this, newWorldID == 0 ? CurrentSubworldID : newWorldID, Vec2i.FromVector3(position));        
+    }
+    /// <summary>
+    /// Used to move the entity. We call <see cref="EntityManager.MoveEntity(Entity, int, Vec2i)"/>.
+    /// If <paramref name="newWorldID"/> is 0, then we stay in the same world.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="newWorldID"></param>
+    public void MoveEntity(Vector2 position, int newWorldID=0)
+    {
+        EntityManager.Instance.MoveEntity(this, newWorldID == 0 ? CurrentSubworldID : newWorldID, Vec2i.FromVector2(position));
+
     }
 
     public void SetLookAngle(float angle)
@@ -214,7 +286,7 @@ public abstract class Entity
 
 }
 /// <summary>
-/// Data structure containing variables associated with EntityMovement
+/// Data structure containing variables associated with Entity Movement
 /// </summary>
 [System.Serializable]
 public struct EntityMovementData

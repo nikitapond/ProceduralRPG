@@ -6,11 +6,11 @@ public class EntityGenerator
 {
     public readonly World World;
     public readonly EntityManager EntityManager;
-    public readonly GameGenerator GameGen;
-    public EntityGenerator(GameGenerator gameGen, EntityManager entityManager)
+    public readonly GameGenerator2 GameGen;
+    public EntityGenerator(GameGenerator2 gameGen, EntityManager entityManager)
     {
         GameGen = gameGen;
-        World = gameGen.World;
+        World = gameGen!=null?gameGen.World:World.Instance;
         EntityManager = entityManager;
     }
 

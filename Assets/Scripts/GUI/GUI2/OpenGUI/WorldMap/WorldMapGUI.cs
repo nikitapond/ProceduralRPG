@@ -86,7 +86,7 @@ public class WorldMapGUI : MonoBehaviour
     {
         if (GameManager.WorldManager.InSubworld)
             return;
-        GameManager.PlayerManager.Player.SetPosition(wml.WorldPosition);
+        GameManager.PlayerManager.Player.MoveEntity(wml.WorldPosition);
     }
 
 

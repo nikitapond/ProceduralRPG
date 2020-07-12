@@ -16,12 +16,12 @@ public class EntityGroupBandits : EntityGroup
 
     private List<EntityGroup> NearGroups;
 
-    public EntityGroupBandits(ChunkStructure home, List<Entity> entities = null, EconomicInventory inventory = null) : base(home.Position, entities, inventory)
+    public EntityGroupBandits(ChunkStructure home, List<Entity> entities = null, EconomicInventory inventory = null) : base(home.ChunkPos, entities, inventory)
     {
 
         Vec2i deltaPosition = GenerationRandom.RNG.RandomVec2i(-64, 64);
 
-        Vec2i tChunk = home.Position + deltaPosition;
+        Vec2i tChunk = home.ChunkPos + deltaPosition;
 
         NearGroups = new List<EntityGroup>(20);
 
@@ -157,7 +157,7 @@ public class EntityGroupBandits : EntityGroup
         if(LifeTime > 20)
         {
             ReturningHome = true;
-            GenerateNewPath(Home.Position);
+            GenerateNewPath(Home.ChunkPos);
         }
         else
         {

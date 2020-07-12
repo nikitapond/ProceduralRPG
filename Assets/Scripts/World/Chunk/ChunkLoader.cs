@@ -111,8 +111,23 @@ public class ChunkLoader : MonoBehaviour
     /// <param name="chunk"></param>
     public void AddToChunkBuffer(LoadedChunk2 chunk)
     {
+
+
+        chunk.gameObject.name = "Unloaded";
+        if (chunk.HasLoadedWorldObjects || chunk.HasGeneratedVoxels)
+        {
+            foreach(Transform t in chunk.transform)
+            {
+                Destroy(t.gameObject);
+            }
+        }
+
         ChunkBuffer.Add(chunk);
+        
     }
+
+
+
 
     /// <summary>
     /// Calling this function forces the chunk loader to load all chunks currently in its list.
@@ -345,7 +360,7 @@ public class ChunkLoader : MonoBehaviour
         float off = lc2.Chunk.GetHeight(localPos);
         WorldObject obj = WorldObject.CreateWorldObject(objData, lc2.transform, off + 0.7f);
         //Debug.Log("Created object " + obj);
-        obj.AdjustHeight();
+        //obj.AdjustHeight();
     }
 
     /// <summary>
@@ -417,18 +432,16 @@ public class ChunkLoader : MonoBehaviour
             }
         }
         cObj.transform.position = pChunk.Position.AsVector3() * World.ChunkSize;
-        Debug.Log("LOD: " + loaded.LOD + " has loaded? " + loaded.HasLoadedWorldObjects);
+
         if (loaded.LOD < 3 && !loaded.HasLoadedWorldObjects)
         {
             loaded.SetHasLoadedWorldObjects(true);
-            Debug.Log("In here");
             //loaded.SetChunk(pChunk.ChunkData);
             lock (ObjectsToLoadLock)
             {
                 if (pChunk.ChunkData.WorldObjects != null)
                 {
                     ObjectsToLoad.AddRange(pChunk.ChunkData.WorldObjects);
-                    Debug.Log("Adding " + pChunk.ChunkData.WorldObjects.Count + " to load");
                 }
             }
         }
@@ -751,7 +764,6 @@ public class ChunkLoader : MonoBehaviour
     private PreMesh GenerateSmoothTerrain(ChunkData chunk, ChunkData[] neighbors, int LOD = 1) {
 
         //int jump = (int)Mathf.Pow(2, LOD - 1);
-        Debug.Log(LOD);
         int jump = POWER_OF_2[LOD-1];
         
         int size = World.ChunkSize/jump;

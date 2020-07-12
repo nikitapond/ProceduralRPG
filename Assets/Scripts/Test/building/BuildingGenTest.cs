@@ -52,8 +52,7 @@ public class BuildingGenTest : MonoBehaviour
                 //    continue;
                 int xP = x * World.ChunkSize*2;
                 int zP = z * World.ChunkSize*2;
-                Building b = BuildingGenerator.CreateBuilding(genRan, out BuildingVoxels vox, Building.HOUSE);
-                tbb.AddBuilding(b, vox, new Vec2i(xP+1,zP+1));
+               
             }
         }
 

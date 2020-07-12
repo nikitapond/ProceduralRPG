@@ -130,6 +130,7 @@ public class Vec2i
             return new Vec2i(0, 0);
         return new Vec2i(v.x == 0 ? 1 : 0, v.z == 0 ? 1 : 0);
     }
+    #region operators
     public static Vec2i operator *(Vec2i a, int s)
     {
         return new Vec2i(a.x * s, a.z * s);
@@ -146,6 +147,24 @@ public class Vec2i
     {
         return new Vec2i(a.x - b.x, a.z - b.z);
     }
+
+    public static Vector2 operator +(Vec2i a, Vector2 b)
+    {
+        return new Vector2(a.x + b.x, a.z + b.y);
+    }
+    public static Vector2 operator +(Vector2 a, Vec2i b)
+    {
+        return new Vector2(a.x + b.x, a.y + b.z);
+    }
+    public static Vector2 operator -(Vec2i a, Vector2 b)
+    {
+        return new Vector2(a.x - b.x, a.z - b.y);
+    }
+    public static Vector2 operator -(Vector2 a, Vec2i b)
+    {
+        return new Vector2(a.x - b.x, a.y - b.z);
+    }
+
     public static bool operator ==(Vec2i a, Vec2i b)
     {
         if (System.Object.ReferenceEquals(a, null))
@@ -162,6 +181,8 @@ public class Vec2i
     {
         return !(a == b);
     }
+
+    #endregion
 
     public override bool Equals(object obj)
     {
@@ -196,16 +217,21 @@ public class Vec2i
     }
 
 
+
     /// <summary>
-    /// Automatic conversion from SerializableVector3 to Vector3
+    /// Casts Vector2 to a vec2i by casting each dimension to int
     /// </summary>
     /// <param name="rValue"></param>
-    /// <returns></returns>
+    public static implicit operator Vec2i(Vector2 rValue)
+    {
+        return new Vec2i((int)rValue.x, (int)rValue.y);
+    }
+
+
     public static implicit operator Vector2(Vec2i rValue)
     {
         return new Vector2(rValue.x, rValue.z);
     }
-
     /// <summary>
     /// Automatic conversion from Vector3 to SerializableVector3
     /// </summary>
@@ -249,5 +275,18 @@ public class Vec2i
     public override string ToString()
     {
         return "("+x + "," + z+")";
+    }
+}
+
+
+public static class Vec2iHelper
+{
+    public static Vec2i RoundUp(this Vector2 vec)
+    {
+        return new Vec2i(Mathf.CeilToInt(vec.x), Mathf.CeilToInt(vec.y));
+    }
+    public static Vec2i RoundDown(this Vector2 vec)
+    {
+        return new Vec2i(Mathf.FloorToInt(vec.x), Mathf.FloorToInt(vec.y));
     }
 }

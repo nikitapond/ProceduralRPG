@@ -54,7 +54,7 @@ public class Dungeon : Subworld
     public void EntityLeave(Entity entity)
     {
         EnteredEntities.Remove(entity);
-        entity.SetPosition(InternalEntrancePos);
+        entity.MoveEntity(InternalEntrancePos);
     }
     public void EntityEnter(Entity entity)
     {
@@ -74,7 +74,7 @@ public class Dungeon : Subworld
 
 
         EnteredEntities.Add(entity);
-        entity.SetPosition(ExternalEntrancePos);
+        entity.MoveEntity(ExternalEntrancePos);
     }
     public override string ToString()
     {

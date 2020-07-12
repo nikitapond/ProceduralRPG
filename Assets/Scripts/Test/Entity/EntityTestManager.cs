@@ -20,7 +20,7 @@ public class EntityTestManager : MonoBehaviour
     void Start()
     {
         Bandit testNPC = new Bandit();
-        EntityManager.AddFixedEntity(testNPC);
+        EntityManager.AddEntity(testNPC);
         EntityManager.LoadChunk(new Vec2i(0, 0));
     }
 

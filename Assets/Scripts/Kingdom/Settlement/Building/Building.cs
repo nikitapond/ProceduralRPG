@@ -13,6 +13,33 @@ public class BuildingPlan
         MinSize = minSize;
         MaxSize = maxSize;
     }
+
+    public override bool Equals(object obj)
+    {
+        if (obj == null)
+            return false;
+        BuildingPlan bp = obj as BuildingPlan;
+        if (bp == null)
+            return false;
+        return bp.Name == Name;
+        
+    }
+    public static bool operator ==(BuildingPlan a, BuildingPlan b)
+    {
+        if (System.Object.ReferenceEquals(a, null))
+        {
+            if (System.Object.ReferenceEquals(b, null))
+            {
+                return true;
+            }
+            return false;
+        }
+        return a.Equals(b);
+    }
+    public static bool operator !=(BuildingPlan a, BuildingPlan b)
+    {
+        return !(a == b);
+    }
 }
 [System.Serializable]
 public abstract class Building
@@ -58,6 +85,9 @@ public abstract class Building
     public float Value { get { return BaseValue * ValueModifier; } }
 
     public Subworld BuildingSubworld;
+
+    public bool HasSubworld { get { return BuildingSubworld != null; } }
+
     public ISubworldEntranceObject ExternalEntranceObject;
     public ISubworldEntranceObject InternalEntranceObject;
 
@@ -114,9 +144,9 @@ public abstract class Building
         if(BuildingSubworld != null)
         {
 
-            BuildingSubworld.Exit = ExternalEntranceObject;
-
-            BuildingSubworld.SetExternalEntrancePos(WorldPosition + Entrance);
+            BuildingSubworld.Entrance = ExternalEntranceObject;
+            BuildingSubworld.Exit = InternalEntranceObject;
+            BuildingSubworld.SetExternalEntrancePos(WorldPosition + BuildingSubworld.ExternalEntrancePos);
             
 
             ExternalEntranceObject.SetSubworld(BuildingSubworld);
@@ -223,14 +253,19 @@ public abstract class Building
                         
                 }
                 if (canPlace)
-                    SpawnableTiles.Add(WorldPosition + new Vec2i(x, z));
+                {
+                    if(BuildingSubworld != null)
+                        SpawnableTiles.Add(new Vec2i(x, z));
+                    else
+                        SpawnableTiles.Add(new Vec2i(x, z) + WorldPosition);
+                }
+                    
             }
         }
     }
 
     public List<Vec2i> GetSpawnableTiles(bool force=false)
     {
-        return SpawnableTiles;
         if (SpawnableTiles == null || force)
         {
 

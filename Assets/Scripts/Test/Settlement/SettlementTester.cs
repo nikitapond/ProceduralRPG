@@ -75,6 +75,11 @@ public class SettlementTester : MonoBehaviour
     {
         TestMain.SetupTest();
         Player = TestMain.CreatePlayer(new Vector3(0, 0, 0));
+
+        Kingdom king = new Kingdom("kingdom", new Vec2i(0, 0));
+        World.Instance.AddKingdom(king);
+
+
         SettlementShell shell = new SettlementShell(new GridPoint(new Vec2i(0, 0), new Vec2i(0, 0)), 0, SettlementType.CAPITAL);
 
         bool[] entraceDir = new bool[8];
@@ -85,18 +90,18 @@ public class SettlementTester : MonoBehaviour
         SettlementGenerator2.LocationData ld = new SettlementGenerator2.LocationData() { OnRiver = false, OnBorder = false, OnLake = false,EntranceDirections=entraceDir };
         shell.SetLocationData(ld);
 
-
-        ChunkBase2[,] bases = new ChunkBase2[16, 16];
-        for(int x=0; x<16; x++)
+        int size = shell.Type.GetSize();
+        ChunkBase2[,] bases = new ChunkBase2[size, size];
+        for(int x=0; x< size; x++)
         {
-            for(int z=0; z<16; z++)
+            for(int z=0; z< size; z++)
             {
                 bases[x, z] = new ChunkBase2(new Vec2i(x, z), WorldHeightChunk(x, z), ChunkBiome.grassland);
                 if (z == 8)
                     bases[x, z].SetChunkFeature(new ChunkRiverNode(new Vec2i(x, z)));
             }
         }
-        List<BuildingPlan> reqBuild = new List<BuildingPlan>() { Building.VEGFARM, Building.WHEATFARM, };
+        List<BuildingPlan> reqBuild = new List<BuildingPlan>() { Building.VEGFARM, Building.WHEATFARM, Building.VEGFARM , Building.WHEATFARM };
         shell.RequiredBuildings = reqBuild;
         shell.SetChunkBases(bases);
         Debug.BeginDeepProfile("Setgen");
@@ -107,12 +112,16 @@ public class SettlementTester : MonoBehaviour
         {
             if (b.BuildingSubworld != null)
             {
-                Debug.Log(b.BuildingSubworld.ExternalEntrancePos);
+
                 World.Instance.AddSubworld(b.BuildingSubworld);
             }
                 
         }
 
+        Settlement set = new Settlement(king, "set", setB);
+        World.Instance.AddLocation(set);
+        EntityGenerator eg = new EntityGenerator(null, EntityManager.Instance);
+        eg.GenerateAllKingdomEntities();
         SettlementWall = setB.GenerateWall();
         //wall = SettlementWall.WallPath.CalculateEvenlySpacedPoints(5, 1);
         Debug.EndDeepProfile("Setgen");
@@ -143,25 +152,13 @@ public class SettlementTester : MonoBehaviour
 
             Chunks[cd.X, cd.Z] = cd;
             
-            //EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
+            EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
         }
 
         SetChunks(Chunks);
+        
         return;
-        foreach (ChunkData cd in Chunks)
-        {
 
-            if (cd == null)
-                continue;
-
-    
-            PreLoadedChunk plc = GeneratePreLoadedChunk(cd);
-
-            CreateChunk(plc, cd);
-            //EntityManager.Instance.LoadChunk(new Vec2i(cd.X, cd.Z));
-
-
-        }
 
 
 

@@ -189,19 +189,21 @@ public class WorldEventManager : MonoBehaviour
         Settlement target = null;
         int closestDist = -1;
         //We iterate all settlements in the world
-        foreach(KeyValuePair<int, Settlement> sets in World.Instance.WorldSettlements)
+        foreach(KeyValuePair<int, WorldLocation> locs in World.Instance.WorldLocations)
         {
-            if (sets.Value == start)
+            //if this location is not a settlement
+            if (!(locs.Value is Settlement))
                 continue;
+            Settlement set = locs.Value as Settlement;
             //If the settlement cannot import the required type, we will ignore it
-            if (!sets.Value.Economy.CanImport(exportType))
+            if (!set.Economy.CanImport(exportType))
                 continue;
             //Find the distance from the start to this settlement
-            int sqrDist = sets.Value.BaseChunk.QuickDistance(start.BaseChunk);
+            int sqrDist = set.BaseChunk.QuickDistance(start.BaseChunk);
 
             if(closestDist == -1 || sqrDist < closestDist)
             {
-                target = sets.Value;
+                target = set;
                 closestDist = sqrDist;
             }
         }
@@ -370,16 +372,27 @@ public class WorldEventManager : MonoBehaviour
 /// </summary>
 public abstract class WorldLocation
 {
-    public Vec2i Position { get; private set; }
-    public int LocationID { get { return Position.GetHashCode(); } }
+    /// <summary>
+    /// The position of this world location in chunk coordinates
+    /// </summary>
+    public Vec2i ChunkPos { get; private set; }
+    public int LocationID { get { return ChunkPos.GetHashCode(); } }
 
+    public string Name { get; protected set; }
+    public WorldMapLocation WorldMapLocation { get; private set; }
 
     public WorldLocation(Vec2i cPos)
     {
-        Position = cPos;
+        ChunkPos = cPos;
     }
-
-
+    public void SetWorldMapLocation(WorldMapLocation wml)
+    {
+        WorldMapLocation = wml;
+    }
+    public void SetName(string name)
+    {
+        Name = name;
+    }
 
     /// <summary>
     /// Calls the update tick for this location

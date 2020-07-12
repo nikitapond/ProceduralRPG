@@ -10,6 +10,8 @@ public abstract class WorldObjectData
     [System.NonSerialized]
     public WorldObject LoadedObject;
 
+    public bool IsLoaded { get { return LoadedObject != null; } }
+
     public GameObject ObjectPrefab { get { return ResourceManager.GetWorldObject((int)ID); } }
 
 

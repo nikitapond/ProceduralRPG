@@ -119,6 +119,21 @@ public class GenerationRandom
     }
 
     /// <summary>
+    /// Randomly finds a position on a circle of specified radius about the middle point
+    /// </summary>
+    /// <param name="mid"></param>
+    /// <param name="radius"></param>
+    /// <returns></returns>
+    public Vector3 RandomPositionOnRadius(Vector3 mid, float radius)
+    {
+        float theta = Random(0, Mathf.PI * 2);
+
+        float x = mid.x + Mathf.Cos(theta);
+        float z = mid.z + Mathf.Sin(theta);
+        return new Vector3(x, mid.y, z);
+    }
+
+    /// <summary>
     /// Generates a random vector3 with all coordinates within specified bounds
     /// </summary>
     /// <param name="mins"></param>

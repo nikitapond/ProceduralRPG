@@ -43,6 +43,7 @@ public class IngameGUI : MonoBehaviour
             NPCText.text = "";
             NPCText.text += npc.Name + "\n";
             NPCText.text += npc.EntityRelationshipManager.Personality.ToString();
+            NPCText.text += "Subworld?: " + npc.GetSubworld();
         }
     }
 }

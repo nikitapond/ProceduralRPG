@@ -25,7 +25,7 @@ public class TestArenaManager : MonoBehaviour
             Vector2 pos = GameManager.RNG.RandomVector2(15, 25);
             Bandit b = new Bandit();
             b.SetEntityFaction(bandits);
-            b.SetPosition(Vec2i.FromVector2(pos));
+            b.MoveEntity(Vec2i.FromVector2(pos));
             EntityManager.Instance.LoadEntity(b);
 
         }

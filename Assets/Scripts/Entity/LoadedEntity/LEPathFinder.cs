@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using Pathfinding;
+using System.Collections;
 /// <summary>
 /// A component added to all entities except the player.
 /// Controlls path finding details
@@ -15,6 +16,16 @@ public class LEPathFinder : MonoBehaviour
 
     public Vector3 Target { get; private set; }
 
+    /// <summary>
+    /// Function form to call when an entity is close to target (within distance of 1)
+    /// </summary>
+    /// <param name="target"></param>
+    public delegate void OnCloseToTarget(params object[] args);
+
+
+    private OnCloseToTarget TargetCallback;
+    private object[] CallbackArgs;
+
     private void Awake()
     {
         
@@ -26,8 +37,15 @@ public class LEPathFinder : MonoBehaviour
         DestinationSetter.target = TargetObject.transform;
         AIPathFinder.radius = 0.4f;
         LoadedEntity = GetComponent<LoadedEntity>();
+        StartCoroutine(WaitThenConstrain(1));
+        //AIPathFinder.constrainInsideGraph = true;
 
+    }
 
+    private IEnumerator WaitThenConstrain(float t)
+    {
+        yield return new WaitForSeconds(t);
+        AIPathFinder.constrainInsideGraph = true;
     }
 
     public float CurrentSpeed()
@@ -41,7 +59,7 @@ public class LEPathFinder : MonoBehaviour
     /// from the viewpoint of this entity.
     /// </summary>
     /// <param name="entity"></param>
-    public void SetEntityTarget(Entity entity, float range=1)
+    public void SetEntityTarget(Entity entity, float range=1, OnCloseToTarget callback = null,params object[] callbackArgs)
     {
         Vector2 targetPos = entity.Position2;
         Vector2 ourPos = LoadedEntity.Entity.Position2;
@@ -49,9 +67,14 @@ public class LEPathFinder : MonoBehaviour
         Vector2 dif = (targetPos - ourPos).normalized;
         Vector2 finalTarget = targetPos - dif * range;
         SetTarget(finalTarget, 0.1f);
-        
+
+        TargetCallback = callback;
+        CallbackArgs = callbackArgs;
+
+
+
     }
-    public void SetTarget(Vector2 target2, float repath=20)
+    public void SetTarget(Vector2 target2, float repath=20, OnCloseToTarget callback = null, params object[] callbackArgs)
     {
         //  Debug.Log("Setting target to " + target2);
         //DestinationSetter.target = PlayerManager.Instance.Player.GetLoadedEntity().transform;
@@ -61,15 +84,33 @@ public class LEPathFinder : MonoBehaviour
 
         AIPathFinder.repathRate = repath;
         Target = targetGlobal;
+        TargetCallback = callback;
+        CallbackArgs = callbackArgs;
+
         //AIPathFinder.SearchPath();
 
     }
-    public void SetTarget(Vector3 target)
+    public void SetTarget(Vector3 target, OnCloseToTarget callback = null, params object[] callbackArgs)
     {
         Debug.Log("Setting target to " + target);
         TargetObject.transform.position = target;
         Target = target;
+        TargetCallback = callback;
+        CallbackArgs = callbackArgs;
 
+    }
+
+    public void Tick()
+    {
+        if(TargetCallback != null)
+        {
+            Vector3 disp = TargetObject.transform.position - transform.position;
+            float dSqr = disp.sqrMagnitude;
+            if(dSqr <= 1.1f)
+            {
+                TargetCallback(CallbackArgs);
+            }
+        }
     }
 
     /// <summary>

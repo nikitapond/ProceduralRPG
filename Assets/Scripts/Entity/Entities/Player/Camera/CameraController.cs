@@ -139,7 +139,8 @@ public class ThirdPersonCC : CameraController, IGamePauseEvent
     private readonly float MinPhi = 10;
 
 
-    private float Theta, Phi,R;
+    public float Theta { get; private set; }
+    private float Phi,R;
     private float Sensitivity = 20;
     private float ScrollSense =0.01f;
     void Start()
@@ -171,7 +172,6 @@ public class ThirdPersonCC : CameraController, IGamePauseEvent
         if (Input.GetKey(KeyCode.E))
         {
             Theta += Sensitivity * Time.deltaTime;
-            Debug.Log(Theta);
         }
         if(Input.mouseScrollDelta != Vector2.zero)
         {
@@ -179,7 +179,6 @@ public class ThirdPersonCC : CameraController, IGamePauseEvent
             Zoom = Mathf.Clamp(Zoom, 0, 1);
         }
         CalculatePhi_R();
-        Debug.Log(Phi);
         transform.position = PlayerManager.Player.GetLoadedEntity().transform.position + SphericalPolarToCart(R, Theta, Phi);
         transform.LookAt(PlayerManager.Player.GetLoadedEntity().transform);
 

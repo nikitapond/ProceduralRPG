@@ -27,7 +27,7 @@ public class Door : WorldObjectData, ISubworldEntranceObject
 
     void ISubworldEntranceObject.SetSubworld(Subworld world)
     {
-        Debug.Log("Setting ID" + world.SubworldID);
+
         SubworldID = world.SubworldID;
     }
 }

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 public abstract class ChunkStructure : WorldLocation
 {
     
-    public string Name;
 
 
 
@@ -23,7 +22,6 @@ public abstract class ChunkStructure : WorldLocation
     public bool HasLootChest { get { return MainLootChest != null; } }
 
 
-    public WorldMapLocation WorldMapLocation { get; private set; }
 
     public ChunkStructure(Vec2i cPos, Vec2i cSize) : base(cPos)
     {
@@ -45,10 +43,7 @@ public abstract class ChunkStructure : WorldLocation
         }
     }
 
-    public void SetWorldMapLocation(WorldMapLocation wml)
-    {
-        WorldMapLocation = wml;
-    }
+
     public void SetMainLootChest(IInventoryObject inv)
     {
         MainLootChest = inv;

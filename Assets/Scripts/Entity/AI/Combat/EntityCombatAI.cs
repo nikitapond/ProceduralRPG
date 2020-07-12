@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System.Collections;
 using System.Collections.Generic;
 [System.Serializable]
 public abstract class EntityCombatAI : IWorldCombatEvent
@@ -98,12 +99,14 @@ public abstract class EntityCombatAI : IWorldCombatEvent
 
                 }
             }
+            Entity.GetLoadedEntity().LEPathFinder.Tick();
         }
     }
     public virtual void Update()
     {
         if (InCombat)
         {
+            Entity.GetLoadedEntity().LEPathFinder.Tick();
             //If the combat event is complete, then run no combat update
             if (CurrentCombatEvent.IsComplete)
             {
@@ -242,6 +245,8 @@ public abstract class EntityCombatAI : IWorldCombatEvent
     protected virtual void RunFromCombat(Vec2i combatPosition=null)
     {
         currentCombatTask = "running from combat";
+
+        WorldManager.Instance.StartCoroutine(RunFromCombatCoolDown(5));
         //If we are currently running, we don't need to update
         if (IsRunningFromCombat)
             return;
@@ -251,23 +256,51 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         if (combatPosition == null)
             combatPosition = Entity.TilePos;
 
-        Vector2 movementDirection = Entity.Position2 - combatPosition.AsVector2();
 
-
-        //If our movement is 0, we define it to be in a random direction.
-        if(movementDirection == Vector2.zero)
+        if(Entity.GetSubworld() != null)
         {
-            movementDirection = GameManager.RNG.RandomVector2(-1, 1).normalized;
+            Subworld sub = Entity.GetSubworld();
+            //TODO - sub if small?
+            Debug.Log("In subworld, exit: " + (sub.Exit as WorldObjectData).Position  );
+            //WorldObject obj = (sub.Exit as WorldObjectData).LoadedObject;
+            Entity.GetLoadedEntity().LEPathFinder.SetTarget((sub.Exit as WorldObjectData).Position, callback: ExitThroughDoor, callbackArgs:sub.Entrance);
+
         }
-        //Define the target position as at least 2 chunks away
-        Vector2 targetPosition = Entity.Position2 + movementDirection * 32;
-        //Set the AI target
-        Entity.GetLoadedEntity().LEPathFinder.SetTarget(targetPosition);
-        /*
-        Vector2 movement = Entity.Position2 - CurrentTarget.Position2;
-        Entity.GetLoadedEntity().MoveInDirection(movement);
-        Entity.LookAt(Entity.Position2 + movement);*/
+        else
+        {
+            Debug.Log("not in subworld");
+            Vector2 movementDirection = Entity.Position2 - combatPosition.AsVector2();
+
+
+            //If our movement is 0, we define it to be in a random direction.
+            if (movementDirection == Vector2.zero)
+            {
+                movementDirection = GameManager.RNG.RandomVector2(-1, 1).normalized;
+            }
+            //Define the target position as at least 2 chunks away
+            Vector2 targetPosition = Entity.Position2 + movementDirection * 32;
+            //Set the AI target
+            Entity.GetLoadedEntity().LEPathFinder.SetTarget(targetPosition);
+        }      
     }
+
+    public void ExitThroughDoor(params object[] args)
+    {
+        ISubworldEntranceObject entrObjec = args[0] as ISubworldEntranceObject;
+        WorldObjectData objDat = entrObjec as WorldObjectData;
+        WorldObject obj = objDat.LoadedObject;
+
+        obj.OnEntityInteract(Entity);
+        IsRunningFromCombat = false;
+    }
+
+    private IEnumerator RunFromCombatCoolDown(float cooldown)
+    {
+        yield return new WaitForSeconds(cooldown);
+        IsRunningFromCombat = false;
+    }
+
+
     /// <summary>
     /// Default RunToCombat causes the entity to look at its target
     /// If it has line of sight, it runs directly towards 

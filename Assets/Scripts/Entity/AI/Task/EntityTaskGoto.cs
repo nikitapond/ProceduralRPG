@@ -55,7 +55,7 @@ public class EntityTaskGoto : EntityTask
             if(Vec2i.QuickDistance(TargetTile, PlayerManager.Instance.Player.TilePos) > (World.ChunkSize * 3) * (World.ChunkSize * 3))
             {
                 //Then we teleport to our target position.
-                Entity.SetPosition(TargetTile);
+                Entity.MoveEntity(TargetTile);
                 IsComplete = true;
                 return;
             }

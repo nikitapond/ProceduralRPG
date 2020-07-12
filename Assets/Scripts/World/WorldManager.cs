@@ -39,19 +39,26 @@ public class WorldManager : MonoBehaviour
 
     }
 
-    public void EntityEnterSubworld(Entity entity, Subworld sub)
+
+    public void EntityEnterSubworld(Entity entity, Subworld subworld)
     {
-        if(entity is Player)
+
+    }
+    public void EntityExitSubworld(Entity entity, Subworld subworld)
+    {
+        subworld.RemoveEntity(entity);
+        entity.MoveEntity(GenerationRandom.RNG.RandomPositionOnRadius(subworld.ExternalEntrancePos.AsVector3(), 1.5f), -1);
+        entity.SetSubworld(null);
+
+        if (entity.GetLoadedEntity() != null)
         {
-            CRManager.LoadSubworldChunks(sub);
+            entity.SetFixed(true);
+            EntityManager.Instance.UnloadEntity(entity.GetLoadedEntity(), false);
+            
         }
-    }
-
-    public void EntityExitSubworld(Entity entity, Subworld sub)
-    {
+        
 
     }
-
 
 
     /// <summary>
@@ -92,15 +99,33 @@ public class WorldManager : MonoBehaviour
             Debug.Log("Player entering subworld " + sub.ToString(), Debug.NORMAL);
             //First unload all world chunks and set the current subworld
             CurrentSubworld = sub;
+            EntityManager.Instance?.UnloadAllChunks();
             //Load all subworld chunks and add them to the the relevent list
             CRManager.LoadSubworldChunks(sub);
 
             //GameManager.PathFinder.LoadSubworld(sub);
             //Inform entity manager we are entering the sub world, then teleport player to correct position.
-            EntityManager.Instance?.EnterSubworld(sub);
-            Player.SetPosition(sub.InternalEntrancePos);
-        }
 
+            Player.SetPosition(sub.InternalEntrancePos.AsVector3());
+            WaitAndPathScanCoroutine();
+
+            EntityManager.Instance?.EnterSubworld(sub);
+            
+            //PlayerManager.Instance.ProceduralGridMover.UpdateGraph();
+
+        }
+    }
+
+
+
+    private void WaitAndPathScanCoroutine(float time = 0.5f)
+    {
+        StartCoroutine(WaitAndScan(time));
+    }
+    private IEnumerator WaitAndScan(float t = 0.5f)
+    {
+        yield return new WaitForSeconds(t);
+        AstarPath.active.Scan();
 
     }
 
@@ -129,12 +154,17 @@ public class WorldManager : MonoBehaviour
         Debug.Log("leaving subworld");
         if (CurrentSubworld != null)
         {
-        
+            EntityManager.Instance?.LeaveSubworld();
             CRManager.LeaveSubworld();
-            Player.SetPosition(CurrentSubworld.ExternalEntrancePos);
+            Player.SetPosition(CurrentSubworld.ExternalEntrancePos.AsVector3());
+            WaitAndPathScanCoroutine();
+
             //CurrentSubworld = null;
             LoadedChunksCentre = null;
-            EntityManager.Instance?.LeaveSubworld();
+            
+            CurrentSubworld = null;
+            //Rescan pathfinding
+
         }
     }
 

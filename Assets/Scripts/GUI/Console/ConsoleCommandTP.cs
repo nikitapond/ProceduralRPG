@@ -37,7 +37,7 @@ public class ConsoleCommandTP : ConsoleCommand
             Settlement set = GameManager.WorldManager.World.GetSettlement(setID);
             if (set == null)
                 return "Settlement with ID " + setID + " not found";
-            GameManager.PlayerManager.Player.SetPosition(set.Centre * World.ChunkSize);
+            GameManager.PlayerManager.Player.MoveEntity(set.Centre * World.ChunkSize);
             return "Teleporting to settlement " + setID; 
         }
         else
@@ -54,7 +54,7 @@ public class ConsoleCommandTP : ConsoleCommand
             ChunkStructure cstruct = GameManager.WorldManager.World.GetChunkStructure(structID);
             if (cstruct == null)
                 return "Chunk structure with ID " + structID + " not found";
-            GameManager.PlayerManager.Player.SetPosition(cstruct.Position * World.ChunkSize);
+            GameManager.PlayerManager.Player.MoveEntity(cstruct.ChunkPos * World.ChunkSize);
             return "Teleporting to chunk structure " + structID;
         }
         else
@@ -70,7 +70,7 @@ public class ConsoleCommandTP : ConsoleCommand
             Subworld subw = GameManager.WorldManager.World.GetSubworld(dunID);
             if (subw == null)
                 return "Dungeon with ID " + dunID + " not found";
-            GameManager.PlayerManager.Player.SetPosition(subw.InternalEntrancePos);
+            GameManager.PlayerManager.Player.MoveEntity(subw.InternalEntrancePos);
             return "Teleporting to dungeon " + dunID;
         }
         else
@@ -85,7 +85,7 @@ public class ConsoleCommandTP : ConsoleCommand
 
             if (x < 0 || x >= World.WorldSize || z < 0 || z >= World.WorldSize)
                 return "Specified coordinate is outside of world";
-            GameManager.PlayerManager.Player.SetPosition(new Vec2i(x, z) * World.ChunkSize);
+            GameManager.PlayerManager.Player.MoveEntity(new Vec2i(x, z) * World.ChunkSize);
             return "Player teleporting to chunk " + x + "," + z;
 
         }
@@ -101,7 +101,7 @@ public class ConsoleCommandTP : ConsoleCommand
 
             if (x < 0 || x >= World.WorldSize*World.ChunkSize || z < 0 || z >= World.WorldSize * World.ChunkSize)
                 return "Specified coordinate is outside of world";
-            GameManager.PlayerManager.Player.SetPosition(new Vec2i(x, z));
+            GameManager.PlayerManager.Player.MoveEntity(new Vec2i(x, z));
             return "Player teleporting to position " + x + "," + z;
 
         }

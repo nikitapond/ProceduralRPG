@@ -29,9 +29,14 @@ public class ConsoleCommandList : ConsoleCommand
     private string ListSettlements()
     {
         string result = "";
-        foreach(KeyValuePair<int, Settlement> sets in GameManager.WorldManager.World.WorldSettlements)
+        foreach(KeyValuePair<int, WorldLocation> sets in GameManager.WorldManager.World.WorldLocations)
         {
-            result += sets.Value.Name  + "_" + sets.Value.SettlementID + ":(" + sets.Value.Centre + "), ";
+            if(sets.Value is Settlement)
+            {
+                Settlement set = sets.Value as Settlement;
+                result += set.Name + "_" + set.SettlementID + ":(" + set.Centre + "), ";
+            }
+                
 
         }
         return result;
@@ -43,7 +48,7 @@ public class ConsoleCommandList : ConsoleCommand
         string result = "";
         foreach (KeyValuePair<int, ChunkStructure> structs in GameManager.WorldManager.World.WorldChunkStructures)
         {
-            result += structs.Value.ToString() + ":(" + structs.Value.Position + "), ";
+            result += structs.Value.ToString() + ":(" + structs.Value.ChunkPos + "), ";
 
         }
         return result;

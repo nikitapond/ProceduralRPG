@@ -8,7 +8,7 @@ public class BanditCampBuilder : ChunkStructureBuilder
     public int Boundry = 5;
     public BanditCampBuilder(ChunkStructure structure, GameGenerator gameGen = null) : base(structure, gameGen)
     {
-        structure.Name = "Bandit camp";
+        structure.SetName("Bandit camp");
         RaiseBase(2, Boundry);
     }
 
@@ -24,7 +24,7 @@ public class BanditCampBuilder : ChunkStructureBuilder
             Vector3 pos = GenRan.RandomVector3(Boundry + 2, Mathf.Min(TileSize.x, TileSize.z) - Boundry - 2);
             Bandit bandit = new Bandit();
             bandit.SetEntityFaction(bandits);
-            bandit.SetPosition(pos);
+            bandit.MoveEntity(pos);
             AddEntity(bandit);
         }
     }

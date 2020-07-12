@@ -20,6 +20,7 @@ public class WorldObject : MonoBehaviour
 
         if(GROUND_LAYER_MASK == -1)
             GROUND_LAYER_MASK = LayerMask.GetMask("Ground");
+
         GameObject gameObject = Instantiate(data.ObjectPrefab);
         //gameObject.layer = 8;
         WorldObject obj = gameObject.GetComponent<WorldObject>();        
@@ -32,8 +33,9 @@ public class WorldObject : MonoBehaviour
         gameObject.transform.localPosition = data.Position.Mod(World.ChunkSize);
         gameObject.transform.localScale = data.Scale;
         obj.Data = data;
-        obj.AdjustHeight();
+        obj.Data.LoadedObject = obj;
         data.OnObjectLoad(obj);
+        obj.CoroutineAdjust();
         return obj;
     }
 
@@ -43,25 +45,28 @@ public class WorldObject : MonoBehaviour
     {
         Vector3 basePos = new Vector3(transform.position.x,256, transform.position.z);
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 256, layerMask: GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 257, layerMask: GROUND_LAYER_MASK))
         {
-            //Debug.Log("Height raycast succesful: " + hit.point.y);
+           
             basePos.y = hit.point.y + Data.Position.y;
             transform.position = basePos;
         }
         else
         {
-            return;
             StartCoroutine(WaitAndAdjust());
-            Debug.Log("no hit" + "_" + basePos);
+
         }
 
     }
 
+    private void CoroutineAdjust()
+    {
+        StartCoroutine(WaitAndAdjust());
+    }
+
     private IEnumerator WaitAndAdjust()
     {
-        yield return new WaitForSeconds(0.2f);
-        Debug.Log("Attempting to adjust again");
+        yield return new WaitForSeconds(0.5f);
         AdjustHeight();
     }
 
@@ -80,17 +85,23 @@ public class WorldObject : MonoBehaviour
 
     public void OnEntityInteract(Entity ent)
     {
+        if (ent is Player)
+            return;
         if(Data is IOnEntityInteract)
         {
             (Data as IOnEntityInteract).OnEntityInteract(ent);
         }else if(Data is ISubworldEntranceObject)
         {
             ISubworldEntranceObject ob = Data as ISubworldEntranceObject;
-            Debug.Log("lol" + ob.GetSubworldID());
             Key key = ob.GetSubworldKey();
             if(key == null || ent.Inventory.ContainsItemStack(key)!=null)
             {
-                World.Instance.EntityEnterSubworld(ent, ob.GetSubworld());
+
+                Subworld current = ent.GetSubworld();
+                if (current == null)
+                    WorldManager.Instance.EntityEnterSubworld(ent, ob.GetSubworld());
+                else
+                    WorldManager.Instance.EntityExitSubworld(ent, ob.GetSubworld());
             }
 
         }
@@ -101,9 +112,16 @@ public class WorldObject : MonoBehaviour
         if(Data != null)
             Data.OnObjectUnload(this);
     }
+    public bool RePlace = false;
+    private void Update()
+    {
+        if (RePlace)
+        {
+            RePlace = false;
+            AdjustHeight();
+        }
+    }
 
-
-    
 
 }
 public enum WorldObjects
@@ -133,7 +151,8 @@ public enum WorldObjects
     WALL_TORCH,
     FIRE_PLACE,
     TRAINING_DUMMY,
-    TRAP_DOOR
+    TRAP_DOOR,
+    NO_WALK_ZONE
 
 
 

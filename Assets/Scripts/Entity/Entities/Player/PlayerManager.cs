@@ -15,7 +15,7 @@ public class PlayerManager : MonoBehaviour
     public PlayerCamera PlayerCameraScript { get; private set; }
     private NPC CurrentlySelected;
 
-
+    public ProceduralGridMover ProceduralGridMover { get; private set; }
 
     private SettlementPathNode NearestNode;
     private List<SettlementPathNode> path;
@@ -164,8 +164,9 @@ public class PlayerManager : MonoBehaviour
 
         PlayerCamera = transform.Find("PlayerCamera").GetComponent<Camera>();
         PlayerCameraScript = transform.Find("PlayerCamera").GetComponent<PlayerCamera>();
-        
-        
+        ProceduralGridMover = GetComponent<ProceduralGridMover>();
+
+
     }
 
     public void SetPlayer(Player player)
@@ -333,6 +334,13 @@ public class PlayerManager : MonoBehaviour
 
             LoadedPlayer.MoveInDirection(new Vector2(dx, dz));
 
+        }else if(PlayerCameraScript.CameraController is ThirdPersonCC)
+        {
+            ThirdPersonCC cc = PlayerCameraScript.CameraController as ThirdPersonCC;
+            float dz = -hor * Mathf.Sin((cc.Theta - 90)* Mathf.Deg2Rad) - vert * Mathf.Cos((cc.Theta - 90) * Mathf.Deg2Rad);
+            float dx = -hor * Mathf.Cos((cc.Theta - 90) * Mathf.Deg2Rad) + vert * Mathf.Sin((cc.Theta - 90) * Mathf.Deg2Rad);
+
+            LoadedPlayer.MoveInDirection(new Vector2(dx, dz));
         }
     }
 

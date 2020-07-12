@@ -18,7 +18,7 @@ GameObject:
   m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 4294967295
   m_IsActive: 1
 --- !u!4 &2744366116202518055
 Transform:
@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7705efe258f8df446b095486247b872b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DrawNormals: 0
 --- !u!23 &2744366116202518049
 MeshRenderer:
   m_ObjectHideFlags: 0

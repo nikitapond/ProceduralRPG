@@ -21,7 +21,7 @@ public class QuestGenerator
     {
 
         OrderedStructures = GetAllOrderedChunkStructures();
-        OrderedSettlements = GetAllOrderedSettlements();
+        OrderedSettlements = GetSettlementsOrderedByRegion();
 
 
         List<Quest> allQuests = new List<Quest>();
@@ -304,13 +304,15 @@ public class QuestGenerator
     private Dictionary<Vec2i, List<ChunkStructure>> GetAllOrderedChunkStructures()
     {
         Dictionary<Vec2i, List<ChunkStructure>> allStructures = new Dictionary<Vec2i, List<ChunkStructure>>();
-        foreach(KeyValuePair<int, ChunkStructure> kvp in World.WorldChunkStructures)
+        foreach (KeyValuePair<int, WorldLocation> locs in World.WorldLocations)
         {
-            Vec2i regionPos = World.GetRegionCoordFromChunkCoord(kvp.Value.Position);
-            if (!allStructures.ContainsKey(regionPos))
-                allStructures.Add(regionPos, new List<ChunkStructure>());
-            allStructures[regionPos].Add(kvp.Value);
-
+            if (locs.Value is ChunkStructure)
+            {
+                Vec2i regionPos = World.GetRegionCoordFromChunkCoord(locs.Value.ChunkPos);
+                if (!allStructures.ContainsKey(regionPos))
+                    allStructures.Add(regionPos, new List<ChunkStructure>());
+                allStructures[regionPos].Add(locs.Value as ChunkStructure);
+            }
         }
 
         return allStructures;
@@ -320,17 +322,22 @@ public class QuestGenerator
     /// This dictionary key is the region the settlement exists in.
     /// </summary>
     /// <returns></returns>
-    private Dictionary<Vec2i, List<Settlement>> GetAllOrderedSettlements()
+    private Dictionary<Vec2i, List<Settlement>> GetSettlementsOrderedByRegion()
     {
         Dictionary<Vec2i, List<Settlement>> allSets = new Dictionary<Vec2i, List<Settlement>>();
-        foreach (KeyValuePair<int, Settlement> kvp in World.WorldSettlements)
-        {
-            Vec2i regionPos = World.GetRegionCoordFromChunkCoord(kvp.Value.Centre);
-            if (!allSets.ContainsKey(regionPos))
-                allSets.Add(regionPos, new List<Settlement>());
-            allSets[regionPos].Add(kvp.Value);
 
+
+        foreach(KeyValuePair<int, WorldLocation> locs in World.WorldLocations)
+        {
+            if(locs.Value is Settlement)
+            {
+                Vec2i regionPos = World.GetRegionCoordFromChunkCoord(locs.Value.ChunkPos);
+                if (!allSets.ContainsKey(regionPos))
+                    allSets.Add(regionPos, new List<Settlement>());
+                allSets[regionPos].Add(locs.Value as Settlement);
+            }
         }
+
 
         return allSets;
     }

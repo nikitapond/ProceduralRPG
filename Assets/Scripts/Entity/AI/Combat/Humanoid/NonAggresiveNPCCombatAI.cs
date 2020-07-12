@@ -18,7 +18,8 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
         //We check if we can see the entity.
         if (!CanSeeEntity(source))
         {
-            Entity.EntityAI.TaskAI.SetTask(new EntityTaskLookForDamageSource(Entity, source, 15), false);
+            RunFromCombat(source.TilePos);
+           // Entity.EntityAI.TaskAI.SetTask(new EntityTaskLookForDamageSource(Entity, source, 15), false);
             return;
         }
 

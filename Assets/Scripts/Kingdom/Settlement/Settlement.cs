@@ -2,7 +2,29 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
-
+[System.Serializable]
+public enum SettlementType
+{
+    CAPITAL, CITY, TOWN, VILLAGE
+}
+public static class SettlementTypeHelper
+{
+    public static int GetSize(this SettlementType t)
+    {
+        switch (t)
+        {
+            case SettlementType.CAPITAL:
+                return 18;
+            case SettlementType.CITY:
+                return 18;
+            case SettlementType.TOWN:
+                return 16;
+            case SettlementType.VILLAGE:
+                return 14;
+        }
+        return 10;
+    }
+}
 [System.Serializable]
 public class Settlement : WorldLocation
 {
@@ -13,7 +35,6 @@ public class Settlement : WorldLocation
 
     public int SettlementID { get; private set; }
     public int KingdomID { get; private set; }
-    public string Name { get; private set; }
 
     public Vec2i BaseChunk { get; private set; }
     public Vec2i Centre { get; private set; }
@@ -35,16 +56,14 @@ public class Settlement : WorldLocation
 
     public SettlementPathNode[,] tNodes;
 
-    public WorldMapLocation WorldMapLocation { get; private set; }
 
     public float[,] PathNodes;
 
     public SettlementEconomy Economy { get; private set; }
 
 
-    public Settlement(Kingdom kingdom, string name, SettlementBuilder builder) : base(builder.BaseChunk)
+    public Settlement(Kingdom kingdom, string name, SettlementBuilder2 builder) : base(builder.BaseChunk)
     {
-        IMPORTANT = builder.ENTR_NODE;
         Name = name;
         KingdomID = kingdom.KingdomID;
         TileSize = builder.TileSize;
@@ -58,14 +77,12 @@ public class Settlement : WorldLocation
         //SettlementNPCs = new List<NPC>();
         //setBuild = builder;
 
-        PathNodes = builder.PathNodes;
         SettlementType = builder.SettlementType;
         foreach (Building b in Buildings)
         {
             b.SetSettlement(this);
         }
 
-        SettlementPathFinder = builder.SettlementPathFinder;
     }
 
     public void SetEconomy(SettlementEconomy econ)
@@ -73,10 +90,7 @@ public class Settlement : WorldLocation
         Economy = econ;
     }
 
-    public void SetWorldMapLocation(WorldMapLocation wml)
-    {
-        WorldMapLocation = wml;
-    }
+
     public void AfterApplyToWorld()
     {
         Debug.Log("Setting set: " + BaseCoord, Debug.SETTLEMENT_GENERATION);
@@ -88,7 +102,7 @@ public class Settlement : WorldLocation
     }
     public Kingdom GetKingdom()
     {
-        return GameManager.WorldManager.World.GetKingdom(KingdomID);
+        return WorldManager.Instance.World.GetKingdom(KingdomID);
     }
     public void SetKingdomID(int id)
     {

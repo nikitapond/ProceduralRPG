@@ -106,7 +106,7 @@ public class KingdomNPCGenerator
 
                     
 
-                    npc.SetPosition(entitySpawn);
+                    npc.SetPosition(entitySpawn.AsVector3());
                     npc.NPCData.SetHome(h);
                     //First two entities should be male and female (husband and wife)
                     //All others are then randomly assigned
@@ -120,7 +120,7 @@ public class KingdomNPCGenerator
                         npc.NPCData.SetGender((NPCGender)GenerationRan.RandomInt(0, 2));
                     
                     
-                    npc.SetName("NPC " + npc.ID);
+                    
                     set.AddNPC(npc);
                     settlementNPCs.Add(npc);
                     inThisHouse.Add(npc);
@@ -130,12 +130,9 @@ public class KingdomNPCGenerator
                         h.BuildingSubworld.AddEntity(npc);
                         npc.SetSubworld(h.BuildingSubworld);
                     }
-                    else
-                    {
-                        EntityManager.AddFixedEntity(npc);
-                    }
-
-
+                    
+                    EntityManager.AddEntity(npc);
+                    npc.SetName("NPC " + npc.ID);
                 }
                 //If more than 1 person lives in this house, they are family
                 if(inThisHouse.Count > 1)
