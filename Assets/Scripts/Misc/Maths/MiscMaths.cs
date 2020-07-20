@@ -73,3 +73,16 @@ public class MiscMaths
         return toOut;
     }
 }
+public static class VectorHelper
+{
+    /// <summary>
+    /// Takes a vector 3 and converts it to a vector2 with x and z components.
+    /// </summary>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public static Vector2 XZ(this Vector3 v)
+    {
+        return new Vector2(v.x, v.z);
+    }
+
+}

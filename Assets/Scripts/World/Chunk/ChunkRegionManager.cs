@@ -122,6 +122,8 @@ public class ChunkRegionManager : MonoBehaviour
                     Debug.Log("In the loop...");
                     //Get free object instance and add to list of chunks
                     loadedToAdd.Add(new KeyValuePair<Vec2i, LoadedChunk2>(kvp.Key.Position, ChunkLoader.GetLoadedChunk(kvp.Key, kvp.Value)));
+                    EntityManager.Instance?.LoadChunk(kvp.Key.Position);
+
                     //LoadedChunks.Add(kvp.Key.Position, ChunkLoader.GetLoadedChunk(kvp.Key, kvp.Value));
                 }
                 ToGetLoadedChunks.Clear();
@@ -240,7 +242,6 @@ public class ChunkRegionManager : MonoBehaviour
 
                     //Load the entities for this chunk
                     //TODO - check this doesn't cause issues with entities loading before chunks?
-                    EntityManager.Instance?.LoadChunk(pos);
 
                     //ChunkLoader.LoadChunk(cd);
                 }

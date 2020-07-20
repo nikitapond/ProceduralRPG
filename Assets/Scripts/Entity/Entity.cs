@@ -28,7 +28,7 @@ public abstract class Entity
     /// <summary>
     /// ID of the current subworld the entity is in
     /// </summary>
-    public int CurrentSubworldID { get; private set; }
+    public virtual int CurrentSubworldID { get; private set; }
 
 
 
@@ -51,13 +51,16 @@ public abstract class Entity
     {
         return LoadedEntity;
     }
+
+    public bool IsLoaded { get { return LoadedEntity != null; } }
+
     #endregion
     public Entity(EntityCombatAI combatAI, EntityTaskAI taskAI, EntityMovementData movementData, string name = "un-named_entity", bool isFixed = false)
     {
         Name = name;
         IsFixed = isFixed;
-       // MoveEntity(Vector3.zero);
-
+        // MoveEntity(Vector3.zero);
+        Debug.Log("Base entity created");
         EntityAI = new EntityAI(this, combatAI, taskAI);
 
 
@@ -65,11 +68,11 @@ public abstract class Entity
         CombatManager = new EntityCombatManager(this);
         SkillTree = new SkillTree();
         MovementData = movementData;
-
+        CurrentSubworldID = -1;
         IsAlive = true;
     }
 
-
+    
 
     /// <summary>
     /// Main update loop for entity, 
@@ -146,6 +149,7 @@ public abstract class Entity
 
     public void SetLastChunk(Vec2i chunk)
     {
+        Debug.Log("Setting last chunk to " + chunk);
         LastChunkPosition = chunk;
     }
 

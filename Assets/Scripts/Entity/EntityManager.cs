@@ -14,9 +14,9 @@ public class EntityManager : MonoBehaviour
     /// When idle, no update calculations are run. The entity is set to idle mode, which prevents physics calculations also
     /// 
     /// </summary>
-    public static readonly int IDLE_CHUNK_DISTANCE = 4;
+    public static readonly int IDLE_CHUNK_DISTANCE = 8;
     public static readonly int IDLE_DISTANCE_SQR = World.ChunkSize * World.ChunkSize * IDLE_CHUNK_DISTANCE * IDLE_CHUNK_DISTANCE;
-    public static readonly int ENTITY_CLOSE_TO_PLAYER_RADIUS = World.ChunkSize * 3;
+    public static readonly int ENTITY_CLOSE_TO_PLAYER_RADIUS = World.ChunkSize * 5;
     public static readonly int MAX_LOADED_ENTITIES = 128;
 
     private int FixedEntityCount;
@@ -34,6 +34,17 @@ public class EntityManager : MonoBehaviour
     /// </summary>
     private Dictionary<int, Dictionary<Vec2i, List<int>>> EntitiesByLocation;
     private List<LoadedEntity> LoadedEntities;
+    /// <summary>
+    /// List of entities who's actions should be updated on the slow tick, but who aren't currently loaded
+    /// </summary>
+    private HashSet<int> UnloadedUpdatableEntities;
+
+    /// <summary>
+    /// A list of entities created when the player leaves a subworld, containing all entities in that subworld. 
+    /// This allows them to update for following etc
+    /// </summary>
+    private List<Entity> PastSubworldEntities;
+    private int PastSubworldID;
 
     private List<Vec2i> LoadedChunks;
     private EntitySpawner EntitySpawner;
@@ -65,6 +76,8 @@ public class EntityManager : MonoBehaviour
         CurrentWorldCombatEvents = new List<WorldCombat>();
         ToUnloadEntities = new List<LoadedEntity>();
         EntitiesByLocation = new Dictionary<int, Dictionary<Vec2i, List<int>>>();
+        PastSubworldEntities = new List<Entity>();
+        UnloadedUpdatableEntities = new HashSet<int>();
     }
 
 
@@ -157,34 +170,177 @@ public class EntityManager : MonoBehaviour
                     LoadedEntities[(CurrentUpdateIndex) % LoadedEntities.Count].Entity.Tick();
             }
 
-
         }
 
-        
         /*
-        Debug.BeginDeepProfile("entity_tick");
-        if (timer > 0.2f)
+        //If we have just left a subworld
+        if(PastSubworldEntities.Count > 0)
         {
-            WorldCombatEventTick();          
-
-            GameManager.PlayerManager.Tick(timer);
-            foreach (LoadedEntity e in LoadedEntities)
+            //Iterate all entities
+            foreach(Entity e in PastSubworldEntities)
             {
-                e.Entity.Tick(timer);
+                //We check if any of the entities are in combat
+                if (e.EntityAI.CombatAI.InCombat && e.EntityAI.CombatAI.CurrentTarget != null)
+                {
+                    //If they are, and we are in pursuet, we check if the entities are in seperate subworlds
+                    if(e.EntityAI.CombatAI.CurrentTarget.CurrentSubworldID != e.CurrentSubworldID)
+                    {
+                        //Current target in main world
+                        if (e.EntityAI.CombatAI.CurrentTarget.CurrentSubworldID == -1) {
+
+                            Subworld sw = e.GetSubworld();
+                            e.MoveEntity(sw.ExternalEntrancePos, -1);
+                            e.GetLoadedEntity().LEPathFinder.SetEntityTarget(e.EntityAI.CombatAI.CurrentTarget);
+                            Debug.Log("Leaving subworld to persue");
+                        }
+                        else
+                        {
+                            Subworld sw = e.EntityAI.CombatAI.CurrentTarget.GetSubworld();
+                            e.MoveEntity(sw.InternalEntrancePos, sw.SubworldID);
+                            e.GetLoadedEntity().LEPathFinder.SetEntityTarget(e.EntityAI.CombatAI.CurrentTarget);
+                            Debug.Log("Enter subworld to persue");
+
+                        }
+
+
+
+                    }
+                }
             }
-            timer = 0;
-
-        }*/
-
+            PastSubworldEntities.Clear();
+        }
+        */
+        
         if (timer2 > 1)
         {
             timer2 = 0;
             UpdateNearEntityChunks();
-        
+            UnloadedEntityTick();
         }
         //TODO - Add slow entity tick management
 
 
+    }
+
+    /// <summary>
+    /// Called as a slow tick to update entities that aren't currently loaded.
+    /// <br/> Used to update entities that are close to the player, but which are in different worlds. <br/>
+    /// When the player is in the world, this consists of all entities in all subworlds who's entrances are in currently loaded chunks
+    /// <br/>When the player is in a subworld, it is all the entities that were loaded previous to entering the subworld.
+    /// <br/>Update allows entities to leave subworlds while they are not loaded (allowing pursuet).
+    /// <br/>Also checks for the entities desired location (i.e, if they should be at work) and allows them to travel.
+    /// </summary>
+    public void UnloadedEntityTick()
+    {
+        Debug.Log("Unloaded update count: " + UnloadedUpdatableEntities.Count);
+        int currentSubworldID = Subworld == null ? -1 : Subworld.SubworldID;
+        //Iterate all entities
+        foreach(int id in UnloadedUpdatableEntities)
+        {
+            //Get entity and its combat target
+            Entity e = GetEntityFromID(id);
+
+            Entity currentTarget = e.EntityAI.CombatAI.CurrentTarget;
+            if (currentTarget != null)
+            {
+                Debug.Log(e + " is unloaded but has a target: " + currentTarget);
+                Debug.Log(e + " attempting to follow " + currentTarget);
+            }
+                
+            Subworld entWorld = e.GetSubworld();
+            //Check if the current target is one the entity should be following
+            if (currentTarget != null && currentTarget.CurrentSubworldID != e.CurrentSubworldID && currentTarget.IsLoaded)
+            {
+                
+                if(entWorld != null)
+                {
+                    Debug.Log(e + " is leaving subworld, moving to subworld ID: " + "-1" + " pos:" + entWorld.ExternalEntrancePos);
+                    //If we are currently in a subworld, then we assume we are attempting to leave the subworld (no nested sw)
+                    MoveEntity(e, -1, entWorld.ExternalEntrancePos);
+                }
+                else
+                {
+                    entWorld = currentTarget.GetSubworld();
+                    if(entWorld != null)
+                    {
+                        //If we are currently in a subworld, then we assume we are attempting to leave the subworld (no nested sw)
+                        MoveEntity(e, entWorld.SubworldID, entWorld.InternalEntrancePos);
+                    }
+                }
+            }else if(e is NPC)
+            {
+                
+                //Get the NPC and its AI
+                NPC npc = e as NPC;
+                BasicNPCTaskAI npcAI = npc.EntityAI.TaskAI as BasicNPCTaskAI;
+
+                if (!npcAI.HasTask || npcAI.CurrentTask.ShouldTaskEnd())
+                {
+                    //Check for a new task
+                    EntityTask curTask = npcAI.ChooseIdleTask();
+                    npcAI.SetTask(curTask);
+                    if (curTask != null)
+                    {
+                        Debug.Log("HEREHEHREHERE");
+                        //If the current task has a specified location
+                        if (curTask.HasTaskLocation)
+                        {
+                            int taskWorld = curTask.Location.SubworldWorldID;
+                            //Check if this entities task is in the currently loaded world.
+                            //if this is the case, we should teleport the entity to this place
+                            if (taskWorld == currentSubworldID)
+                            {
+                                Debug.Log("This should not happen...");
+                                MoveEntity(e, taskWorld, curTask.Location.Position);
+                                continue;
+                            }
+                            //If we are currently in the same world as the desired task, then we do not need to do anything
+                            if (taskWorld == e.CurrentSubworldID)
+                                continue;
+                            //If the current task world is not loaded, and this entity is in an unloaded subworld, and will
+                            //wish to travel to the target world
+                            //The simplest example is an entity at home/work, who wishes to walk to a position in the main world.
+                            if (e.CurrentSubworldID != -1 && taskWorld == -1)
+                            {
+
+                                Vec2i extPos = entWorld.ExternalEntrancePos;
+                                if(EntityWithinDistanceOfPlayer(e, World.ChunkSize * 3)){
+                                    //We move the entity from the current subworld to the main world
+                                    MoveEntity(e, taskWorld, extPos);
+                                    Debug.Log("1");
+                                }
+
+                               
+                            }
+                            else if(e.CurrentSubworldID != -1 && taskWorld != -1 && taskWorld != e.CurrentSubworldID)
+                            {
+                                //if the entity is currently in a subworld, and the task is in a different subworld
+                                //We move first to the main world
+                                Vec2i extPos = entWorld.ExternalEntrancePos;
+                                if (EntityWithinDistanceOfPlayer(e, World.ChunkSize * 3))
+                                {
+                                    //We move the entity from the current subworld to the main world
+                                    MoveEntity(e, taskWorld, extPos);
+                                    Debug.Log("2");
+                                }
+                               
+                                //TODO - check if currently loaded world is main world, if so, move to entrance and travel (depending on distance to player)
+                            }else if(e.CurrentSubworldID == -1 && taskWorld != -1)
+                            {
+                                Debug.Log("3");
+                            }
+
+                        }
+                    }
+
+                }
+            }
+        }
+        foreach(LoadedEntity le in LoadedEntities)
+        {
+            if (UnloadedUpdatableEntities.Contains(le.Entity.ID))
+                UnloadedUpdatableEntities.Remove(le.Entity.ID);
+        }
     }
 
     public bool EntityInWorldCombatEvent(Entity entity, out WorldCombat wce)
@@ -278,39 +434,7 @@ public class EntityManager : MonoBehaviour
 
         int total=0;
         int enabled=0;
-        /*
-        foreach(Vec2i v in LoadedChunks)
-        {
-            MeshCollider mc = GameManager.WorldManager.CRManager.GetLoadedChunk(v).GetComponent<MeshCollider>();
-            total++;
-            if (mc.enabled)
-                enabled++;
-            if(LoadedEntityChunks.ContainsKey(v) && LoadedEntityChunks[v].Count != 0)
-            {
-                //enabled++;
-                //mc.enabled = true;
-            }
-            else
-            {
-               // mc.enabled = false;
-            }
-        }*/
-        /*
-        foreach(KeyValuePair<Vec2i, List<Entity>> kvp in LoadedEntityChunks)
-        {
-            MeshCollider mc = GameManager.WorldManager.CRManager.GetLoadedChunk(kvp.Key).GetComponent<MeshCollider>();
-            total++;
-            if (kvp.Value == null || kvp.Value.Count == 0)
-            {
 
-                mc.enabled = false;
-            }
-            else
-            {
-                mc.enabled = true;
-                enabled++;
-            }
-        }*/
         DebugGUI.Instance.SetData("chunk_col", +enabled + "/" + total);
     }
 
@@ -332,15 +456,15 @@ public class EntityManager : MonoBehaviour
     {
         Debug.BeginDeepProfile("update_entity_chunk");
         //If the last position is not null, we must remove the entity from said chunk position
-        if(last != null && LoadedEntityChunks.ContainsKey(last))
+        if (last != null && LoadedEntityChunks.ContainsKey(last))
         {
             LoadedEntityChunks[last].Remove(entity);
             //If we are removing the last entity, deleted the chunk address
-            if(LoadedEntityChunks[last].Count == 0)
+            if (LoadedEntityChunks[last].Count == 0)
             {
                 LoadedEntityChunks.Remove(last);
             }
-            for(int x=-1; x<=1; x++)
+            for (int x = -1; x <= 1; x++)
             {
                 for (int z = -1; z <= 1; z++)
                 {
@@ -348,24 +472,28 @@ public class EntityManager : MonoBehaviour
                 }
             }
 
-            //If the last position is not null, 
-            bool succesful = false;
-            if (EntitiesByLocation.TryGetValue(entity.CurrentSubworldID, out Dictionary<Vec2i, List<int>> subworldEnts))
+            if (!(entity is Player))
             {
-                if (subworldEnts.TryGetValue(last, out List<int> entIds))
+                //If the last position is not null, 
+                bool succesful = false;
+                if (EntitiesByLocation.TryGetValue(entity.CurrentSubworldID, out Dictionary<Vec2i, List<int>> subworldEnts))
                 {
-                    //if this entity is here, we remove them
-                    if (entIds.Contains(entity.ID))
+                    if (subworldEnts.TryGetValue(last, out List<int> entIds))
                     {
-                        entIds.Remove(entity.ID);
-                        succesful = true;
+                        //if this entity is here, we remove them
+                        if (entIds.Contains(entity.ID))
+                        {
+                            entIds.Remove(entity.ID);
+                            succesful = true;
+                        }
                     }
+                    if (!succesful)
+                        throw new System.Exception("No entity could be found at the old chunk position");
+
+
                 }
-                if (!succesful)
-                    throw new System.Exception("No entity could be found at the old chunk position");
-
-
             }
+           
 
         }
         //If the next position is not null, we try to add to correct spot
@@ -378,43 +506,25 @@ public class EntityManager : MonoBehaviour
                    // GameManager.WorldManager.CRManager.GetLoadedChunk(new Vec2i(x + next.x, z + next.z)).GetComponent<MeshCollider>().enabled = true;
                 }
             }
+            //We don't update chunk position of player, as it isn't stored here
+            if(!(entity is Player))
+            {
+                //If the chunk has no entity list associated, create it
+                if (!LoadedEntityChunks.ContainsKey(next))
+                    LoadedEntityChunks.Add(next, new List<Entity>(16));
+                //Add to correct list
+                LoadedEntityChunks[next].Add(entity);
 
-            //If the chunk has no entity list associated, create it
-            if (!LoadedEntityChunks.ContainsKey(next))
-                LoadedEntityChunks.Add(next, new List<Entity>(16));
-            //Add to correct list
-            LoadedEntityChunks[next].Add(entity);
-
-            if (!EntitiesByLocation.ContainsKey(entity.CurrentSubworldID))
-                EntitiesByLocation.Add(entity.CurrentSubworldID, new Dictionary<Vec2i, List<int>>());
-            if (!EntitiesByLocation[entity.CurrentSubworldID].ContainsKey(next))
-                EntitiesByLocation[entity.CurrentSubworldID].Add(next, new List<int>());
-            EntitiesByLocation[entity.CurrentSubworldID][next].Add(entity.ID);
+                if (!EntitiesByLocation.ContainsKey(entity.CurrentSubworldID))
+                    EntitiesByLocation.Add(entity.CurrentSubworldID, new Dictionary<Vec2i, List<int>>());
+                if (!EntitiesByLocation[entity.CurrentSubworldID].ContainsKey(next))
+                    EntitiesByLocation[entity.CurrentSubworldID].Add(next, new List<int>());
+                EntitiesByLocation[entity.CurrentSubworldID][next].Add(entity.ID);
+            }
+           
         }
         Debug.EndDeepProfile("update_entity_chunk");
-        //Debug.Log("Entity " + entity + " moved from chunk " + last + " to " + next);
-        /*
-        bool succesful = false;
-        if (EntitiesByLocation.TryGetValue(entity.CurrentSubworldID, out Dictionary<Vec2i, List<int>> subworldEnts))
-        {
-            if (subworldEnts.TryGetValue(last, out List<int> entIds))
-            {
-                //if this entity is here, we remove them
-                if (entIds.Contains(entity.ID))
-                {
-                    entIds.Remove(entity.ID);
-                    succesful = true;
-                }
-            }
-            if (!succesful)
-                throw new System.Exception("No entity could be found at the old chunk position");
 
-
-            if (!subworldEnts.ContainsKey(next))
-                subworldEnts.Add(next, new List<int>());
-            subworldEnts[next].Add(entity.ID);
-        }
-        */
 
     }
 
@@ -423,7 +533,30 @@ public class EntityManager : MonoBehaviour
     {
         if(subworld != null) //If we are entering a new subworld
         {
+            Debug.Log("HEREHEHREHHER");
+            PastSubworldID = -1;
+
+            Debug.Log("LE count:" + LoadedEntities.Count);
+
+            PastSubworldEntities.Clear();
+            UnloadedUpdatableEntities.Clear();
+            foreach (LoadedEntity le in LoadedEntities)
+            {
+                UnloadedUpdatableEntities.Add(le.Entity.ID);
+                PastSubworldEntities.Add(le.Entity);
+            }
+            Debug.Log(PastSubworldEntities.Count);
+            UnloadAllChunks();
             UnloadAllEntities();
+
+            for(int x=0; x<subworld.SubworldChunks.GetLength(0); x++)
+            {
+                for (int z = 0; z < subworld.SubworldChunks.GetLength(1); z++)
+                {
+                    LoadedChunks.Add(new Vec2i(x, z));
+                }
+            }
+
         }
         if (subworld.HasEntities)
         {
@@ -445,13 +578,25 @@ public class EntityManager : MonoBehaviour
             LoadEntity(dun.Boss);
         }
         Subworld = subworld;
+
+
     }
 
     public void LeaveSubworld()
     {
-        if(Subworld != null)
+        if (Subworld != null)
         {
+            PastSubworldID = Subworld.SubworldID;
+
             Subworld = null;
+            PastSubworldEntities.Clear();
+            foreach (LoadedEntity le in LoadedEntities)
+            {
+                PastSubworldEntities.Add(le.Entity);
+            }
+
+            LoadedChunks.Clear();
+
             UnloadAllEntities();
         }
     }
@@ -545,10 +690,11 @@ public class EntityManager : MonoBehaviour
         if (IsEntityLoaded(entity.ID))
         {
 
-
+            Debug.Log("1");
             //Check if the new position is loaded
             if (!LoadedChunks.Contains(cPos) || (entity.CurrentSubworldID != loadedSubworldID))
             {
+                Debug.Log("2");
                 //If the new position isn't loaded, then we must unload the entity
                 //If correct chunk position is loaded, but wrong world, we also unload
                 UnloadEntity(entity.GetLoadedEntity(), false);
@@ -556,7 +702,8 @@ public class EntityManager : MonoBehaviour
         }
         else
         {
-            if (LoadedChunks.Contains(cPos) && (entity.CurrentSubworldID != loadedSubworldID))
+            
+            if (LoadedChunks.Contains(cPos) && (entity.CurrentSubworldID == loadedSubworldID))
             {
                 LoadEntity(entity);
             }
@@ -624,6 +771,8 @@ public class EntityManager : MonoBehaviour
     /// <param name="entity"></param>
     public void LoadEntity(Entity entity)
     {
+        if (!entity.IsAlive)
+            return;
         Debug.Log("Entity Pref: " + entity.GetEntityGameObject());
 
         LoadedEntity loadedEntity = Instantiate(entity.GetEntityGameObject()).GetComponent<LoadedEntity>();
@@ -686,20 +835,38 @@ public class EntityManager : MonoBehaviour
         LoadedChunks.Add(v);
 
         int currentSubworldID = Subworld == null ? -1 : Subworld.SubworldID;
-
+        //Main entity loading
         if(EntitiesByLocation.TryGetValue(currentSubworldID, out Dictionary<Vec2i, List<int>> chunkEnts))
         {
             if(chunkEnts.TryGetValue(v, out List<int> ents))
             {
                 foreach(int id in ents)
                 {
+                    
+
                     Entity e = GetEntityFromID(id);
                     if(e.IsAlive)
                         LoadEntity(e);
                 }
             }
         }
-        
+        if(currentSubworldID == -1)
+        {
+            List<Subworld> sws = World.Instance.GetSubworldsInChunk(v);
+            if(sws != null)
+            {
+                //Iterate all subworlds in this chunk
+                foreach (Subworld sw in sws)
+                {
+                    foreach (Entity e in sw.Entities)
+                    {
+                        UnloadedUpdatableEntities.Add(e.ID);
+                    }
+                }
+            }
+            
+
+        }
     }
     public void UnloadAllChunks()
     {
@@ -756,4 +923,9 @@ public class EntityManager : MonoBehaviour
 
     #endregion
 
+
+    public static bool EntityWithinDistanceOfPlayer(Entity e, float dist)
+    {
+        return e.TilePos.QuickDistance(PlayerManager.Instance.Player.TilePos) < dist * dist;
+    }
 }

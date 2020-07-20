@@ -6,14 +6,22 @@ using System.Collections.Generic;
 public abstract class EntityCombatAI : IWorldCombatEvent
 {
     protected WorldCombat CurrentCombatEvent;
-    protected Entity CurrentTarget;
+    /// <summary>
+    /// The current entity related to this entities combat.
+    /// If the entity is attacking, this is their target
+    /// If they are running, they are running from this entity
+    /// </summary>
+    public Entity CurrentTarget { get;  protected set; }
     public bool InCombat { get { return CurrentCombatEvent != null; } }
     protected Entity Entity;
 
-    private bool IsRunningFromCombat;
+    public bool IsRunningFromCombat { get; protected set; }
     private List<Entity> NearEntities;
 
     private string currentCombatTask;
+
+    private LastTargetDetails LastTargetDetails;
+
 
 
     #region abstract_functions
@@ -26,13 +34,37 @@ public abstract class EntityCombatAI : IWorldCombatEvent
     public void SetEntity(Entity e)
     {
         Entity = e;
+        //If the entity should be running
+        if (IsRunningFromCombat)
+        {
+            //We reset
+            IsRunningFromCombat = true;
+            //We check if we have a current valid target to be running from
+            if(CurrentTarget != null && CurrentTarget.CurrentSubworldID == Entity.CurrentSubworldID)
+            {
+                RunFromCombat(CurrentTarget.TilePos);
+            }
+            else
+            {
+                //if we don't we run randomly.
+                RunFromCombat();
+            }
+            
+        }
     }
-
+    /// <summary>
+    /// Instructs the parent entity <see cref="EntityCombatAI.Entity"/> to try and attack the target <paramref name="entity"/>. <br/>
+    /// We check if either the parent entity or target entity are already in combat events. If so, we add the other entity to the relevent team.
+    /// <br/>
+    /// </summary>
+    /// <param name="entity"></param>
     public void Attack(Entity entity)
     {
         WorldCombat wce = null;
+        //Check for combat event related to target entity
         if(EntityManager.Instance.EntityInWorldCombatEvent(entity, out wce))
         {
+            //Add parent entity to relevent team
             if (wce.Team1.Contains(entity))
             {
                 wce.Team2.Add(Entity);
@@ -41,6 +73,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
             {
                 wce.Team1.Add(Entity);
             }
+            //Check for combat event related to parent entity.
         }else if(EntityManager.Instance.EntityInWorldCombatEvent(Entity, out wce))
         {
             if (wce.Team1.Contains(Entity))
@@ -53,9 +86,10 @@ public abstract class EntityCombatAI : IWorldCombatEvent
             }
         }
         else
-        {
+        {//If no combat event is found, we create a new one
             wce = EntityManager.Instance.NewCombatEvent(entity, Entity);
         }
+        //We set thecombat event and combat target.
         CurrentCombatEvent = wce;
 
         CurrentTarget = entity;
@@ -74,6 +108,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         }
         else
         {
+            Entity.GetLoadedEntity().LEPathFinder.Tick();
 
             //If not currently in combat, gather all near entities
             NearEntities = EntityManager.Instance.GetEntitiesNearChunk(Entity.LastChunkPosition);
@@ -95,11 +130,16 @@ public abstract class EntityCombatAI : IWorldCombatEvent
                         //Enter into combat
                         CurrentCombatEvent = EntityManager.Instance.NewCombatEvent(Entity, ent);
                         CurrentTarget = ent;
+
+                        //Store details of entity
+                        LastTargetDetails = new LastTargetDetails(ent);
+
                     }
 
                 }
             }
-            Entity.GetLoadedEntity().LEPathFinder.Tick();
+            //Update the path finder
+            Debug.Log("tick?");
         }
     }
     public virtual void Update()
@@ -207,6 +247,55 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         Entity.LookAt(CurrentTarget.Position2);
     }
 
+    protected virtual IEnumerator LookForDamageSource(Entity source, float searchTime=5)
+    {
+        float time = 0;
+        Vector3 initialPos = source.Position;
+        //Desired look angle is based on direction of initial position + a random value of noise
+        //float angle = Vector2.SignedAngle(Vector2.up, Entity.Position2-initialPos.XZ()) /*+ GenerationRandom.RNG.GaussianFloat(0, 5)*/;
+        float angle = Vector3.SignedAngle(Vector3.forward, Entity.Position - initialPos, Vector3.up) + 90;
+
+        Debug.Log("ang: " + angle + " cur look:" + Entity.LookAngle);
+        bool hasFound = false;
+
+        while(time < searchTime && !hasFound)
+        {
+            time += Time.deltaTime;
+            //Debug.Log("Running: " + time);
+            Entity.GetLoadedEntity().LookTowardsPoint(source.Position);
+          //  Entity.GetLoadedEntity().SetDesiredLookAngle(angle);
+            //Entity.SetLookAngle(Mathf.LerpAngle(Entity.LookAngle, angle, Time.deltaTime));
+
+            if (CanSeeEntity(source))
+            {
+                hasFound = true;
+                if (ShouldCombat(source))
+                {
+                    Attack(source);
+                    Entity.GetLoadedEntity()?.SpeechBubble.PushMessage("Seen combat source -> Attacking");
+                }
+                else
+                {
+                    CurrentTarget = source;
+                    RunFromCombat(source.TilePos);
+                    Entity.GetLoadedEntity()?.SpeechBubble.PushMessage("Seen combat source -> Runnings");
+                }                    
+            }
+
+            yield return null;
+        }
+        if (!hasFound)
+        {
+            Entity.GetLoadedEntity()?.SpeechBubble.PushMessage("Cannot see combat source -> Runnings");
+            CurrentTarget = source;
+            RunFromCombat(source.TilePos);
+        }
+            
+        
+        
+
+
+    }
 
     protected virtual void MeleeCombat()
     {
@@ -218,8 +307,10 @@ public abstract class EntityCombatAI : IWorldCombatEvent
 
         Vector2 combatDisplacement = Entity.Position2 - CurrentTarget.Position2;
         float distance = combatDisplacement.magnitude;
+        //Valid if the subworlds are the same
+        bool validSubworld = (CurrentTarget.CurrentSubworldID == Entity.CurrentSubworldID);
 
-        if (distance < attackRange)
+        if (distance < attackRange && validSubworld)
         {
             if (Entity.CombatManager.CanAttack())
             {
@@ -232,12 +323,47 @@ public abstract class EntityCombatAI : IWorldCombatEvent
             }
                 
         }
-        else
+        else if(distance > attackRange && validSubworld)
         {
             currentCombatTask += " too far too attack (dist/range): " + distance + "/" + attackRange;
             RunToCombat();
+        }else if (!validSubworld)
+        {//If target is in a different subworld we must find the exit
+            //If our target is in the main world, we must find OUR subworld exit
+            if (CurrentTarget.CurrentSubworldID == -1)
+            {
+                Subworld ourSW = Entity.GetSubworld();
+                Entity.GetLoadedEntity().SpeechBubble.PushMessage("Pursuing " + CurrentTarget + " through to world");
+                Entity.GetLoadedEntity().LEPathFinder.SetTarget((ourSW.Exit as WorldObjectData).Position, PersueThroughDoor, new object[] { ourSW.Exit, CurrentTarget });
+            }
+            else
+            {
+                Debug.Log(CurrentTarget.CurrentSubworldID);
+                //If we are in the world, and need to get to a subworld.
+                Subworld targetSW = World.Instance.GetSubworld(CurrentTarget.CurrentSubworldID);
+                Entity.GetLoadedEntity().SpeechBubble.PushMessage("Pursuing " + CurrentTarget + " through to subworld");
+                Entity.GetLoadedEntity().LEPathFinder.SetTarget((targetSW.Entrance as WorldObjectData).Position, PersueThroughDoor, new object[] { targetSW.Entrance, CurrentTarget });
+            }
+
+
+
+
+
         }
     }
+
+    public void ExitThroughDoor(params object[] args)
+    {
+        Debug.Log("reached door?");
+        ISubworldEntranceObject entrObjec = args[0] as ISubworldEntranceObject;
+        WorldObjectData objDat = entrObjec as WorldObjectData;
+        WorldObject obj = objDat.LoadedObject;
+
+        obj.OnEntityInteract(Entity);
+        IsRunningFromCombat = false;
+        RunFromCombat();
+    }
+
     /// <summary>
     /// Default RunFromCombat results in the entity moving in directly the 
     /// opposite direction from the current target.
@@ -246,24 +372,28 @@ public abstract class EntityCombatAI : IWorldCombatEvent
     {
         currentCombatTask = "running from combat";
 
-        WorldManager.Instance.StartCoroutine(RunFromCombatCoolDown(5));
         //If we are currently running, we don't need to update
         if (IsRunningFromCombat)
             return;
+        Entity.GetLoadedEntity()?.SpeechBubble.PushMessage(Entity + " is running from combat");
+        WorldManager.Instance.StartCoroutine(RunFromCombatCoolDown(5));
+
         //We now define that we are running from combat
         IsRunningFromCombat = true;
         //If the combats position is not defined, then we set it to the entities position
         if (combatPosition == null)
             combatPosition = Entity.TilePos;
 
+        Debug.Log("Running");
 
         if(Entity.GetSubworld() != null)
         {
             Subworld sub = Entity.GetSubworld();
             //TODO - sub if small?
             Debug.Log("In subworld, exit: " + (sub.Exit as WorldObjectData).Position  );
+            Entity.GetLoadedEntity().SpeechBubble.PushMessage("Running to subworld exit");
             //WorldObject obj = (sub.Exit as WorldObjectData).LoadedObject;
-            Entity.GetLoadedEntity().LEPathFinder.SetTarget((sub.Exit as WorldObjectData).Position, callback: ExitThroughDoor, callbackArgs:sub.Entrance);
+            Entity.GetLoadedEntity().LEPathFinder.SetTarget((sub.Exit as WorldObjectData).Position, ExitThroughDoor,callbackArgs: new object[] { sub.Entrance, 0.5f });
 
         }
         else
@@ -284,14 +414,17 @@ public abstract class EntityCombatAI : IWorldCombatEvent
         }      
     }
 
-    public void ExitThroughDoor(params object[] args)
+ 
+
+    public void PersueThroughDoor(params object[] args)
     {
         ISubworldEntranceObject entrObjec = args[0] as ISubworldEntranceObject;
         WorldObjectData objDat = entrObjec as WorldObjectData;
         WorldObject obj = objDat.LoadedObject;
 
         obj.OnEntityInteract(Entity);
-        IsRunningFromCombat = false;
+        Entity.GetLoadedEntity().LEPathFinder.SetEntityTarget(CurrentTarget);
+        
     }
 
     private IEnumerator RunFromCombatCoolDown(float cooldown)
@@ -309,7 +442,7 @@ public abstract class EntityCombatAI : IWorldCombatEvent
     {
 
 
-        //Entity.EntityAI.GeneratePath(Vec2i.FromVector3(CurrentTarget.Position));
+        
         Entity.GetLoadedEntity().LEPathFinder.SetEntityTarget(CurrentTarget, 1.5f);
         Entity.LookAt(CurrentTarget.Position2);
         Entity.GetLoadedEntity().SetRunning(true);
@@ -435,3 +568,20 @@ public abstract class EntityCombatAI : IWorldCombatEvent
 
 
 }  
+/// <summary>
+/// Details about the combat target on the last tick
+/// Used to check if an entity has changed subworld.
+/// </summary>
+struct LastTargetDetails
+{
+    public bool IsInstance;
+    public int SubworldID;
+    public Vector3 Position;
+
+    public LastTargetDetails(Entity entity)
+    {
+        SubworldID = entity.CurrentSubworldID;
+        Position = entity.Position;
+        IsInstance = true;
+    }
+}

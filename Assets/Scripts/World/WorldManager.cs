@@ -14,9 +14,12 @@ public class WorldManager : MonoBehaviour
 
     public static Vec2i LOAD_CHUNK;
 
+    public GameObject MainLight;
+
 
     public ChunkRegionManager CRManager { get; private set; }
     public World World { get; private set; }
+    public WorldDateTime Time;
     public Subworld CurrentSubworld { get; private set; }
     //public List<LoadedChunk> SubworldChunks { get; private set; }
     public Vec2i LoadedChunksCentre { get; private set; }
@@ -36,7 +39,7 @@ public class WorldManager : MonoBehaviour
     public void SetWorld(World world)
     {
         World = world;
-
+        Time = new WorldDateTime();
     }
 
 
@@ -99,7 +102,7 @@ public class WorldManager : MonoBehaviour
             Debug.Log("Player entering subworld " + sub.ToString(), Debug.NORMAL);
             //First unload all world chunks and set the current subworld
             CurrentSubworld = sub;
-            EntityManager.Instance?.UnloadAllChunks();
+            //EntityManager.Instance?.UnloadAllChunks();
             //Load all subworld chunks and add them to the the relevent list
             CRManager.LoadSubworldChunks(sub);
 
@@ -188,7 +191,7 @@ public class WorldManager : MonoBehaviour
             Player = PlayerManager.Instance.Player;
             return;
         }
-
+        Time.Update(MainLight);
         Debug.EndDeepProfile("world_update");
 
     }
@@ -243,18 +246,7 @@ public class WorldManager : MonoBehaviour
         //Vec2i chunkPos = World.GetChunkPosition(worldObject.WorldPosition);
         //ChunkData2 c = CRManager.GetChunk(chunkPos);
         return;
-        /*
-        Vec2i localPos = new Vec2i(worldObject.WorldPosition.x % World.ChunkSize, worldObject.WorldPosition.z % World.ChunkSize);
-        c.SetObject(localPos.x,localPos.z, worldObject);
 
-        //Check if the object has been added to a loaded chunk
-        LoadedChunk loaded = CRManager.GetLoadedChunk(chunkPos);
-        if (loaded != null)
-        {
-            WorldObject newObject = worldObject.CreateWorldObject(loaded.transform);
-
-            loaded.LoadedWorldObjects[localPos.x, localPos.z] = newObject;            
-        }*/
     }
 
 }

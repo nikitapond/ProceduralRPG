@@ -469,7 +469,8 @@ public class PlayerManager : MonoBehaviour
                 {
                     
                     Subworld sw = (data as ISubworldEntranceObject).GetSubworld();
-                    WorldManager.Instance.EnterSubworld(sw.SubworldID);
+                    if(sw != null && sw.SubworldChunks != null)
+                        WorldManager.Instance.EnterSubworld(sw.SubworldID);
                 }
             }
 

@@ -91,7 +91,8 @@ public class NPCJobBlackSmith : NPCJob
     {
         if (CurrentlyWorkingAt != null)
             CurrentlyWorkingAt.CurrentUser = null;
-
+        if (WorkEquiptment.Count == 0)
+            throw new System.Exception("No work equiptment");
         CurrentlyWorkingAt = GameManager.RNG.RandomFromList(WorkEquiptment);
         for(int i=0; i<10; i++)
             if(CurrentlyWorkingAt.CurrentUser != null)

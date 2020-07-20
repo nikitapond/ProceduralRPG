@@ -13,6 +13,8 @@ public class BasicNPCData
 
     public NPCGender Gender { get; private set; }
 
+   
+
     public void SetJob(NPCJob job)
     {
         NPCJob = job;

@@ -21,7 +21,7 @@ public class EntitySpeechBubble : MonoBehaviour
     public Canvas SpeechCanvas;
     public TextMeshProUGUI Text;
 
-    private float MessageTimeout = 15;
+    private float MessageTimeout = 30;
 
     private void Awake()
     {
@@ -36,13 +36,23 @@ public class EntitySpeechBubble : MonoBehaviour
     {
         if (SpeechCanvas.enabled)
         {
-            transform.LookAt(PlayerManager.Instance.PlayerCamera.transform);
+
+            //float angle = -Vector2.SignedAngle(transform.position.XZ(), PlayerManager.Instance.Player.Position2);
+            //Debug.Log("Angle speech bubble: " + angle);
+            //transform.rotation = Quaternion.Euler(0, 180, 0);
+            transform.LookAt(PlayerManager.Instance.Player.GetLoadedEntity().transform);
+            //transform.rotation = Quaternion.Euler(0, angle, 0);
             transform.Rotate(new Vector3(0, 180, 0));
         }
     }
 
     public void PushMessage(string text)
     {
+
+        //prevent clone messages
+        if (AddedMessages.Count > 0 && SpeechCanvas.enabled && text == AddedMessages[AddedMessages.Count - 1].GetComponentInChildren<TextMeshProUGUI>().text)
+            return;
+
         SpeechCanvas.enabled = true;
         GameObject nBubble = Instantiate(SpeechBubblePrefab);
         nBubble.transform.SetParent(ViewPort.transform, false);
@@ -67,9 +77,9 @@ public class EntitySpeechBubble : MonoBehaviour
 
     private IEnumerator TextFadeOut(GameObject text, float time)
     {
-        Debug.Log("waiting for " + time);
+       // Debug.Log("waiting for " + time);
         yield return new WaitForSeconds(time);
-        Debug.Log("Removing");
+      //  Debug.Log("Removing");
         AddedMessages.Remove(text);
         Destroy(text.gameObject);
 
@@ -79,9 +89,9 @@ public class EntitySpeechBubble : MonoBehaviour
 
     private IEnumerator TextFadeOut(float time)
     {
-        Debug.Log("waiting for time " + time);
+       // Debug.Log("waiting for time " + time);
         yield return new WaitForSeconds(time);
-        Debug.Log("hiding");
+       // Debug.Log("hiding");
         SpeechCanvas.enabled = false;
 
     }

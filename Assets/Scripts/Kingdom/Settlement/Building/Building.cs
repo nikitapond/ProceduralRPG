@@ -141,7 +141,8 @@ public abstract class Building
     public void SetPositions(Vec2i settlementBaseCoord, Vec2i buildingSettlementCoord)
     {
         WorldPosition = settlementBaseCoord + buildingSettlementCoord;
-        if(BuildingSubworld != null)
+        Entrance = WorldPosition;
+        if (BuildingSubworld != null)
         {
 
             BuildingSubworld.Entrance = ExternalEntranceObject;
@@ -151,12 +152,21 @@ public abstract class Building
 
             ExternalEntranceObject.SetSubworld(BuildingSubworld);
             InternalEntranceObject.SetSubworld(BuildingSubworld);
-        }
-        
+        }    
 
       
         
 
+    }
+
+    public virtual TaskLocation GetBuildingGotoTaskLocation()
+    {
+        if (HasSubworld)
+        {
+            return new TaskLocation(BuildingSubworld, BuildingSubworld.InternalEntrancePos);
+        }
+        else
+            return new TaskLocation(-1, Entrance);
     }
 
 

@@ -5,6 +5,7 @@ public class Player : HumanoidEntity
 {
     private NPC CurrentDialog;
 
+    public override int CurrentSubworldID { get { return WorldManager.Instance.CurrentSubworld==null?-1:WorldManager.Instance.CurrentSubworld.SubworldID; } }
 
     public Player(): base(null, null, new EntityMovementData(20,25,5), name:"Player")
     {

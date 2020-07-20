@@ -37,8 +37,13 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     public EntitySpeechBubble SpeechBubble;
     private CapsuleCollider Collider;
 
+    private Vector3 LastTickPosition;
+    private LookType LookType;
 
-    private Vector3 LookTowards;
+    private Vector3 LookTowardsPointTarget;
+    private Entity LookTowardsEntityTarget;
+    private float LookTowardsAngleTarget;
+
 
     private Vector2 MoveDirection;
     private Vector2 TargetPosition;
@@ -53,7 +58,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
         if (IsPlayer)
             return;
-        if (EntityManager.Instance == null || Entity==null || Entity.TilePos==null)
+        if (EntityManager.Instance == null || Entity == null || Entity.TilePos == null)
             return;
         List<Entity> near = EntityManager.Instance.GetEntitiesNearChunk(World.GetChunkPosition(Entity.TilePos));
         if (near == null)
@@ -63,7 +68,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             if (e == Entity)
                 continue;
 
-            Color c = Entity.EntityAI.CombatAI.CanSeeEntity(e)?Color.green:Color.red;
+            Color c = Entity.EntityAI.CombatAI.CanSeeEntity(e) ? Color.green : Color.red;
             Gizmos.color = c;
             Gizmos.DrawLine(e.Position + Vector3.up, Entity.Position + Vector3.up);
         }
@@ -104,11 +109,11 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     {
 
 
-       
 
 
+        LookType = LookType.none;
         EventManager.Instance.AddListener(this);
-        
+
         Entity = entity;
         AnimationManager = GetComponent<LoadedEntityAnimationManager>();
 
@@ -131,7 +136,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             IsPlayer = false;
 
             LEPathFinder = gameObject.AddComponent<LEPathFinder>();
-            Destroy(gameObject.GetComponent<Rigidbody>());
+           // Destroy(gameObject.GetComponent<Rigidbody>());
 
             GameObject speechBubble = Instantiate(ResourceManager.GetEntityGameObject("speechbubble"));
             speechBubble.transform.SetParent(transform);
@@ -149,20 +154,26 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         float speed = IsRunning ? Entity.MovementData.RunSpeed : Entity.MovementData.WalkSpeed;
 
         LEPathFinder?.SetSpeed(speed);
+        LastTickPosition = entity.Position;
 
     }
 
 
     public void SetIdle(bool idle)
     {
+        if (IsIdle != idle)
+        {
+            Debug.Log(Entity + " is now idle?: " + idle);
+        }
         IsIdle = idle;
+
     }
 
 
     public bool OnGround()
     {
         return IsGrounded;
-        return Physics.Raycast(transform.position+Vector3.up, -Vector3.up, 0.1f+1);
+        return Physics.Raycast(transform.position + Vector3.up, -Vector3.up, 0.1f + 1);
     }
     private bool IsJumping;
     private bool IsWaitingForJump;
@@ -183,7 +194,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
         RaycastHit hit;
         //Raycast only the ground
-        if(Physics.Raycast(ray, out hit, distance, layerMask:GROUND_LAYER_MASK))
+        if (Physics.Raycast(ray, out hit, distance, layerMask: GROUND_LAYER_MASK))
         {
             float slopeAngle = Mathf.Deg2Rad * Vector3.Angle(Vector3.up, hit.normal);
             float radius = Mathf.Abs(slopeRayHeight / Mathf.Sin(slopeAngle)); // slopeRayHeight is the Y offset from the ground you wish to cast your ray from.
@@ -256,14 +267,14 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             AnimationManager.SetSpeedPercentage(1);
         }
 
-     
+
         IsRunning = running;
     }
 
 
 
     private System.Diagnostics.Stopwatch Stopwatch;
-    
+
 
 
     /// <summary>
@@ -274,25 +285,39 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
     {
 
         IsIdle = false;
-        LookTowards = v;
-        ShouldLook = true;
+        LookTowardsPointTarget = v;
+        LookType = LookType.point;
     }
     public void LookTowardsPoint(Vector2 v)
     {
 
         IsIdle = false;
-        LookTowards = new Vector3(v.x,0, v.y);
-        ShouldLook = true;
+        LookTowardsPointTarget = new Vector3(v.x, 0, v.y);
+        LookType = LookType.point;
     }
     public void SetLookBasedOnMovement(bool onMovement)
     {
+        LookType = LookType.direction;
         IsIdle = false;
     }
+    public void SetDesiredLookAngle(float angle)
+    {
+        LookType = LookType.angle;
+        LookTowardsAngleTarget = angle;
+        Debug.Log("here?");
+        IsIdle = false;
+    }
+    public void LookTowardsEntity(Entity entity)
+    {
+        LookType = LookType.entity;
+        LookTowardsEntityTarget = entity;
+    }
+
 
     private float GetWorldHeight(float x, float z)
     {
-        
-        ChunkData chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(x,z), false);
+
+        ChunkData chunk = GameManager.WorldManager.CRManager.GetChunk(World.GetChunkPosition(x, z), false);
         if (chunk == null)
             return World.ChunkHeight;
 
@@ -303,9 +328,9 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         }
 
         if (chunk.Heights != null)
-            return  chunk.Heights[(int)x % World.ChunkSize, (int)z % World.ChunkSize];
+            return chunk.Heights[(int)x % World.ChunkSize, (int)z % World.ChunkSize];
         else
-            return  chunk.BaseHeight;
+            return chunk.BaseHeight;
 
     }
 
@@ -314,22 +339,22 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         Vector3 basePos = new Vector3(transform.position.x, 512, transform.position.z);
 
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 513, layerMask:GROUND_LAYER_MASK))
+        if (Physics.Raycast(new Ray(basePos, Vector3.down), out hit, 513, layerMask: GROUND_LAYER_MASK))
         {
             return hit.point.y;
         }
         //float height = 4.5f;
         return 1;
-      
+
     }
     private void UpdateVerticalVelocity()
     {
         VerticalVelocity -= 9.81f * Time.fixedDeltaTime;
     }
 
-    public void MoveTowards(Vector3 position, bool chosenPoint=false)
+    public void MoveTowards(Vector3 position, bool chosenPoint = false)
     {
-        
+
 
         Vector3 delta = position - transform.position;
         delta.Normalize();
@@ -344,7 +369,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         DesiredVelocity = new Vector2(position.x - transform.position.x, position.z - transform.position.z);
 
     }
-    
+
     public void MoveTowards(Vector2 position)
     {
         MoveTowards(new Vector3(position.x, transform.position.y, position.y), true);
@@ -366,25 +391,27 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
         if (!(Entity is Player))
         {
-            
+
             float gHeight = GetWorldHeight();
 
-            if (transform.position.y<gHeight)
+            if (transform.position.y < gHeight)
             {
                 transform.position = new Vector3(transform.position.x, gHeight, transform.position.z);
             }
             AnimationManager.SetSpeedPercentage(LEPathFinder.CurrentSpeed() / Entity.MovementData.RunSpeed);
             EntityHealthBar.SetHealthPct(Entity.CombatManager.CurrentHealth / Entity.CombatManager.MaxHealth);
 
+            UpdateLookAngle();
+            /*
             if (ShouldLook)
             {
-                float angle = Vector3.SignedAngle(Vector3.forward, LookTowards - transform.position, Vector3.up);
+                float angle = Vector3.SignedAngle(Vector3.forward, LookTowardsPointTarget - transform.position, Vector3.up);
                 Quaternion quat = Quaternion.Euler(new Vector3(0, angle, 0));
                 transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.fixedDeltaTime * LOOK_ROTATION_SPEED);
                 Entity.SetLookAngle(transform.rotation.eulerAngles.y);
             }
 
-            Entity.SetLookAngle(transform.rotation.eulerAngles.y);
+            Entity.SetLookAngle(transform.rotation.eulerAngles.y);*/
         }
 
 
@@ -395,7 +422,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             return;
         if (IsIdle)
         {
-          //  RigidBody.velocity = Vector3.zero;
+            //  RigidBody.velocity = Vector3.zero;
             return;
         }
 
@@ -426,19 +453,19 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         float velY = RigidBody.velocity.y;
 
         //If we are below the ground, reset position to be at ground level
-        if(transform.position.y < ground)
+        if (transform.position.y < ground)
         {
             transform.position = new Vector3(transform.position.x, ground, transform.position.z);
         }
         //If our DesiredVelocity is non 0
-        if(DesiredVelocity != Vector2.zero)
+        if (DesiredVelocity != Vector2.zero)
         {
             //We check if the terrain we are moving into is valid to move
-            if(CheckMoveableTerrain(transform.position, new Vector3(DesiredVelocity.x, 0, DesiredVelocity.y), 10f))
+            if (CheckMoveableTerrain(transform.position, new Vector3(DesiredVelocity.x, 0, DesiredVelocity.y), 10f))
             {
                 //Calculate and set velocity
-                float moveSpeed = IsRunning?Entity.MovementData.RunSpeed:Entity.MovementData.WalkSpeed;
-                RigidBody.velocity = new Vector3(DesiredVelocity.x* moveSpeed, velY, DesiredVelocity.y* moveSpeed);
+                float moveSpeed = IsRunning ? Entity.MovementData.RunSpeed : Entity.MovementData.WalkSpeed;
+                RigidBody.velocity = new Vector3(DesiredVelocity.x * moveSpeed, velY, DesiredVelocity.y * moveSpeed);
                 //inform animation manager of velocity
                 AnimationManager.SetSpeedPercentage(moveSpeed / Entity.MovementData.RunSpeed);
             }
@@ -449,15 +476,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         {
             AnimationManager.SetSpeedPercentage(0);
         }
-
-        //If we have a specified look direction
-        if (LookTowards != Vector3.zero)
-        {
-            float angle = Vector3.SignedAngle(Vector3.forward, LookTowards - transform.position, Vector3.up);
-            Quaternion quat = Quaternion.Euler(new Vector3(0, angle, 0));
-            transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.fixedDeltaTime * LOOK_ROTATION_SPEED);
-            Entity.SetLookAngle(transform.rotation.eulerAngles.y);
-        }
+ 
 
         //The final y coord we will end up at
         float finalY = transform.position.y;
@@ -602,7 +621,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         {
             float tileSpeed = 1; //TODO - get tile speed
             //Finds correct speed associated with running/walking for this entity
-            float entitySpeed = IsRunning?Entity.MovementData.RunSpeed:Entity.MovementData.WalkSpeed;
+            float entitySpeed = IsRunning ? Entity.MovementData.RunSpeed : Entity.MovementData.WalkSpeed;
 
             AnimationManager.SetSpeedPercentage(entitySpeed / Entity.MovementData.RunSpeed);
 
@@ -612,7 +631,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             Vector3 vel = new Vector3(MoveDirection.x, 0, MoveDirection.y) * tileSpeed * entitySpeed;
 
             //controller.SimpleMove(vel);
-            
+
 
 
 
@@ -622,22 +641,22 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             RigidBody.velocity = new Vector3(MoveDirection.x, 0, MoveDirection.y) * tileSpeed * entitySpeed;
             //If the distance the body will move in a frame (|velocity|*dt) is more than the desired amount (target mag)
             //Then we must scale the velocity down
-            if(RigidBody.velocity.magnitude*Time.fixedDeltaTime > targetMag)
+            if (RigidBody.velocity.magnitude * Time.fixedDeltaTime > targetMag)
             {
 
-               RigidBody.velocity = RigidBody.velocity * targetMag/(Time.fixedDeltaTime* RigidBody.velocity.magnitude);
+                RigidBody.velocity = RigidBody.velocity * targetMag / (Time.fixedDeltaTime * RigidBody.velocity.magnitude);
             }
 
             RigidBody.velocity += Vector3.up * oldVy;
-            
-            Vector3 moveTo = transform.position + vel * Time.fixedDeltaTime*5;
+
+            Vector3 moveTo = transform.position + vel * Time.fixedDeltaTime * 5;
             float moveToHeight = GetWorldHeight(moveTo.x, moveTo.z);
 
             if (Entity is Player)
             {
                 Debug.Log("ground: " + ground + " move to" + moveToHeight);
             }
-            if(moveToHeight > ground)
+            if (moveToHeight > ground)
             {
                 if ((moveToHeight - ground) * Time.fixedDeltaTime < 0.5f)
                     transform.position = new Vector3(transform.position.x, moveToHeight, transform.position.z);
@@ -657,22 +676,15 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         {
             AnimationManager.SetSpeedPercentage(0);
         }
-        //If we have a specified look direction
-        if (LookTowards != Vector3.zero)
-        {
-            float angle = Vector3.SignedAngle(Vector3.forward, LookTowards - transform.position, Vector3.up);
-            Quaternion quat = Quaternion.Euler(new Vector3(0, angle, 0));
-            transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.fixedDeltaTime * LOOK_ROTATION_SPEED);
-            Entity.SetLookAngle(transform.rotation.eulerAngles.y);
-        }
+ 
 
 
         //If the entity is currently grounded and moving down
-        if (IsGrounded && VerticalVelocity <0)
+        if (IsGrounded && VerticalVelocity < 0)
         {
 
             //If we were falling or jumping, we now land
-            if(IsJumping || IsFalling)
+            if (IsJumping || IsFalling)
             {
                 AnimationManager.LandJump();
             }
@@ -683,7 +695,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             //maybe we remove this?
             transform.position = new Vector3(transform.position.x, ground, transform.position.z);
 
-        }else if(IsGrounded && VerticalVelocity > 0)
+        } else if (IsGrounded && VerticalVelocity > 0)
         {
             //Update velocity
             VerticalVelocity -= 9.81f * Time.fixedDeltaTime;
@@ -693,18 +705,18 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
                 y = ground;
             transform.position = new Vector3(transform.position.x, y, transform.position.z);
         }
-        else if(IsGrounded && Mathf.Abs(VerticalVelocity) < 0.1f)
+        else if (IsGrounded && Mathf.Abs(VerticalVelocity) < 0.1f)
         {
             VerticalVelocity = 0;
             IsFalling = false;
             IsJumping = false;
-        }else
+        } else
         {
             //We are not grounded
 
             //If we are not grounded, but we aren't currently falling or jumping, 
             //then we must be falling
-            if(!(IsJumping || IsFalling))
+            if (!(IsJumping || IsFalling))
             {
                 IsFalling = true;
                 AnimationManager.SetFalling();
@@ -723,7 +735,7 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         bool IsOnGround = OnGround();
 
         //Debug info for player Jumping
-        if(Entity is Player)
+        if (Entity is Player)
         {
             DebugGUI.Instance.SetData("jump_vel", VerticalVelocity);
             DebugGUI.Instance.SetData("onGround", IsOnGround);
@@ -791,15 +803,14 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
 
         //transform.position = new Vector3(transform.position.x, Height, transform.position.z);
         */
-       /* float worldHeight = GetWorldHeight();
-        if (transform.position.y < worldHeight)
-        {
-            transform.position = new Vector3(transform.position.x, worldHeight, transform.position.z);
-            VerticalVelocity = 0;
-        }*/
+        /* float worldHeight = GetWorldHeight();
+         if (transform.position.y < worldHeight)
+         {
+             transform.position = new Vector3(transform.position.x, worldHeight, transform.position.z);
+             VerticalVelocity = 0;
+         }*/
         //Reset variables 
-        LookTowards = Vector3.zero;
-        MoveDirection = Vector2.zero;
+
 
 
         Entity.MoveEntity(transform.position);
@@ -809,10 +820,38 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
         return;
 
 
-     
+
     }
 
+    private void UpdateLookAngle()
+    {
+        if (LookType == LookType.none)
+            return;
+        if(LookType == LookType.entity || LookType == LookType.point)
+        {
+            Vector3 pos = LookType == LookType.entity ? LookTowardsEntityTarget.Position : LookTowardsPointTarget;
 
+            float angle = Vector3.SignedAngle(Vector3.forward, pos - transform.position, Vector3.up);
+            Quaternion quat = Quaternion.Euler(new Vector3(0, angle, 0));
+            transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.fixedDeltaTime * LOOK_ROTATION_SPEED);
+            Entity.SetLookAngle(transform.rotation.eulerAngles.y);
+        }else if(LookType == LookType.angle)
+        {
+            Quaternion quat = Quaternion.Euler(new Vector3(0, LookTowardsAngleTarget, 0));
+            transform.rotation = Quaternion.Slerp(transform.rotation, quat, Time.fixedDeltaTime * LOOK_ROTATION_SPEED);
+            Debug.Log("um?" + transform.rotation.eulerAngles);
+
+            Entity.SetLookAngle(transform.rotation.eulerAngles.y);
+        }else if(LookType == LookType.direction)
+        {
+            //Displacement between last and current position
+         //   Vector2 movementDisp = LEPathFinder.Direction.XZ();
+           // Debug.Log("Movement: " + movementDisp);
+           // Vector3 rot = new Vector3(movementDisp.x, 0, movementDisp.y);
+           // transform.rotation = Quaternion.LookRotation(rot, Vector3.up);
+            Entity.SetLookAngle(transform.rotation.eulerAngles.y);
+        }
+    }
     public void GamePauseEvent(bool pause)
     {
         if (!IsPlayer)
@@ -821,4 +860,11 @@ public class LoadedEntity : MonoBehaviour, IGamePauseEvent
             LEPathFinder.SetPause(pause);
         }
     }
+}
+/// <summary>
+/// Defines the method the entity should use to decide its look direction.
+/// </summary>
+public enum LookType
+{
+    none, entity, point, angle, direction
 }

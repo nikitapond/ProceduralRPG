@@ -12,6 +12,7 @@ public class NPC : HumanoidEntity
 
     public NPC(string name = "un-named_entity", bool isFixed = true) : base(new NonAggresiveNPCCombatAI(), new BasicNPCTaskAI(),new EntityMovementData(4,7,2), name:name, isFixed:isFixed)
     {
+        Debug.Log("new entity created ");
         NPCData = new BasicNPCData();
         EntityRelationshipManager = new EntityRelationshipManager(this);
     }

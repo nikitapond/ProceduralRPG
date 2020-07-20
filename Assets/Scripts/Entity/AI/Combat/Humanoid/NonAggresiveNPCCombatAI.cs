@@ -18,7 +18,9 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
         //We check if we can see the entity.
         if (!CanSeeEntity(source))
         {
-            RunFromCombat(source.TilePos);
+            Entity.GetLoadedEntity()?.StartCoroutine(LookForDamageSource(source));
+            Debug.Log("Cannot see enemy, running");
+           // RunFromCombat(source.TilePos);
            // Entity.EntityAI.TaskAI.SetTask(new EntityTaskLookForDamageSource(Entity, source, 15), false);
             return;
         }
@@ -43,13 +45,12 @@ public class NonAggresiveNPCCombatAI : EntityCombatAI
         {
             Debug.Log("Entity " + Entity + " is a lil' pus pus, run from combat");
             Entity.GetLoadedEntity().SpeechBubble.PushMessage("Ouch! running from combat source " + source);
-
+            IsRunningFromCombat = false;
+            CurrentTarget = source;
             RunFromCombat(source.TilePos);
             return;
             //if our aggression is low, we run
             Vec2i goTo = GameManager.RNG.RandomVec2i(-20, 20);
-            while (goTo.QuickDistance(new Vec2i(0, 0)) < 10 * 10) goTo = GameManager.RNG.RandomVec2i(-20, 20);
-            Entity.EntityAI?.TaskAI?.SetTask(new EntityTaskGoto(Entity, goTo + Entity.TilePos, running: true, priority: 50));
         }        
     }
 

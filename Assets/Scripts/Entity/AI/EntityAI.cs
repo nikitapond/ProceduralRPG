@@ -17,9 +17,16 @@ public class EntityAI
 
     public EntityAI(Entity entity, EntityCombatAI combatAI, EntityTaskAI taskAI)
     {
+        Debug.Log("Init EntityAI : " + entity);
         Entity = entity;
         CombatAI = combatAI;
         TaskAI = taskAI;
+        if (!(entity is Player))
+        {
+            CombatAI.SetEntity(entity);
+            TaskAI.SetEntity(entity);
+        }
+        
     }
 
     /// <summary>
@@ -202,8 +209,10 @@ public class EntityAI
     {
         EventManager.Instance.AddListener(CombatAI);
         CombatAI.CheckEquiptment();
+
         CombatAI.SetEntity(Entity);
         TaskAI.SetEntity(Entity);
+        
         //GameManager.EventManager.AddListener(TaskAI);
     }
     /// <summary>

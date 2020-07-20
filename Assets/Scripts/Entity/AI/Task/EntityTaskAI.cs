@@ -7,8 +7,12 @@ public abstract class EntityTaskAI
     public EntityTask CurrentTask { get; protected set; }
     public void SetEntity(Entity e)
     {
+        Debug.Log("Entity set" + e);
         Entity = e;
     }
+
+    public bool HasTask { get { return CurrentTask != null && !CurrentTask.IsComplete; } }
+
     /// <summary>
     /// Decides and returns the task this entity should do when 
     /// there are no external stimuli.
@@ -26,7 +30,7 @@ public abstract class EntityTaskAI
     {
         Debug.BeginDeepProfile("internal_ai_tick");
         //Check if we need a new task
-        if(CurrentTask == null || CurrentTask.IsComplete)
+        if(CurrentTask == null || CurrentTask.IsComplete || CurrentTask.ShouldTaskEnd())
         {
             
             //if so, choose our idle task
@@ -66,7 +70,7 @@ public abstract class EntityTaskAI
                 {
                     CurrentTask.OnTaskEnd();
                     CurrentTask = task;
-                    Entity.GetLoadedEntity().SpeechBubble.PushMessage("New task has higher priority : " + CurrentTask);
+                    Entity.GetLoadedEntity()?.SpeechBubble.PushMessage("New task has higher priority : " + CurrentTask);
 
                 }
             }
@@ -74,7 +78,7 @@ public abstract class EntityTaskAI
             {
                 CurrentTask.OnTaskEnd();
                 CurrentTask = task;
-                Entity.GetLoadedEntity().SpeechBubble.PushMessage("New task, skip priority check : " + CurrentTask);
+                Entity.GetLoadedEntity()?.SpeechBubble.PushMessage("New task, skip priority check : " + CurrentTask);
 
             }
 
@@ -82,7 +86,7 @@ public abstract class EntityTaskAI
         else
         {
             CurrentTask = task;
-            Entity.GetLoadedEntity().SpeechBubble.PushMessage("No task, new task : " + CurrentTask);
+            Entity.GetLoadedEntity()?.SpeechBubble.PushMessage("No task, new task : " + CurrentTask);
 
         }
 

@@ -9,7 +9,7 @@ public class PassiveAnimalCombatAI : EntityCombatAI
 
 
         Vec2i runPos = Entity.TilePos + GameManager.RNG.RandomVec2i(10, 20) * GameManager.RNG.RandomSign();
-        Entity.EntityAI?.TaskAI.SetTask(new EntityTaskGoto(Entity, runPos, priority: 10, running: true));
+        Entity.EntityAI?.TaskAI.SetTask(new EntityTaskGoto(Entity, runPos, priority: 10, running: true, taskDesc:"Running from combat"));
 
     }
 
