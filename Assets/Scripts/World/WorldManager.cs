@@ -16,6 +16,7 @@ public class WorldManager : MonoBehaviour
 
     public GameObject MainLight;
 
+    public AstarPath PathFinder { get; private set; }
 
     public ChunkRegionManager CRManager { get; private set; }
     public World World { get; private set; }
@@ -46,19 +47,29 @@ public class WorldManager : MonoBehaviour
     public void EntityEnterSubworld(Entity entity, Subworld subworld)
     {
 
+        if(subworld != null)
+        {
+            entity.MoveEntity(subworld.InternalEntrancePos.AsVector3(), subworld.SubworldID);
+        }
+
+        
     }
     public void EntityExitSubworld(Entity entity, Subworld subworld)
     {
         subworld.RemoveEntity(entity);
         entity.MoveEntity(GenerationRandom.RNG.RandomPositionOnRadius(subworld.ExternalEntrancePos.AsVector3(), 1.5f), -1);
         entity.SetSubworld(null);
-
+        //TODO - check that removing below code hasn't broken anything
+        //This code should be run correctly in
+        ///<see cref="EntityManager.MoveEntity(Entity, int, Vec2i)"/>
+        ///
+        /*
         if (entity.GetLoadedEntity() != null)
         {
             entity.SetFixed(true);
             EntityManager.Instance.UnloadEntity(entity.GetLoadedEntity(), false);
             
-        }
+        }*/
         
 
     }
@@ -176,6 +187,9 @@ public class WorldManager : MonoBehaviour
         LoadedRegions = new ChunkRegion[World.RegionCount, World.RegionCount];
         Instance = this;
         CRManager = GetComponent<ChunkRegionManager>();
+        
+        PathFinder = (AstarPath)GameObject.FindObjectOfType<AstarPath>();
+        Debug.Log("Path finder... " + PathFinder);
     }
 
     /// <summary>

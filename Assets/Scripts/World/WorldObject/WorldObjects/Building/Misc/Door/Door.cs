@@ -30,4 +30,8 @@ public class Door : WorldObjectData, ISubworldEntranceObject
 
         SubworldID = world.SubworldID;
     }
+    public override string ToString()
+    {
+        return "Subworld entrance: " + SubworldID;
+    }
 }

@@ -166,7 +166,7 @@ public abstract class Building
             return new TaskLocation(BuildingSubworld, BuildingSubworld.InternalEntrancePos);
         }
         else
-            return new TaskLocation(-1, Entrance);
+            return new TaskLocation(-1, GenerationRandom.RNG.RandomFromList(SpawnableTiles));
     }
 
 

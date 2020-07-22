@@ -7,7 +7,7 @@ public class NPCJobMerchant : NPCJob
     private Vector3 CurrentTargetPosition;
     private float CurrentPositionTime;
     private float CurrentPositionTimeOut;
-
+    private bool NewTarget;
     private NPCDialogNode ShopNode;
 
     private bool Init;
@@ -67,7 +67,12 @@ public class NPCJobMerchant : NPCJob
         if (pathTarget.WithinDistance(CurrentTargetPosition, 1f))
             return;
         //If the finder isn't targeted, set it
-        npc.GetLoadedEntity().LEPathFinder.SetTarget(CurrentTargetPosition);
+        if (NewTarget)
+        {
+            NewTarget = false;
+            npc.GetLoadedEntity().LEPathFinder.SetTarget(CurrentTargetPosition);
+        }
+        
     }
 
 
@@ -77,8 +82,9 @@ public class NPCJobMerchant : NPCJob
         //Debug.Log(WorkLocation.AsBuilding().GetSpawnableTiles());
         //Choose random point
         CurrentTargetPosition = GameManager.RNG.RandomFromList(WorkLocation.AsBuilding().GetSpawnableTiles()).AsVector3();
-        CurrentPositionTime = Time.deltaTime;
+        CurrentPositionTime = Time.time;
         CurrentPositionTimeOut = GameManager.RNG.RandomInt(40, 60);
+        NewTarget = true;
     }
     public override void OnTaskEnd(NPC npc)
     {

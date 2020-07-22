@@ -56,7 +56,7 @@ public class HouseGenerator
         {
             BuildingGenerator.PlaceObjectAgainstWall(genRan, new WallTorch(), 1.5f, vox, house, 0f, requireWallBacking:true);
         }
-        house.AddExternalObject(new BuildingInternalNoWalkFloor(Vector3.zero, new Vector3(house.Width, 5, house.Height)));
+        house.AddExternalObject(new BuildingInternalNoWalkFloor(new Vector3(1,0,1), new Vector3(house.Width-2, 5, house.Height-2)));
         BuildingGenerator.AddRoof(genRan, vox, house, Voxel.thatch);
 
         BuildingSubworldBuilder b = new BuildingSubworldBuilder(house, vox, plan);

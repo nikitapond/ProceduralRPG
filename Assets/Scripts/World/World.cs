@@ -157,7 +157,12 @@ public class World
     }
     public Subworld GetSubworld(int id)
     {
-        return WorldSubWorlds[id];
+        if (WorldSubWorlds.TryGetValue(id, out Subworld sw))
+            return sw;
+        if (id == -1)
+            return null;
+        Debug.LogError("Subworld with ID " + id + " not found");
+        return null;
     }
 
     public Settlement GetSettlement(int id)

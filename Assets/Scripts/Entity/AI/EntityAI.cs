@@ -212,7 +212,8 @@ public class EntityAI
 
         CombatAI.SetEntity(Entity);
         TaskAI.SetEntity(Entity);
-        
+        TaskAI.OnEntityLoad();
+
         //GameManager.EventManager.AddListener(TaskAI);
     }
     /// <summary>

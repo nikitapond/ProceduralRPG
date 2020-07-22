@@ -24,7 +24,7 @@ public class EntityPathFinder
     new Vec2i(-1, -1) // diagonal bottom left*/
   };
     private Object LockSafe;
-    private PathFinder Parent;
+    private PathFinderDEP Parent;
 
     private Thread WorkThread;
 
@@ -49,7 +49,7 @@ public class EntityPathFinder
     public Vec2i Target { get; private set; }
     private bool NewTarget;
 
-    public EntityPathFinder(PathFinder parent)
+    public EntityPathFinder(PathFinderDEP parent)
     {
         ChunkPathVals = new Dictionary<Vec2i, float[,]>();
         Parent = parent;
@@ -79,7 +79,7 @@ public class EntityPathFinder
 
     private void InternalFindPath(Vec2i start, Vec2i end, bool debug=false)
     {
-        LockSafe = PathFinder.LockSafe;
+        LockSafe = PathFinderDEP.LockSafe;
         IsRunning = true;
         this.start = start;
         this.Target = end;
@@ -480,7 +480,7 @@ public class EntityPathFinder
 /// Class holds onto the 
 /// </summary>
 [System.Serializable]
-public class PathFinder
+public class PathFinderDEP
 {
 
     public volatile int COUNT;
@@ -509,7 +509,7 @@ public class PathFinder
     public Recti Bounds { get; private set; }
 
     public World World { get; private set; }
-    public PathFinder(World world)
+    public PathFinderDEP(World world)
     {
         //TileValues = new float[PathFinderSize, PathFinderSize];
         World = world;

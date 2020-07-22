@@ -26,6 +26,8 @@ public class NPCTaskDoJob : EntityTask
  
     }
 
+
+
     public override bool ShouldTaskEnd()
     {
         return WorldManager.Instance.Time.IsNight;

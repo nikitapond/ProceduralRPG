@@ -122,6 +122,10 @@ public class WorldObject : MonoBehaviour
         }
     }
 
+    public override string ToString()
+    {
+        return Data.ToString();
+    }
 
 }
 public enum WorldObjects

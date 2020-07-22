@@ -63,6 +63,8 @@ public class EntityManager : MonoBehaviour
     private int CurrentUpdateIndex;
     private static int TicksPerFrame = 2;
 
+    
+
     void Awake()
     {
         Instance = this;
@@ -119,7 +121,7 @@ public class EntityManager : MonoBehaviour
 
             int quickDist = Vec2i.QuickDistance(e.Entity.TilePos, PlayerManager.Instance.Player.TilePos);
             e.LEPathFinder?.SetDistanceToPlayer(quickDist);
-            if(quickDist > IDLE_DISTANCE_SQR)
+            if(quickDist > IDLE_DISTANCE_SQR || WorldManager.Instance.Time.TimeChange)
             {
                 e.SetIdle(true);
                 idleEnt++;
@@ -681,7 +683,13 @@ public class EntityManager : MonoBehaviour
         }
 
         EntitiesByLocation[newSubworldID][cPos].Add(id);
-
+        
+        
+        Subworld sw = World.Instance.GetSubworld(newSubworldID);
+        
+        
+        if (sw != null)
+            sw.AddEntity(entity);
         entity.SetSubworld(newSubworldID);
         entity.SetPosition(newPosition.AsVector3());
         entity.SetLastChunk(cPos);
@@ -691,13 +699,29 @@ public class EntityManager : MonoBehaviour
         {
 
             Debug.Log("1");
-            //Check if the new position is loaded
+            //Check if the new position is loaded, if not then we unload the entity
             if (!LoadedChunks.Contains(cPos) || (entity.CurrentSubworldID != loadedSubworldID))
             {
                 Debug.Log("2");
                 //If the new position isn't loaded, then we must unload the entity
                 //If correct chunk position is loaded, but wrong world, we also unload
                 UnloadEntity(entity.GetLoadedEntity(), false);
+                //If the entity is now in a subworld after being unloaded,
+                //we must check if they are close enough to the player to have a slow update.
+                if(entity.CurrentSubworldID != -1)
+                {
+                    if(sw != null)
+                    {
+                        //We get the entrance, and check if the relvent chunk is loaded
+                        Vec2i entranceChunk = World.GetChunkPosition(sw.ExternalEntrancePos);
+                        //If it is, then we make sure we continue to run slow ticks on the unloaded entity
+                        if (LoadedChunks.Contains(entranceChunk))
+                        {
+                            UnloadedUpdatableEntities.Add(entity.ID);
+                        }
+                    }
+                }
+
             }
         }
         else
@@ -927,5 +951,59 @@ public class EntityManager : MonoBehaviour
     public static bool EntityWithinDistanceOfPlayer(Entity e, float dist)
     {
         return e.TilePos.QuickDistance(PlayerManager.Instance.Player.TilePos) < dist * dist;
+    }
+    public static bool PlayerCanSeeEntity(Entity entity)
+    {
+        float LookAngle = PlayerManager.Instance.Player.LookAngle;
+        Vector3 Position = PlayerManager.Instance.Player.Position;
+        float fov = PlayerManager.Instance.Player.fov;
+
+
+        Vector3 entityLookDirection = new Vector3(Mathf.Sin(LookAngle * Mathf.Deg2Rad), 0, Mathf.Cos(LookAngle * Mathf.Deg2Rad));
+        Vector3 difPos = new Vector3(entity.Position.x - Position.x, 0, entity.Position.z - Position.z).normalized;
+        //float angle = Vector3.Angle(entityLookDirection, difPos);
+        float dot = Vector3.Dot(entityLookDirection, difPos);
+
+        float angle = Mathf.Abs(Mathf.Acos(dot) * Mathf.Rad2Deg);
+        //Debug.Log(entityLookDirection + ", " + difPos + ", " + angle);
+        if (angle > fov)
+            return false;
+        //Debug.Log("object in way");
+        return PlayerLineOfSight(entity);
+    }
+
+
+
+
+    /// <summary>
+    /// Returns true if there is no opaque world object blocking the direct line
+    /// of sight between this entity and the entity i question.
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public static bool PlayerLineOfSight(Entity other)
+    {
+
+        Vector3 dir = other.Position - PlayerManager.Instance.Player.Position;
+        RaycastHit[] hit = Physics.RaycastAll(PlayerManager.Instance.Player.Position + Vector3.up * 1.5f, dir, dir.magnitude);
+
+        foreach (RaycastHit h in hit)
+        {
+            GameObject blocking = h.transform.gameObject;
+            if (blocking.GetComponent<LoadedEntity>() != null)
+            {
+                continue; ;
+            }
+            else if (blocking.CompareTag("MainCamera"))
+                continue;
+            else if (blocking.GetComponent<LoadedChunk2>() != null)
+                continue;
+            else
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 }

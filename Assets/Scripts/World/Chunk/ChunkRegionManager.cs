@@ -339,9 +339,9 @@ public class ChunkRegionManager : MonoBehaviour
         
         foreach(ChunkData cd in sub.SubworldChunks)
         {
-            Debug.Log("Object count:" + cd.WorldObjects.Count);
+            //Debug.Log("Object count:" + cd.WorldObjects.Count);
             SubworldChunks.Add(cd.Position, ChunkLoader.GetLoadedChunk(cd, 1));
-            Debug.Log("sub chunk: " + cd.Position);
+            //Debug.Log("sub chunk: " + cd.Position);
             //ChunkLoader.LoadChunk(cd);
         }
         CurrentSubworld = sub;

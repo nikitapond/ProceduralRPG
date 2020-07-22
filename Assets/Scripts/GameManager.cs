@@ -37,7 +37,7 @@ public class GameManager : MonoBehaviour
     public static EventManager EventManager { get; private set; }
     public static DebugGUI DebugGUI { get; private set; }
     public static GUIManager GUIManager { get; private set; }
-    public static PathFinder PathFinder { get; private set; }
+    public static PathFinderDEP PathFinder { get; private set; }
     public static LoadSave LoadSave { get; private set; }
     public static bool Paused { get; private set; }
 
@@ -98,7 +98,7 @@ public class GameManager : MonoBehaviour
             int seed = 0;
             Debug.Log("No game to load, generating with seed " + seed);
             GenerateGame(seed);
-            PathFinder = new PathFinder(WorldManager.World);
+            PathFinder = new PathFinderDEP(WorldManager.World);
             PathFinder.SetPlayerPosition(PlayerManager.Player.TilePos);
 
             System.GC.Collect();

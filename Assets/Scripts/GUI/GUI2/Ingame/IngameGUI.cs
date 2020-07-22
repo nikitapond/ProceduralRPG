@@ -42,8 +42,9 @@ public class IngameGUI : MonoBehaviour
             NPCText.transform.parent.gameObject.SetActive(true);
             NPCText.text = "";
             NPCText.text += npc.Name + "\n";
-            NPCText.text += npc.EntityRelationshipManager.Personality.ToString();
-            NPCText.text += "Subworld?: " + npc.GetSubworld();
+            NPCText.text += npc.EntityRelationshipManager.Personality.ToString() + "\n";
+            NPCText.text += "Subworld?: " + npc.GetSubworld() + "\n";
+            NPCText.text += "Is Idle?: " + npc.GetLoadedEntity()?.IsIdle;
         }
     }
 }

@@ -15,7 +15,11 @@ public class WorldDateTime
 
     private float CurrentDayTime { get { return TotalTime % DAY; } }
 
-
+    private bool TimeChange_;
+    /// <summary>
+    /// True if the time has changed this tick (i.e, from night to day or vice versa)
+    /// </summary>
+    public bool TimeChange { get { return TimeChange_; } }
 
     public WorldDateTime()
     {
@@ -25,11 +29,22 @@ public class WorldDateTime
 
     public void Update(GameObject mainLight)
     {
+
+        if (TimeChange_)
+            TimeChange_ = false;
+
         TotalTime += Time.deltaTime;
 
         mainLight.transform.rotation = Quaternion.Euler(CurrentDayTime/DAY * 360 - 120, 0, 0);
+
+        bool wasNight = IsNight;
+
         DebugGUI.Instance.SetData("Time", CurrentDayTime);
         DebugGUI.Instance.SetData("IsNight", IsNight);
+        if(wasNight != IsNight)
+        {
+            TimeChange_ = true;
+        }
     }
 
 

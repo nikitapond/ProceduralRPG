@@ -114,7 +114,7 @@ public class NPCJobSoldier : NPCJob
 
     private void SetSubTask(NPC npc, CurrentSubTask task)
     {
-        SubTask = CurrentSubTask.GettingEquiptment;
+        SubTask = task;
 
         if(task == CurrentSubTask.GettingEquiptment)
         {

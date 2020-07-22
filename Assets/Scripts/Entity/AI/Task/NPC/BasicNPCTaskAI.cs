@@ -32,8 +32,9 @@ public class BasicNPCTaskAI : EntityTaskAI
             }
             else
             {
+                Debug.Log("Going home?");
                 //if time in some area
-                return new EntityTaskGoto(Entity, NPC.NPCData.House, taskDesc: "Going home");
+                return new EntityTaskGoto(Entity, NPC.NPCData.House, taskDesc: "Going home from work");
             }
         }
         else
@@ -48,6 +49,7 @@ public class BasicNPCTaskAI : EntityTaskAI
             }
             else
             {
+                Debug.Log("Going home?");
                 return new EntityTaskGoto(Entity, NPC.NPCData.House, taskDesc: "Going home");
             }
             

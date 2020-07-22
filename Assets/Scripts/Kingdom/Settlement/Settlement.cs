@@ -132,12 +132,11 @@ public class Settlement : WorldLocation
     public Vec2i RandomPathPoint()
     {
         bool isvalid = false;
-        Vec2i pos = GameManager.RNG.RandomVec2i(0, PathNodes.GetLength(0)-1);
-        while (!isvalid)
-        {
-            if (PathNodes[pos.x, pos.z] != 0)
-                isvalid = true;
-        }
+
+        int x = GenerationRandom.RNG.RandomInt(1, SettlementType.GetSize() - 2);
+        int z = GenerationRandom.RNG.RandomInt(1, SettlementType.GetSize() - 2);
+        Vec2i pos = new Vec2i(x, z);
+        
         return BaseCoord + pos * World.ChunkSize;
     }
 

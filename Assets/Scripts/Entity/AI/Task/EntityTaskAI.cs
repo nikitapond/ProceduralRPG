@@ -9,6 +9,8 @@ public abstract class EntityTaskAI
     {
         Debug.Log("Entity set" + e);
         Entity = e;
+
+
     }
 
     public bool HasTask { get { return CurrentTask != null && !CurrentTask.IsComplete; } }
@@ -26,11 +28,20 @@ public abstract class EntityTaskAI
             CurrentTask.Update();
         }
     }
+    public void OnEntityLoad()
+    {
+        if (Entity == null)
+            return;
+        EntityTask task = ChooseIdleTask();
+        if (task != null)
+            SetTask(task);
+    }
+
     public virtual void Tick()
     {
         Debug.BeginDeepProfile("internal_ai_tick");
         //Check if we need a new task
-        if(CurrentTask == null || CurrentTask.IsComplete || CurrentTask.ShouldTaskEnd())
+        if(CurrentTask == null || CurrentTask.IsComplete || CurrentTask.ShouldTaskEnd() || WorldManager.Instance.Time.TimeChange)
         {
             
             //if so, choose our idle task
@@ -40,7 +51,7 @@ public abstract class EntityTaskAI
         }
         if(CurrentTask != null)
         {
-            if (CurrentTask.IsComplete)
+            if (CurrentTask.IsComplete || CurrentTask.ShouldTaskEnd() || WorldManager.Instance.Time.TimeChange)
             {
                 Entity.GetLoadedEntity().SpeechBubble.PushMessage("Task " + CurrentTask + " complete");
                 CurrentTask = null;
